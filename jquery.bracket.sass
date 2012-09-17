@@ -10,6 +10,7 @@
 $winColor: #DA0
 $loseColor: #CCC
 $thirdColor: #963
+$fourthColor: #678
 
 $connectorColor: #666
 
@@ -201,11 +202,17 @@ div.jQBracket
     width: 30px
     right: -35px
     position: absolute
-    background-color: $thirdColor
     text-align: center
     font-size: 11px
     height: 16px
-    color: #310
+
+    &.third
+      background-color: $thirdColor
+      color: #310
+
+    &.fourth
+      background-color: $fourthColor
+      color: #CCD
 
     &:after
       content: ''
@@ -222,7 +229,10 @@ div.jQBracket
     &:after
       left: -5px
       border-left: 0
+    &.third:after
       border-right: 6px solid $thirdColor
+    &.fourth:after
+      border-right: 6px solid $fourthColor
 
   .highlightWinner
     .bubble
