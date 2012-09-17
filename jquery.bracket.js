@@ -1,7 +1,7 @@
 /**
- * jQuery Bracket - release 1
+ * jQuery Bracket - release 2
  *
- * Copyright (c) 2011, Teijo Laine,
+ * Copyright (c) 2011-2012, Teijo Laine,
  * http://aropupu.fi/bracket/
  *
  * Licenced under the MIT licence
@@ -83,7 +83,7 @@
       }
     }
 
-    var Match = function(round, data, idx, results)
+    var Match = function(round, data, idx, results, renderCb)
     {
       function connector(height, shift, teamCon) {
         var width = parseInt($('.round:first').css('margin-right'))/2
@@ -374,6 +374,9 @@
             alignCb(teamCon)
 
           this.connect(connectorCb)
+
+          if (typeof(renderCb) === 'function')
+            renderCb(this.el)
         },
         results: function() {
           return [data[0].score, data[1].score]
@@ -390,7 +393,7 @@
         el: roundCon,
         bracket: bracket,
         id: roundIdx,
-        addMatch: function(teamCb) {
+        addMatch: function(teamCb, renderCb) {
             var matchIdx = matches.length
 
             if (teamCb !== null)
@@ -399,7 +402,7 @@
               var teams = [{source: bracket.round(roundIdx-1).match(matchIdx*2).winner},
                           {source: bracket.round(roundIdx-1).match(matchIdx*2+1).winner}]
 
-            var match = new Match(this, teams, matchIdx, !results?null:results[matchIdx])
+            var match = new Match(this, teams, matchIdx, !results?null:results[matchIdx], renderCb)
             matches.push(match)
             return match;
         },
@@ -594,6 +597,18 @@
 
     }
 
+    function winnerBubbles(el) { 
+        var winner = el.find('.team.win')
+        winner.append('<div class="bubble">1st</div>')
+        var loser = el.find('.team.lose')
+        loser.append('<div class="bubble">2nd</div>')
+    }
+
+    function consolidationBubbles(el) { 
+      var winner = el.find('.team.win')
+      winner.append('<div class="bubble">3rd</div>')
+    }
+
     function prepareWinners(winners, data, isSingleElimination)
     {
       var teams = data.teams;
@@ -619,8 +634,12 @@
               }
           }
 
-          var match = round.addMatch(teamCb)
-          if (r === rounds-1 && isSingleElimination) {
+
+          if (!(r === rounds-1 && isSingleElimination)) {
+            round.addMatch(teamCb)
+          }
+          else {
+            var match = round.addMatch(teamCb, winnerBubbles)
             match.setAlignCb(function(tC) {
               tC.css('top', '');
               tC.css('position', 'absolute');
@@ -636,7 +655,8 @@
 
         var third = winners.final().round().prev().match(0).loser
         var fourth = winners.final().round().prev().match(1).loser
-        var consol = round.addMatch(function() { return [{source: third}, {source: fourth}] })
+        var consol = round.addMatch(function() { return [{source: third}, {source: fourth}] },
+                                    consolidationBubbles)
 
         consol.setAlignCb(function(tC) {
           var height = (winners.el.height())/2
@@ -718,8 +738,8 @@
     function prepareFinals(finals, winners, losers, data)
     {
       var round = finals.addRound()
-      var match = round.addMatch(function() { return [{source: winners.winner}, {source: losers.winner}] })
-
+      var match = round.addMatch(function() { return [{source: winners.winner}, {source: losers.winner}] },
+                                 winnerBubbles)
       match.setAlignCb(function(tC) {
         var height = (winners.el.height()+losers.el.height())/2
         match.el.css('height', (height)+'px');
@@ -733,7 +753,8 @@
       var height
 
       var fourth = losers.final().round().prev().match(0).loser
-      var consol = round.addMatch(function() { return [{source: fourth}, {source: losers.loser}] })
+      var consol = round.addMatch(function() { return [{source: fourth}, {source: losers.loser}] },
+                                  consolidationBubbles)
       consol.setAlignCb(function(tC) {
         var height = (winners.el.height()+losers.el.height())/2
         consol.el.css('height', (height)+'px');
@@ -882,7 +903,10 @@
     else
       rounds = (Math.log(data.teams.length*2) / Math.log(2)-1) * 2 + 1
 
-    topCon.css('width', rounds*140+40)
+    if (opts.save)
+      topCon.css('width', rounds*140+40)
+    else
+      topCon.css('width', rounds*140+10)
 
     w = new Bracket(wEl, !r||!r[0]?null:r[0], data.teams)
 

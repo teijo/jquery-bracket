@@ -1,7 +1,7 @@
 /**
- * jQuery Bracket - release 1
+ * jQuery Bracket - release 2
  *
- * Copyright (c) 2011, Teijo Laine,
+ * Copyright (c) 2011-2012, Teijo Laine,
  * http://aropupu.fi/bracket/
  *
  * Licenced under the MIT licence
@@ -145,7 +145,6 @@ div.jQBracket .team.na {
 }
 
 div.jQBracket .team.win {
-  background-color: #888;
   color: #EEE;
 }
 
@@ -154,7 +153,7 @@ div.jQBracket .team.win span {
 }
 
 div.jQBracket .team.lose span {
-  color: #C00;
+  color: #900;
 }
 
 div.jQBracket .team.lose {
@@ -211,7 +210,7 @@ div.jQBracket .team.highlightWinner {
 
 div.jQBracket .connector.highlightLoser,
 div.jQBracket .connector div.connector.highlightLoser {
-  border-color: #09C;
+  border-color: #DDD;
 }
 
 div.jQBracket .np .connector,
@@ -220,6 +219,53 @@ div.jQBracket .np .connector div.connector {
 }
 
 div.jQBracket .team.highlightLoser {
-  background-color: #09C;
+  background-color: #DDD;
   color: #000;
 }
+
+div.jQBracket .bubble {
+  display: block;
+  width: 30px;
+  right: -35px;
+  position: absolute;
+  background-color: #963;
+  text-align: center;
+  font-size: 11px;
+  height: 16px;
+  color: #310;
+}
+
+div.jQBracket .bubble:after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 3px;
+  width: 0;
+  height: 0;
+  border-top:    5px solid transparent;
+  border-left:   5px solid transparent;
+  border-right:  5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+
+div.jQBracket .bubble:after {
+  left: -5px;
+  border-left: 0;
+  border-right: 6px solid #963;
+}
+
+div.jQBracket .highlightWinner .bubble {
+  background-color: #FC0;
+  color: #960;
+}
+div.jQBracket .highlightWinner .bubble:after {
+  border-right-color: #FC0;
+}
+div.jQBracket .highlightLoser .bubble {
+  background-color: #CCC;
+  color: #333;
+}
+div.jQBracket .highlightLoser .bubble:after {
+  border-right-color: #CCC;
+}
+
