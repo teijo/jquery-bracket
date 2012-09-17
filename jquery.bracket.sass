@@ -1,0 +1,239 @@
+/**
+ * jQuery Bracket
+ *
+ * Copyright (c) 2011-2012, Teijo Laine,
+ * http://aropupu.fi/bracket/
+ *
+ * Licenced under the MIT licence
+ */
+
+$winColor: #DA0
+$loseColor: #CCC
+$thirdColor: #963
+
+$connectorColor: #666
+
+div.jQBracket
+  font-family: "Arial"
+  font-size: 14px
+  float: left
+  clear: both
+  position: relative
+  background-color: #333
+  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#222), to(#333))
+  background: -moz-linear-gradient(-90deg, #222, #333)
+
+  .tools
+    position: absolute
+    top: 0px
+    color: #FFF
+
+  .tools span
+    cursor: pointer
+    margin: 5px
+    display: block
+    text-align: center
+    width: 18px
+    height: 18px
+    background-color: #666
+
+  .tools span:hover
+    background-color: #999
+
+  .finals
+    float: right
+    right: 0px
+    clear: right
+    position: relative
+
+  .bracket
+    float: right
+    height: 400px
+    clear: left
+
+  .loserBracket
+    float: right
+    height: 200px
+    clear: left
+    position: relative
+
+  .round
+    position: relative
+    width: 100px
+    margin-right: 40px
+    float: left
+
+  .match
+    position: relative
+    float: left
+    display: block
+    width: 100%
+
+  .team
+    position: relative
+    z-index: 1
+    float: left
+    background-color: #666
+    color: #FFF
+    width: 100px
+    height: 16px
+    border-radius: 5px
+    margin: 1px 0px
+    cursor: default
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.4)
+
+    b
+      font-weight: normal
+      padding-left: 3px
+      cursor: pointer
+      height: inherit
+      position: absolute
+      width: 70px
+
+      &[disabled]
+        cursor: default
+
+      input
+        font-size: 10px
+        padding: 0px
+        width: 60px
+        height: 16px
+        position: absolute
+
+    span
+      font-weight: bold
+      float: right
+      cursor: pointer
+      padding: 0px
+      padding-right: 5px
+      background-color: rgba(255,255,255,0.3)
+      border-radius: 0px 3px 3px 0px
+      text-align: right
+      width: 20px
+
+      &[disabled]
+        color: #999
+        cursor: default
+
+      input
+        font-size: 10px
+        padding: 0px
+        width: inherit
+        height: 16px
+
+    b input.error,
+    span input.error
+      background-color: #FCC
+
+    &.np
+      background-color: #666
+      color: #EEE
+
+    &.na
+      background-color: #999
+      color: #CCC
+
+    &.win
+      color: #EEE
+
+    &.win span
+      color: #060
+
+    &.lose span
+      color: #900
+
+    &.lose
+      background-color: #666
+      color: #333
+
+    &.tie span
+      color: #00F
+
+    &.highlight
+      background-color: #3C0
+      color: #000
+
+    &.highlightWinner
+      background-color: $winColor
+      color: #000
+
+    &.highlightLoser
+      background-color: $loseColor
+      color: #000
+
+  .teamContainer
+    position: relative
+    float: left
+    display: block
+
+  .connector
+    border: 2px solid $connectorColor
+    border-left: none
+    position: absolute
+    display: block
+    z-index: 1
+
+    div.connector
+      border: none
+      border-bottom: 2px solid $connectorColor
+      height: 0px
+      position: absolute
+      display: block
+
+    &.highlight,
+    div.connector.highlight
+      border-color: #0C0
+
+    &.highlightWinner,
+    div.connector.highlightWinner
+      border-color: $winColor
+
+    &.highlightLoser,
+    div.connector.highlightLoser
+      border-color: $loseColor
+
+  .np .connector,
+  .np .connector div.connector
+    border-color: #222
+
+  .bubble
+    display: block
+    width: 30px
+    right: -35px
+    position: absolute
+    background-color: $thirdColor
+    text-align: center
+    font-size: 11px
+    height: 16px
+    color: #310
+
+    &:after
+      content: ''
+      display: block
+      position: absolute
+      top: 3px
+      width: 0
+      height: 0
+      border-top:    5px solid transparent
+      border-left:   5px solid transparent
+      border-right:  5px solid transparent
+      border-bottom: 5px solid transparent
+
+    &:after
+      left: -5px
+      border-left: 0
+      border-right: 6px solid $thirdColor
+
+  .highlightWinner
+    .bubble
+      background-color: $winColor
+      color: #960
+      &:after
+        border-right-color: $winColor
+
+  .highlightLoser
+    .bubble
+      background-color: $loseColor
+      color: #333
+      &:after
+        border-right-color: $loseColor

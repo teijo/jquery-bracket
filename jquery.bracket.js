@@ -1,5 +1,5 @@
 /**
- * jQuery Bracket - release 2
+ * jQuery Bracket - release 3
  *
  * Copyright (c) 2011-2012, Teijo Laine,
  * http://aropupu.fi/bracket/
@@ -653,21 +653,23 @@
       if (isSingleElimination) {
         winners.final().connectorCb(function() { return null })
 
-        var third = winners.final().round().prev().match(0).loser
-        var fourth = winners.final().round().prev().match(1).loser
-        var consol = round.addMatch(function() { return [{source: third}, {source: fourth}] },
-                                    consolidationBubbles)
+        if (teams.length > 1) {
+          var third = winners.final().round().prev().match(0).loser
+          var fourth = winners.final().round().prev().match(1).loser
+          var consol = round.addMatch(function() { return [{source: third}, {source: fourth}] },
+                                      consolidationBubbles)
 
-        consol.setAlignCb(function(tC) {
-          var height = (winners.el.height())/2
-          consol.el.css('height', (height)+'px');
+          consol.setAlignCb(function(tC) {
+            var height = (winners.el.height())/2
+            consol.el.css('height', (height)+'px');
 
-          var topShift = tC.height()
+            var topShift = tC.height()
 
-          tC.css('top', (topShift)+'px');
-        })
+            tC.css('top', (topShift)+'px');
+          })
 
-        consol.connectorCb(function() { return null })
+          consol.connectorCb(function() { return null })
+        }
       }
     }
 
