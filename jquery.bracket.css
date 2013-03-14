@@ -1,4 +1,4 @@
-/**
+/*
  * jQuery Bracket
  *
  * Copyright (c) 2011-2012, Teijo Laine,
@@ -133,7 +133,7 @@ div.jQBracket {
     display: block; }
   div.jQBracket .connector {
     border: 2px solid #666666;
-    border-left: none;
+    border-left-style: none;
     position: absolute;
     display: block;
     z-index: 1; }
@@ -197,3 +197,68 @@ div.jQBracket {
     color: #333333; }
     div.jQBracket .highlightLoser .bubble:after {
       border-right-color: #cccccc; }
+
+div.jQBracket.rl .finals {
+  float: left;
+  left: 0px;
+  clear: left; }
+div.jQBracket.rl .bracket {
+  float: left;
+  clear: right; }
+div.jQBracket.rl .loserBracket {
+  float: left;
+  clear: right; }
+div.jQBracket.rl .round {
+  margin-right: 0;
+  margin-left: 40px;
+  float: right; }
+div.jQBracket.rl .match {
+  float: right; }
+div.jQBracket.rl .team {
+  float: right; }
+  div.jQBracket.rl .team b {
+    padding-right: 3px;
+    right: 0; }
+  div.jQBracket.rl .team span {
+    float: left;
+    padding-right: 0;
+    padding-left: 5px;
+    text-align: left; }
+div.jQBracket.rl .teamContainer {
+  float: right; }
+div.jQBracket.rl .connector {
+  border-left-style: solid;
+  border-right-style: none;
+  border-width: 2px; }
+  div.jQBracket.rl .connector.highlight,
+  div.jQBracket.rl .connector div.connector.highlight {
+    border-color: #00cc00; }
+  div.jQBracket.rl .connector.highlightWinner,
+  div.jQBracket.rl .connector div.connector.highlightWinner {
+    border-color: #ddaa00; }
+  div.jQBracket.rl .connector.highlightLoser,
+  div.jQBracket.rl .connector div.connector.highlightLoser {
+    border-color: #cccccc; }
+div.jQBracket.rl .bubble {
+  left: -35px; }
+  div.jQBracket.rl .bubble.third {
+    background-color: #996633;
+    color: #331100; }
+  div.jQBracket.rl .bubble.fourth {
+    background-color: #667788;
+    color: #ccccdd; }
+  div.jQBracket.rl .bubble:after {
+    left: auto;
+    right: -5px;
+    border-left: 5px solid transparent;
+    border-right: 0; }
+  div.jQBracket.rl .bubble.third:after {
+    border-right: none;
+    border-left: 6px solid #996633; }
+  div.jQBracket.rl .bubble.fourth:after {
+    border-right: none;
+    border-left: 6px solid #667788; }
+div.jQBracket.rl .highlightWinner .bubble:after {
+  border-left-color: #ddaa00; }
+div.jQBracket.rl .highlightLoser .bubble:after {
+  border-left-color: #cccccc; }

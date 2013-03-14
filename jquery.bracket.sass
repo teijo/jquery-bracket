@@ -169,7 +169,7 @@ div.jQBracket
 
   .connector
     border: 2px solid $connectorColor
-    border-left: none
+    border-left-style: none
     position: absolute
     display: block
     z-index: 1
@@ -247,3 +247,91 @@ div.jQBracket
       color: #333
       &:after
         border-right-color: $loseColor
+
+div.jQBracket.rl
+  .finals
+    float: left
+    left: 0px
+    clear: left
+
+  .bracket
+    float: left
+    clear: right
+
+  .loserBracket
+    float: left
+    clear: right
+
+  .round
+    margin-right: 0
+    margin-left: 40px
+    float: right
+
+  .match
+    float: right
+
+  .team
+    float: right
+
+    b
+      padding-right: 3px
+      right: 0
+
+    span
+      float: left
+      padding-right: 0
+      padding-left: 5px
+      text-align: left
+
+  .teamContainer
+    float: right
+
+  .connector
+    border-left-style: solid
+    border-right-style: none
+    border-width: 2px
+    &.highlight,
+    div.connector.highlight
+      border-color: #0C0
+
+    &.highlightWinner,
+    div.connector.highlightWinner
+      border-color: $winColor
+
+    &.highlightLoser,
+    div.connector.highlightLoser
+      border-color: $loseColor
+
+
+  .bubble
+    left: -35px
+
+    &.third
+      background-color: $thirdColor
+      color: #310
+
+    &.fourth
+      background-color: $fourthColor
+      color: #CCD
+
+    &:after
+      left: auto
+      right: -5px
+      border-left:   5px solid transparent
+      border-right: 0
+    &.third:after
+      border-right: none
+      border-left: 6px solid $thirdColor
+    &.fourth:after
+      border-right: none
+      border-left: 6px solid $fourthColor
+
+  .highlightWinner
+    .bubble
+      &:after
+        border-left-color: $winColor
+
+  .highlightLoser
+    .bubble
+      &:after
+        border-left-color: $loseColor

@@ -9,6 +9,7 @@
 (function($) {
   var jqueryBracket = function(opts)
   {
+    var align = opts.dir == 'lr'?'right':'left'
     var resultIdentifier
 
     function defaultEdit(span, data, done) {
@@ -56,7 +57,7 @@
 
     data = opts.init
 
-    var topCon = $('<div class="jQBracket"></div>').appendTo(opts.el.empty())
+    var topCon = $('<div class="jQBracket '+opts.dir+'"></div>').appendTo(opts.el.empty())
 
     // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
     function isNumber(n) {
@@ -105,7 +106,7 @@
         var src = $('<div class="connector"></div>').appendTo(teamCon);
         src.css('height', height);
         src.css('width', width+'px');
-        src.css('right', (-width-2)+'px');
+        src.css(align, (-width-2)+'px');
 
         if (shift >= 0)
           src.css('top', shift+'px');
@@ -119,7 +120,7 @@
 
         var dst = $('<div class="connector"></div>').appendTo(src);
         dst.css('width', width+'px');
-        dst.css('right', -width+'px');
+        dst.css(align, -width+'px');
         if (drop)
           dst.css('bottom', '0px');
         else
@@ -1012,6 +1013,9 @@
     init: function(opts) {
         var that = this
         opts.el = this
+        opts.dir = opts.dir || 'lr'
+        if (opts.dir != 'lr' && opts.dir != 'rl')
+          $.error('Direction must be either: "lr" or "rl"')
         var bracket = new jqueryBracket(opts)
         $(this).data('bracket', {target: that, obj: bracket})
         return bracket
