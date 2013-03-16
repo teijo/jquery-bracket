@@ -71,7 +71,9 @@ div.jQBracket {
       cursor: pointer;
       height: inherit;
       position: absolute;
-      width: 70px; }
+      width: 70px;
+      white-space: nowrap;
+      overflow: hidden; }
       div.jQBracket .team b[disabled] {
         cursor: default; }
       div.jQBracket .team b input {
