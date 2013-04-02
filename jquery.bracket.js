@@ -625,7 +625,7 @@
         return true
     }
 
-    function consolidationBubbles(match) {
+    function consolationBubbles(match) {
       var el = match.el
       var winner = el.find('.team.win')
       winner.append('<div class="bubble third">3rd</div>')
@@ -684,7 +684,7 @@
           var third = winners.final().round().prev().match(0).loser
           var fourth = winners.final().round().prev().match(1).loser
           var consol = round.addMatch(function() { return [{source: third}, {source: fourth}] },
-                                      consolidationBubbles)
+                                      consolationBubbles)
 
           consol.setAlignCb(function(tC) {
             var height = (winners.el.height())/2
@@ -838,7 +838,7 @@
       if (!opts.skipConsolationRound) {
         var fourth = losers.final().round().prev().match(0).loser
         var consol = round.addMatch(function() { return [{source: fourth}, {source: losers.loser}] },
-                                    consolidationBubbles)
+                                    consolationBubbles)
         consol.setAlignCb(function(tC) {
           var height = (winners.el.height()+losers.el.height())/2
           consol.el.css('height', (height)+'px');
@@ -973,7 +973,7 @@
 
     wEl.css('height', height)
 
-    // reserve space for consolidation
+    // reserve space for consolation round
     if (isSingleElimination && data.teams.length <= 2 && !opts.skipConsolationRound) {
       height += 30
       topCon.css('height', height)
