@@ -667,7 +667,10 @@
             match.setAlignCb(function(tC) {
               tC.css('top', '');
               tC.css('position', 'absolute');
-              tC.css('bottom', (-tC.height()/2)+'px');
+              if (opts.skipConsolationRound)
+                tC.css('top', (match.el.height()/2-tC.height()/2)+'px');
+              else
+                tC.css('bottom', (-tC.height()/2)+'px');
             })
           }
         }
@@ -677,7 +680,7 @@
       if (isSingleElimination) {
         winners.final().connectorCb(function() { return null })
 
-        if (teams.length > 1) {
+        if (teams.length > 1 && !opts.skipConsolationRound) {
           var third = winners.final().round().prev().match(0).loser
           var fourth = winners.final().round().prev().match(1).loser
           var consol = round.addMatch(function() { return [{source: third}, {source: fourth}] },
@@ -804,7 +807,7 @@
 
             match2.connectorCb(function() { return null })
             match2.setAlignCb(function(tC) {
-              var height = (winners.el.height()+losers.el.height())/2
+              var height = (winners.el.height()+losers.el.height())
               match2.el.css('height', (height)+'px');
 
               var topShift = (winners.el.height()/2 + winners.el.height()+losers.el.height()/2)/2 - tC.height()
@@ -819,7 +822,9 @@
         })
 
       match.setAlignCb(function(tC) {
-        var height = (winners.el.height()+losers.el.height())/2
+        var height = (winners.el.height()+losers.el.height())
+        if (!opts.skipConsolationRound)
+          height /= 2
         match.el.css('height', (height)+'px');
 
         var topShift = (winners.el.height()/2 + winners.el.height()+losers.el.height()/2)/2 - tC.height()
@@ -830,21 +835,23 @@
       var shift
       var height
 
-      var fourth = losers.final().round().prev().match(0).loser
-      var consol = round.addMatch(function() { return [{source: fourth}, {source: losers.loser}] },
-                                  consolidationBubbles)
-      consol.setAlignCb(function(tC) {
-        var height = (winners.el.height()+losers.el.height())/2
-        consol.el.css('height', (height)+'px');
+      if (!opts.skipConsolationRound) {
+        var fourth = losers.final().round().prev().match(0).loser
+        var consol = round.addMatch(function() { return [{source: fourth}, {source: losers.loser}] },
+                                    consolidationBubbles)
+        consol.setAlignCb(function(tC) {
+          var height = (winners.el.height()+losers.el.height())/2
+          consol.el.css('height', (height)+'px');
 
-        var topShift = tC.height()/2
-        var topShift = (winners.el.height()/2 + winners.el.height()+losers.el.height()/2)/2 + tC.height()/2 - height
+          var topShift = tC.height()/2
+          var topShift = (winners.el.height()/2 + winners.el.height()+losers.el.height()/2)/2 + tC.height()/2 - height
 
-        tC.css('top', (topShift)+'px');
-      })
+          tC.css('top', (topShift)+'px');
+        })
 
-      match.connectorCb(function() { return null })
-      consol.connectorCb(function() { return null })
+        match.connectorCb(function() { return null })
+        consol.connectorCb(function() { return null })
+      }
 
       winners.final().connectorCb(function(tC) {
           var connectorOffset = tC.height()/4
@@ -967,7 +974,7 @@
     wEl.css('height', height)
 
     // reserve space for consolidation
-    if (isSingleElimination && data.teams.length <= 2) {
+    if (isSingleElimination && data.teams.length <= 2 && !opts.skipConsolationRound) {
       height += 30
       topCon.css('height', height)
     }
@@ -1014,6 +1021,7 @@
         var that = this
         opts.el = this
         opts.dir = opts.dir || 'lr'
+        opts.skipConsolationRound = opts.skipConsolationRound || false
         if (opts.dir != 'lr' && opts.dir != 'rl')
           $.error('Direction must be either: "lr" or "rl"')
         var bracket = new jqueryBracket(opts)
