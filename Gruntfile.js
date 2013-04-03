@@ -21,7 +21,7 @@ module.exports = function(grunt) {
           asi: true,
           curly: false,
           strict: false,
-          predef : ['$', 'console'],
+          predef : ['jQuery', 'console'],
         },
         files: {
           src: ['src/jquery.bracket.js']
