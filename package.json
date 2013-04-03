@@ -1,0 +1,17 @@
+{
+  "name": "jquery.bracket",
+  "version": "0.0.1",
+  "dependencies": {
+    "grunt-cli": "0.1.6",
+    "grunt": "0.4.0",
+    "grunt-contrib-uglify": ">= 0.0.1",
+    "grunt-contrib-concat": ">= 0.0.1",
+    "grunt-contrib-watch": "0.3.1",
+    "grunt-contrib-jshint": "0.3.0",
+    "grunt-shell": ">= 0.0.1",
+    "grunt-css": ">= 0.0.1"
+  },
+  "engines": {
+    "node": "0.8.21"
+  }
+}

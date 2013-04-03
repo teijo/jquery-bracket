@@ -16,6 +16,7 @@ Examples can be found from the project site at http://www.aropupu.fi/bracket/
 Changes
 -------
 
+*   2013-04-03: "skipConsolationRound" option, minified distribution files
 *   2013-03-14: Reversing the bracket flow with dir property
 *   2012-07-10 (release 5): IE 8 support and remove "disabled" attributes as
     it messed IE8+ colors.
