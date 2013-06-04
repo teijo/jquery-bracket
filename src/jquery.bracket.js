@@ -278,6 +278,16 @@
       var matchCon = $('<div class="match"></div>')
       var teamCon = $('<div class="teamContainer"></div>')
 
+      if (!opts.edit) {
+        var matchUserData = (results ? results[2] : null)
+
+        if (opts.onMatchHover)
+          teamCon.hover(function() { opts.onMatchHover(true, matchUserData) }, function() { opts.onMatchHover(false, matchUserData) })
+
+        if (opts.onMatchClick)
+          teamCon.click(function() { opts.onMatchClick(matchUserData) })
+      }
+
       data[0].id = 0
       data[1].id = 1
 
