@@ -8,6 +8,13 @@ Feedback can be sent via mail to teijo(a)aropupu.fi or via IRC to Aroppuu @
 IRC/Quakenet. If you've found use for this script, I'd be happy to hear about
 it. Drop me a link and let me know if it can be shared on this project page.
 
+Building
+--------
+*   Install node
+*   Run `npm install` to get dependencies
+*   Run `grunt watch` to auto-compile changed files in src/
+*   Run `grunt` to compile once
+
 Examples
 --------
 
