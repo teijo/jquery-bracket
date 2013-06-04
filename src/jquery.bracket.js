@@ -191,6 +191,7 @@
         tEl.append(sEl)
 
         if (!(team.name === null || !isReady || !opts.save) && opts.save) {
+          nEl.addClass('editable')
           nEl.click(function () {
             var span = $(this)
 
@@ -212,6 +213,7 @@
             editor()
           })
           if (team.name) {
+            sEl.addClass('editable')
             sEl.click(function () {
               var span = $(this)
 
