@@ -1081,6 +1081,8 @@
     init: function (opts) {
       var that = this
       opts.el = this
+      if (opts.save && (opts.onMatchClick || opts.onMatchHover))
+        $.error('Match callbacks may not be passed in edit mode (in conjunction with save callback)')
       opts.dir = opts.dir || 'lr'
       opts.skipConsolationRound = opts.skipConsolationRound || false
       if (opts.dir !== 'lr' && opts.dir !== 'rl')
