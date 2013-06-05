@@ -282,7 +282,7 @@
         var matchUserData = (results ? results[2] : null)
 
         if (opts.onMatchHover)
-          teamCon.hover(function() { opts.onMatchHover(true, matchUserData) }, function() { opts.onMatchHover(false, matchUserData) })
+          teamCon.hover(function() { opts.onMatchHover(matchUserData, true) }, function() { opts.onMatchHover(matchUserData, false) })
 
         if (opts.onMatchClick)
           teamCon.click(function() { opts.onMatchClick(matchUserData) })
