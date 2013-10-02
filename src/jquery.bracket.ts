@@ -34,7 +34,7 @@ declare var jQuery: any;
       container.append(team)
     }
 
-    function assert(statement) {
+    function assert(statement : boolean) {
       if (!statement)
         throw new Error('Assertion error')
     }
@@ -65,11 +65,11 @@ declare var jQuery: any;
     var topCon = $('<div class="jQBracket ' + opts.dir + '"></div>').appendTo(opts.el.empty())
 
     // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
-    function isNumber(n) {
+    function isNumber(n : any) : boolean {
       return !isNaN(parseFloat(n)) && isFinite(n);
     }
 
-    function renderAll(save) {
+    function renderAll(save) : void {
       resultIdentifier = 0
       w.render()
       if (l && f) {
@@ -89,8 +89,8 @@ declare var jQuery: any;
       }
     }
 
-    var Match = function (round, data, idx, results, renderCb) {
-      function connector(height, shift, teamCon) {
+    var Match = function (round, data, idx : number, results, renderCb : Function) {
+      function connector(height : number, shift : number, teamCon) {
         var width = parseInt($('.round:first').css('margin-right'), 10) / 2
         var drop = true;
         // drop:
@@ -155,7 +155,7 @@ declare var jQuery: any;
         return {source: null, name: null, id: -1, score: null}
       }
 
-      function teamElement(round, team, isReady) {
+      function teamElement(round : number, team, isReady : boolean) {
         var rId = resultIdentifier
         var sEl = $('<span id="result-' + rId + '"></span>')
         var score
@@ -198,7 +198,7 @@ declare var jQuery: any;
             var span = $(this)
 
             function editor() {
-              function done_fn(val, next) {
+              function done_fn(val, next : boolean) {
                 if (val)
                   opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val
                 renderAll(true)
@@ -312,10 +312,10 @@ declare var jQuery: any;
         round: function () {
           return round
         },
-        connectorCb: function (cb) {
+        connectorCb: function (cb : Function) {
           connectorCb = cb
         },
-        connect: function (cb) {
+        connect: function (cb : Function) {
           var connectorOffset = teamCon.height() / 4
           var matchupOffset = matchCon.height() / 2
           var shift
@@ -368,7 +368,7 @@ declare var jQuery: any;
         second: function () {
           return data[1]
         },
-        setAlignCb: function (cb) {
+        setAlignCb: function (cb : Function) {
           alignCb = cb
         },
         render: function () {
@@ -416,7 +416,7 @@ declare var jQuery: any;
       }
     }
 
-    var Round = function (bracket, previousRound, roundIdx, results, doRenderCb) {
+    var Round = function (bracket, previousRound, roundIdx : number, results, doRenderCb : Function) {
       var matches = []
       var roundCon = $('<div class="round"></div>')
 
@@ -424,7 +424,7 @@ declare var jQuery: any;
         el: roundCon,
         bracket: bracket,
         id: roundIdx,
-        addMatch: function (teamCb, renderCb) {
+        addMatch: function (teamCb : Function, renderCb : Function) {
           var matchIdx = matches.length
           var teams
 
@@ -440,13 +440,13 @@ declare var jQuery: any;
           matches.push(match)
           return match;
         },
-        match: function (id) {
+        match: function (id : number) {
           return matches[id]
         },
         prev: function () {
           return previousRound
         },
-        size: function () {
+        size: function () : number {
           return matches.length
         },
         render: function () {
@@ -474,7 +474,7 @@ declare var jQuery: any;
 
       return {
         el: bracketCon,
-        addRound: function (doRenderCb) {
+        addRound: function (doRenderCb : Function) {
           var id = rounds.length
           var previous = null
           if (id > 0)
@@ -487,10 +487,10 @@ declare var jQuery: any;
         dropRound: function () {
           rounds.pop()
         },
-        round: function (id) {
+        round: function (id : number) {
           return rounds[id]
         },
-        size: function () {
+        size: function () : number {
           return rounds.length
         },
         final: function () {
@@ -520,7 +520,7 @@ declare var jQuery: any;
       }
     }
 
-    function isValid(data) {
+    function isValid(data) : boolean {
       var t = data.teams
       var r = data.results
 
@@ -582,7 +582,7 @@ declare var jQuery: any;
     }
 
     function postProcess(container) {
-      var Track = function (teamIndex, cssClass) {
+      var Track = function (teamIndex : number, cssClass : string) {
         var index = teamIndex;
         var elements = container.find('.team[index=' + index + ']')
         var addedClass
@@ -637,7 +637,7 @@ declare var jQuery: any;
 
     }
 
-    function winnerBubbles(match) {
+    function winnerBubbles(match) : boolean {
       var el = match.el
       var winner = el.find('.team.win')
       winner.append('<div class="bubble">1st</div>')
@@ -646,7 +646,7 @@ declare var jQuery: any;
       return true
     }
 
-    function consolationBubbles(match) {
+    function consolationBubbles(match) : boolean {
       var el = match.el
       var winner = el.find('.team.win')
       winner.append('<div class="bubble third">3rd</div>')
@@ -655,7 +655,7 @@ declare var jQuery: any;
       return true
     }
 
-    function prepareWinners(winners, data, isSingleElimination) {
+    function prepareWinners(winners, data, isSingleElimination : boolean) {
       var teams = data.teams;
       var results = data.results;
       var rounds = Math.log(teams.length * 2) / Math.log(2);
@@ -956,8 +956,8 @@ declare var jQuery: any;
 
     var r = data.results
 
-    function depth(a) {
-      function df(a, d) {
+    function depth(a) : number {
+      function df(a, d : number) : number {
         if (a instanceof Array)
           return df(a[0], d + 1)
         return d
@@ -966,7 +966,7 @@ declare var jQuery: any;
       return df(a, 0)
     }
 
-    function wrap(a, d) {
+    function wrap(a, d : number) {
       if (d > 0)
         a = wrap([a], d - 1)
       return a
