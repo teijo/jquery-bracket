@@ -6,6 +6,68 @@
  *
  * Licenced under the MIT licence
  */
+declare var jQuery: any;
+
+interface Connector {
+  height: number;
+  shift: number;
+}
+
+interface ConnectorProvider {
+  (tc : any, match : BracketMatch) : Connector;
+}
+
+interface TeamBlock {
+  source: ()=>TeamBlock;
+  name: string;
+  id: number;
+  idx: number;
+  score: number;
+}
+
+interface MatchIndicator {
+  name: string;
+  idx: number;
+}
+
+interface BracketRound {
+  el: any;
+  id: number;
+  bracket: any;
+  addMatch: any;
+  match: (id : number)=>BracketMatch
+  prev: ()=>BracketRound
+  size: ()=>number;
+  render: any;
+  results: any;
+}
+
+interface BracketMatch {
+  el: any;
+  id: number;
+  round: any;
+  connectorCb: (cb : ConnectorProvider)=>void;
+  connect: (cb : ConnectorProvider)=>void;
+  winner: ()=>TeamBlock;
+  second: ()=>TeamBlock;
+  setAlignCb: any;
+  render: any;
+  results: any;
+}
+
+interface BracketBracket {
+  el: any;
+  addRound: any;
+  dropRound: any;
+  round: any;
+  size: ()=>number;
+  final: any;
+  winner: ()=>TeamBlock;
+  loser: ()=>TeamBlock;
+  render: any;
+  results: any;
+}
+
 (function ($) {
   var JqueryBracket = function (opts) {
     var align = opts.dir === 'lr' ? 'right' : 'left'
@@ -32,22 +94,22 @@
       container.append(team)
     }
 
-    function assert(statement) {
+    function assert(statement : boolean) {
       if (!statement)
         throw new Error('Assertion error')
     }
 
     if (!opts)
-      throw new Error('Options not set')
+      throw Error('Options not set')
     if (!opts.el)
-      throw new Error('Invalid jQuery object as container')
+      throw Error('Invalid jQuery object as container')
     if (!opts.init && !opts.save)
-      throw new Error('No bracket data or save callback given')
+      throw Error('No bracket data or save callback given')
     if (opts.userData === undefined)
       opts.userData = null
 
     if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render))
-      throw new Error('Invalid decorator input')
+      throw Error('Invalid decorator input')
     else if (!opts.decorator)
       opts.decorator = { edit: defaultEdit, render: defaultRender }
 
@@ -63,11 +125,11 @@
     var topCon = $('<div class="jQBracket ' + opts.dir + '"></div>').appendTo(opts.el.empty())
 
     // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
-    function isNumber(n) {
+    function isNumber(n : any) : boolean {
       return !isNaN(parseFloat(n)) && isFinite(n);
     }
 
-    function renderAll(save) {
+    function renderAll(save) : void {
       resultIdentifier = 0
       w.render()
       if (l && f) {
@@ -87,8 +149,9 @@
       }
     }
 
-    var Match = function (round, data, idx, results, renderCb) {
-      function connector(height, shift, teamCon) {
+    var Match = function (round : BracketRound, data : any,
+                          idx : number, results, renderCb : Function) : BracketMatch {
+      function connector(height : number, shift : number, teamCon) {
         var width = parseInt($('.round:first').css('margin-right'), 10) / 2
         var drop = true;
         // drop:
@@ -131,7 +194,7 @@
         return src;
       }
 
-      function winner() {
+      function winner() : TeamBlock {
         if (isNumber(data[0].score) && isNumber(data[1].score)) {
           if (data[0].score > data[1].score)
             return data[0]
@@ -139,10 +202,10 @@
             return data[1]
         }
 
-        return {source: null, name: null, id: -1, score: null}
+        return {source: null, name: null, id: -1, idx: -1, score: null}
       }
 
-      function loser() {
+      function loser() : TeamBlock {
         if (isNumber(data[0].score) && isNumber(data[1].score)) {
           if (data[0].score > data[1].score)
             return data[1]
@@ -150,10 +213,10 @@
             return data[0]
         }
 
-        return {source: null, name: null, id: -1, score: null}
+        return {source: null, name: null, id: -1, idx: -1, score: null}
       }
 
-      function teamElement(round, team, isReady) {
+      function teamElement(round : number, team : TeamBlock, isReady : boolean) {
         var rId = resultIdentifier
         var sEl = $('<span id="result-' + rId + '"></span>')
         var score
@@ -196,7 +259,7 @@
             var span = $(this)
 
             function editor() {
-              function done_fn(val, next) {
+              function done_fn(val, next : boolean) {
                 if (val)
                   opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val
                 renderAll(true)
@@ -272,7 +335,7 @@
         return tEl;
       }
 
-      var connectorCb = null
+      var connectorCb : ConnectorProvider = null
       var alignCb = null
 
       var matchCon = $('<div class="match"></div>')
@@ -307,13 +370,13 @@
       return {
         el: matchCon,
         id: idx,
-        round: function () {
+        round: function () : BracketRound {
           return round
         },
-        connectorCb: function (cb) {
+        connectorCb: function (cb : ConnectorProvider) {
           connectorCb = cb
         },
-        connect: function (cb) {
+        connect: function (cb : ConnectorProvider) {
           var connectorOffset = teamCon.height() / 4
           var matchupOffset = matchCon.height() / 2
           var shift
@@ -360,13 +423,13 @@
         },
         winner: winner,
         loser: loser,
-        first: function () {
+        first: function () : TeamBlock {
           return data[0]
         },
-        second: function () {
+        second: function () : TeamBlock {
           return data[1]
         },
-        setAlignCb: function (cb) {
+        setAlignCb: function (cb : Function) {
           alignCb = cb
         },
         render: function () {
@@ -414,7 +477,8 @@
       }
     }
 
-    var Round = function (bracket, previousRound, roundIdx, results, doRenderCb) {
+    var Round = function (bracket : BracketBracket,  previousRound : BracketRound,
+                          roundIdx : number,  results,  doRenderCb : ()=>boolean) : BracketRound {
       var matches = []
       var roundCon = $('<div class="round"></div>')
 
@@ -422,7 +486,7 @@
         el: roundCon,
         bracket: bracket,
         id: roundIdx,
-        addMatch: function (teamCb, renderCb) {
+        addMatch: function (teamCb : Function, renderCb : Function) {
           var matchIdx = matches.length
           var teams
 
@@ -434,17 +498,17 @@
               {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
             ]
 
-          var match = new Match(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb)
+          var match = Match(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb)
           matches.push(match)
           return match;
         },
-        match: function (id) {
+        match: function (id : number) : BracketMatch {
           return matches[id]
         },
-        prev: function () {
+        prev: function () : BracketRound {
           return previousRound
         },
-        size: function () {
+        size: function () : number {
           return matches.length
         },
         render: function () {
@@ -467,37 +531,37 @@
       }
     }
 
-    var Bracket = function (bracketCon, results, teams) {
+    var Bracket = function (bracketCon, results, teams) : BracketBracket {
       var rounds = []
 
       return {
         el: bracketCon,
-        addRound: function (doRenderCb) {
+        addRound: function (doRenderCb : ()=>boolean) : BracketRound {
           var id = rounds.length
           var previous = null
           if (id > 0)
             previous = rounds[id - 1]
 
-          var round = new Round(this, previous, id, !results ? null : results[id], doRenderCb)
+          var round = Round(this, previous, id, !results ? null : results[id], doRenderCb)
           rounds.push(round)
           return round;
         },
         dropRound: function () {
           rounds.pop()
         },
-        round: function (id) {
+        round: function (id : number) : BracketRound {
           return rounds[id]
         },
-        size: function () {
+        size: function () : number {
           return rounds.length
         },
-        final: function () {
+        final: function () : BracketMatch {
           return rounds[rounds.length - 1].match(0)
         },
-        winner: function () {
+        winner: function () : TeamBlock {
           return rounds[rounds.length - 1].match(0).winner()
         },
-        loser: function () {
+        loser: function () : TeamBlock {
           return rounds[rounds.length - 1].match(0).loser()
         },
         render: function () {
@@ -518,7 +582,7 @@
       }
     }
 
-    function isValid(data) {
+    function isValid(data) : boolean {
       var t = data.teams
       var r = data.results
 
@@ -580,7 +644,7 @@
     }
 
     function postProcess(container) {
-      var Track = function (teamIndex, cssClass) {
+      var Track = function (teamIndex : number, cssClass : string) {
         var index = teamIndex;
         var elements = container.find('.team[index=' + index + ']')
         var addedClass
@@ -617,15 +681,15 @@
       var loseTrack = null
 
       if (winner && loser) {
-        winTrack = new Track(winner.idx, 'highlightWinner');
-        loseTrack = new Track(loser.idx, 'highlightLoser');
+        winTrack = Track(winner.idx, 'highlightWinner');
+        loseTrack = Track(loser.idx, 'highlightLoser');
         winTrack.highlight()
         loseTrack.highlight()
       }
 
       container.find('.team').mouseover(function () {
         var i = $(this).attr('index')
-        var track = new Track(i);
+        var track = Track(i, null);
         track.highlight()
         $(this).mouseout(function () {
           track.deHighlight()
@@ -635,7 +699,7 @@
 
     }
 
-    function winnerBubbles(match) {
+    function winnerBubbles(match : BracketMatch) : boolean {
       var el = match.el
       var winner = el.find('.team.win')
       winner.append('<div class="bubble">1st</div>')
@@ -644,7 +708,7 @@
       return true
     }
 
-    function consolationBubbles(match) {
+    function consolationBubbles(match : BracketMatch) : boolean {
       var el = match.el
       var winner = el.find('.team.win')
       winner.append('<div class="bubble third">3rd</div>')
@@ -653,7 +717,7 @@
       return true
     }
 
-    function prepareWinners(winners, data, isSingleElimination) {
+    function prepareWinners(winners : BracketBracket, data, isSingleElimination : boolean) {
       var teams = data.teams;
       var results = data.results;
       var rounds = Math.log(teams.length * 2) / Math.log(2);
@@ -672,10 +736,10 @@
               var t = teams[m]
               var i = m
               return [
-                {source: function () {
+                {source: function () : MatchIndicator {
                   return {name: t[0], idx: (i * 2)}
                 }},
-                {source: function () {
+                {source: function () : MatchIndicator {
                   return {name: t[1], idx: (i * 2 + 1)}
                 }}
               ]
@@ -732,7 +796,7 @@
       }
     }
 
-    function prepareLosers(winners, losers, data) {
+    function prepareLosers(winners : BracketBracket, losers : BracketBracket, data) {
       var teams = data.teams;
       var results = data.results;
       var rounds = Math.log(teams.length * 2) / Math.log(2) - 1;
@@ -781,7 +845,7 @@
               var cb = null
               // inside lower bracket
               if (n % 2 === 0) {
-                cb = function (tC, match) {
+                cb = function (tC, match) : Connector {
                   var connectorOffset = tC.height() / 4
                   var height = 0;
                   var shift = 0;
@@ -807,7 +871,8 @@
       }
     }
 
-    function prepareFinals(finals, winners, losers, data) {
+    function prepareFinals(finals : BracketBracket, winners : BracketBracket,
+                           losers : BracketBracket, data) {
       var round = finals.addRound()
       var match = round.addMatch(function () {
             return [
@@ -847,7 +912,7 @@
                   },
                   winnerBubbles)
 
-              match.connectorCb(function (tC) {
+              match.connectorCb(function (tC) : Connector {
                 return {height: 0, shift: tC.height() / 2}
               })
 
@@ -901,15 +966,15 @@
           tC.css('top', (topShift) + 'px');
         })
 
-        match.connectorCb(function () {
+        match.connectorCb(function () : Connector {
           return null
         })
-        consol.connectorCb(function () {
+        consol.connectorCb(function () : Connector {
           return null
         })
       }
 
-      winners.final().connectorCb(function (tC) {
+      winners.final().connectorCb(function (tC) : Connector {
         var connectorOffset = tC.height() / 4
         var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2
         var matchupOffset = topShift - winners.el.height() / 2
@@ -929,7 +994,7 @@
         return {height: height, shift: shift}
       })
 
-      losers.final().connectorCb(function (tC) {
+      losers.final().connectorCb(function (tC) : Connector {
         var connectorOffset = tC.height() / 4
         var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2
         var matchupOffset = topShift - winners.el.height() / 2
@@ -954,8 +1019,8 @@
 
     var r = data.results
 
-    function depth(a) {
-      function df(a, d) {
+    function depth(a) : number {
+      function df(a, d : number) : number {
         if (a instanceof Array)
           return df(a[0], d + 1)
         return d
@@ -964,7 +1029,7 @@
       return df(a, 0)
     }
 
-    function wrap(a, d) {
+    function wrap(a, d : number) {
       if (d > 0)
         a = wrap([a], d - 1)
       return a
@@ -984,7 +1049,7 @@
         var len = data.teams.length
         for (i = 0; i < len; i += 1)
           data.teams.push(['', ''])
-        return new JqueryBracket(opts)
+        return JqueryBracket(opts)
       })
 
       if (data.teams.length > 1 && data.results.length === 1 ||
@@ -993,7 +1058,7 @@
         dec.click(function () {
           if (data.teams.length > 1) {
             data.teams = data.teams.slice(0, data.teams.length / 2)
-            return new JqueryBracket(opts)
+            return JqueryBracket(opts)
           }
         })
       }
@@ -1004,7 +1069,7 @@
         type.click(function () {
           if (data.teams.length > 1 && data.results.length < 3) {
             data.results.push([], [])
-            return new JqueryBracket(opts)
+            return JqueryBracket(opts)
           }
         })
       }
@@ -1013,7 +1078,7 @@
         type.click(function () {
           if (data.results.length === 3) {
             data.results = data.results.slice(0, 1)
-            return new JqueryBracket(opts)
+            return JqueryBracket(opts)
           }
         })
       }
@@ -1054,11 +1119,11 @@
     else
       topCon.css('width', rounds * 140 + 10)
 
-    w = new Bracket(wEl, !r || !r[0] ? null : r[0], data.teams)
+    w = Bracket(wEl, !r || !r[0] ? null : r[0], data.teams)
 
     if (!isSingleElimination) {
-      l = new Bracket(lEl, !r || !r[1] ? null : r[1], null)
-      f = new Bracket(fEl, !r || !r[2] ? null : r[2], null)
+      l = Bracket(lEl, !r || !r[1] ? null : r[1], null)
+      f = Bracket(fEl, !r || !r[2] ? null : r[2], null)
     }
 
     prepareWinners(w, data, isSingleElimination)
@@ -1087,7 +1152,7 @@
       opts.skipConsolationRound = opts.skipConsolationRound || false
       if (opts.dir !== 'lr' && opts.dir !== 'rl')
         $.error('Direction must be either: "lr" or "rl"')
-      var bracket = new JqueryBracket(opts)
+      var bracket = JqueryBracket(opts)
       $(this).data('bracket', {target: that, obj: bracket})
       return bracket
     },
