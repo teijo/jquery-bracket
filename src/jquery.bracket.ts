@@ -8,6 +8,66 @@
  */
 declare var jQuery: any;
 
+interface Connector {
+  height: number;
+  shift: number;
+}
+
+interface ConnectorProvider {
+  (tc : any) : Connector;
+}
+
+interface TeamBlock {
+  source: TeamBlock;
+  name: string;
+  id: number;
+  idx: number;
+  score: number;
+}
+
+interface MatchIndicator {
+  name: string;
+  idx: number;
+}
+
+interface BracketRound {
+  el: any;
+  id: number;
+  bracket: any;
+  addMatch: any;
+  match: any;
+  prev: any;
+  size: ()=>number;
+  render: any;
+  results: any;
+}
+
+interface BracketMatch {
+  el: any;
+  id: number;
+  round: any;
+  connectorCb: any;
+  connect: any;
+  winner: any;
+  second: any;
+  setAlignCb: any;
+  render: any;
+  results: any;
+}
+
+interface BracketBracket {
+  el: any;
+  addRound: any;
+  dropRound: any;
+  round: any;
+  size: ()=>number;
+  final: any;
+  winner: any;
+  loser: any;
+  render: any;
+  results: any;
+}
+
 (function ($) {
   var JqueryBracket = function (opts) {
     var align = opts.dir === 'lr' ? 'right' : 'left'
@@ -89,7 +149,7 @@ declare var jQuery: any;
       }
     }
 
-    var Match = function (round, data, idx : number, results, renderCb : Function) {
+    var Match = function (round, data, idx : number, results, renderCb : Function) : BracketMatch {
       function connector(height : number, shift : number, teamCon) {
         var width = parseInt($('.round:first').css('margin-right'), 10) / 2
         var drop = true;
@@ -133,7 +193,7 @@ declare var jQuery: any;
         return src;
       }
 
-      function winner() {
+      function winner() : TeamBlock {
         if (isNumber(data[0].score) && isNumber(data[1].score)) {
           if (data[0].score > data[1].score)
             return data[0]
@@ -141,10 +201,10 @@ declare var jQuery: any;
             return data[1]
         }
 
-        return {source: null, name: null, id: -1, score: null}
+        return {source: null, name: null, id: -1, idx: -1, score: null}
       }
 
-      function loser() {
+      function loser() : TeamBlock {
         if (isNumber(data[0].score) && isNumber(data[1].score)) {
           if (data[0].score > data[1].score)
             return data[1]
@@ -152,10 +212,10 @@ declare var jQuery: any;
             return data[0]
         }
 
-        return {source: null, name: null, id: -1, score: null}
+        return {source: null, name: null, id: -1, idx: -1, score: null}
       }
 
-      function teamElement(round : number, team, isReady : boolean) {
+      function teamElement(round : number, team : TeamBlock, isReady : boolean) {
         var rId = resultIdentifier
         var sEl = $('<span id="result-' + rId + '"></span>')
         var score
@@ -274,7 +334,7 @@ declare var jQuery: any;
         return tEl;
       }
 
-      var connectorCb = null
+      var connectorCb : ConnectorProvider = null
       var alignCb = null
 
       var matchCon = $('<div class="match"></div>')
@@ -312,7 +372,7 @@ declare var jQuery: any;
         round: function () {
           return round
         },
-        connectorCb: function (cb : Function) {
+        connectorCb: function (cb : ConnectorProvider) {
           connectorCb = cb
         },
         connect: function (cb : Function) {
@@ -362,10 +422,10 @@ declare var jQuery: any;
         },
         winner: winner,
         loser: loser,
-        first: function () {
+        first: function () : TeamBlock {
           return data[0]
         },
-        second: function () {
+        second: function () : TeamBlock {
           return data[1]
         },
         setAlignCb: function (cb : Function) {
@@ -416,7 +476,7 @@ declare var jQuery: any;
       }
     }
 
-    var Round = function (bracket, previousRound, roundIdx : number, results, doRenderCb : Function) {
+    var Round = function (bracket, previousRound, roundIdx : number, results, doRenderCb : Function) : BracketRound {
       var matches = []
       var roundCon = $('<div class="round"></div>')
 
@@ -469,12 +529,12 @@ declare var jQuery: any;
       }
     }
 
-    var Bracket = function (bracketCon, results, teams) {
+    var Bracket = function (bracketCon, results, teams) : BracketBracket {
       var rounds = []
 
       return {
         el: bracketCon,
-        addRound: function (doRenderCb : Function) {
+        addRound: function (doRenderCb : Function) : BracketRound {
           var id = rounds.length
           var previous = null
           if (id > 0)
@@ -674,10 +734,10 @@ declare var jQuery: any;
               var t = teams[m]
               var i = m
               return [
-                {source: function () {
+                {source: function () : MatchIndicator {
                   return {name: t[0], idx: (i * 2)}
                 }},
-                {source: function () {
+                {source: function () : MatchIndicator {
                   return {name: t[1], idx: (i * 2 + 1)}
                 }}
               ]
@@ -783,7 +843,7 @@ declare var jQuery: any;
               var cb = null
               // inside lower bracket
               if (n % 2 === 0) {
-                cb = function (tC, match) {
+                cb = function (tC, match) : Connector {
                   var connectorOffset = tC.height() / 4
                   var height = 0;
                   var shift = 0;
@@ -849,7 +909,7 @@ declare var jQuery: any;
                   },
                   winnerBubbles)
 
-              match.connectorCb(function (tC) {
+              match.connectorCb(function (tC) : Connector {
                 return {height: 0, shift: tC.height() / 2}
               })
 
@@ -903,15 +963,15 @@ declare var jQuery: any;
           tC.css('top', (topShift) + 'px');
         })
 
-        match.connectorCb(function () {
+        match.connectorCb(function () : Connector {
           return null
         })
-        consol.connectorCb(function () {
+        consol.connectorCb(function () : Connector {
           return null
         })
       }
 
-      winners.final().connectorCb(function (tC) {
+      winners.final().connectorCb(function (tC) : Connector {
         var connectorOffset = tC.height() / 4
         var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2
         var matchupOffset = topShift - winners.el.height() / 2
@@ -931,7 +991,7 @@ declare var jQuery: any;
         return {height: height, shift: shift}
       })
 
-      losers.final().connectorCb(function (tC) {
+      losers.final().connectorCb(function (tC) : Connector {
         var connectorOffset = tC.height() / 4
         var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2
         var matchupOffset = topShift - winners.el.height() / 2
