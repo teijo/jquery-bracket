@@ -6,6 +6,8 @@
  *
  * Licenced under the MIT licence
  */
+declare var jQuery: any;
+
 (function ($) {
   var JqueryBracket = function (opts) {
     var align = opts.dir === 'lr' ? 'right' : 'left'
@@ -38,16 +40,16 @@
     }
 
     if (!opts)
-      throw new Error('Options not set')
+      throw Error('Options not set')
     if (!opts.el)
-      throw new Error('Invalid jQuery object as container')
+      throw Error('Invalid jQuery object as container')
     if (!opts.init && !opts.save)
-      throw new Error('No bracket data or save callback given')
+      throw Error('No bracket data or save callback given')
     if (opts.userData === undefined)
       opts.userData = null
 
     if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render))
-      throw new Error('Invalid decorator input')
+      throw Error('Invalid decorator input')
     else if (!opts.decorator)
       opts.decorator = { edit: defaultEdit, render: defaultRender }
 
@@ -434,7 +436,7 @@
               {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
             ]
 
-          var match = new Match(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb)
+          var match = Match(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb)
           matches.push(match)
           return match;
         },
@@ -478,7 +480,7 @@
           if (id > 0)
             previous = rounds[id - 1]
 
-          var round = new Round(this, previous, id, !results ? null : results[id], doRenderCb)
+          var round = Round(this, previous, id, !results ? null : results[id], doRenderCb)
           rounds.push(round)
           return round;
         },
@@ -617,15 +619,15 @@
       var loseTrack = null
 
       if (winner && loser) {
-        winTrack = new Track(winner.idx, 'highlightWinner');
-        loseTrack = new Track(loser.idx, 'highlightLoser');
+        winTrack = Track(winner.idx, 'highlightWinner');
+        loseTrack = Track(loser.idx, 'highlightLoser');
         winTrack.highlight()
         loseTrack.highlight()
       }
 
       container.find('.team').mouseover(function () {
         var i = $(this).attr('index')
-        var track = new Track(i);
+        var track = Track(i, null);
         track.highlight()
         $(this).mouseout(function () {
           track.deHighlight()
@@ -984,7 +986,7 @@
         var len = data.teams.length
         for (i = 0; i < len; i += 1)
           data.teams.push(['', ''])
-        return new JqueryBracket(opts)
+        return JqueryBracket(opts)
       })
 
       if (data.teams.length > 1 && data.results.length === 1 ||
@@ -993,7 +995,7 @@
         dec.click(function () {
           if (data.teams.length > 1) {
             data.teams = data.teams.slice(0, data.teams.length / 2)
-            return new JqueryBracket(opts)
+            return JqueryBracket(opts)
           }
         })
       }
@@ -1004,7 +1006,7 @@
         type.click(function () {
           if (data.teams.length > 1 && data.results.length < 3) {
             data.results.push([], [])
-            return new JqueryBracket(opts)
+            return JqueryBracket(opts)
           }
         })
       }
@@ -1013,7 +1015,7 @@
         type.click(function () {
           if (data.results.length === 3) {
             data.results = data.results.slice(0, 1)
-            return new JqueryBracket(opts)
+            return JqueryBracket(opts)
           }
         })
       }
@@ -1054,11 +1056,11 @@
     else
       topCon.css('width', rounds * 140 + 10)
 
-    w = new Bracket(wEl, !r || !r[0] ? null : r[0], data.teams)
+    w = Bracket(wEl, !r || !r[0] ? null : r[0], data.teams)
 
     if (!isSingleElimination) {
-      l = new Bracket(lEl, !r || !r[1] ? null : r[1], null)
-      f = new Bracket(fEl, !r || !r[2] ? null : r[2], null)
+      l = Bracket(lEl, !r || !r[1] ? null : r[1], null)
+      f = Bracket(fEl, !r || !r[2] ? null : r[2], null)
     }
 
     prepareWinners(w, data, isSingleElimination)
@@ -1087,7 +1089,7 @@
       opts.skipConsolationRound = opts.skipConsolationRound || false
       if (opts.dir !== 'lr' && opts.dir !== 'rl')
         $.error('Direction must be either: "lr" or "rl"')
-      var bracket = new JqueryBracket(opts)
+      var bracket = JqueryBracket(opts)
       $(this).data('bracket', {target: that, obj: bracket})
       return bracket
     },

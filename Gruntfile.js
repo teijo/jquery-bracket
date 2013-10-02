@@ -3,7 +3,7 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON('package.json'),
     watch: {
       scripts: {
-        files: ['src/jquery.bracket.sass', 'src/jquery.bracket.js'],
+        files: ['src/jquery.bracket.sass', 'src/jquery.bracket.ts'],
         tasks: ['default']
       }
     },
@@ -24,7 +24,7 @@ module.exports = function(grunt) {
           predef : ['jQuery', 'console'],
         },
         files: {
-          src: ['src/jquery.bracket.js']
+          src: ['src/jquery.bracket.ts']
         }
       }
     },
@@ -45,13 +45,20 @@ module.exports = function(grunt) {
         }
       }
     },
+    typescript: {
+      base: {
+        src: ['src/*.ts'],
+        dest: 'src/jquery.bracket.js'
+      }
+    }
   });
 
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-shell');
+  grunt.loadNpmTasks('grunt-typescript');
   grunt.loadNpmTasks('grunt-css');
 
-  grunt.registerTask('default', ['shell', 'uglify', 'cssmin']);
+  grunt.registerTask('default', ['shell', 'typescript', 'uglify', 'cssmin']);
 };
