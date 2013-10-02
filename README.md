@@ -11,9 +11,12 @@ it. Drop me a link and let me know if it can be shared on this project page.
 Building
 --------
 *   Install node
+*   Run `npm install -g typescript` to install TypeScript globally
 *   Run `npm install` to get dependencies
 *   Run `grunt watch` to auto-compile changed files in src/
 *   Run `grunt` to compile once
+
+Minified files are compiled to `dist/` directory.
 
 Examples
 --------
