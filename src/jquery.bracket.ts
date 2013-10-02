@@ -33,12 +33,12 @@ interface MatchIndicator {
 interface BracketRound {
   el: any;
   id: number;
-  bracket: any;
-  addMatch: any;
+  bracket: BracketBracket;
+  addMatch: (teamCb : ()=>Array, renderCb : ()=>boolean) => BracketMatch;
   match: (id : number)=>BracketMatch
   prev: ()=>BracketRound
   size: ()=>number;
-  render: any;
+  render: ()=>void;
   results: any;
 }
 
@@ -49,22 +49,24 @@ interface BracketMatch {
   connectorCb: (cb : ConnectorProvider)=>void;
   connect: (cb : ConnectorProvider)=>void;
   winner: ()=>TeamBlock;
+  loser: ()=>TeamBlock;
+  first: ()=>TeamBlock;
   second: ()=>TeamBlock;
-  setAlignCb: any;
-  render: any;
+  setAlignCb: (cb : (Object)=>void)=>void;
+  render: ()=>void;
   results: any;
 }
 
 interface BracketBracket {
   el: any;
   addRound: any;
-  dropRound: any;
-  round: any;
+  dropRound: ()=>void;
+  round: (id : number)=>BracketRound;
   size: ()=>number;
-  final: any;
+  final: ()=>BracketMatch;
   winner: ()=>TeamBlock;
   loser: ()=>TeamBlock;
-  render: any;
+  render: ()=>void;
   results: any;
 }
 
@@ -479,14 +481,14 @@ interface BracketBracket {
 
     var Round = function (bracket : BracketBracket,  previousRound : BracketRound,
                           roundIdx : number,  results,  doRenderCb : ()=>boolean) : BracketRound {
-      var matches = []
+      var matches : Array<BracketMatch> = []
       var roundCon = $('<div class="round"></div>')
 
       return {
         el: roundCon,
         bracket: bracket,
         id: roundIdx,
-        addMatch: function (teamCb : Function, renderCb : Function) {
+        addMatch: function (teamCb : ()=>Array, renderCb : ()=>boolean) : BracketMatch {
           var matchIdx = matches.length
           var teams
 
@@ -532,7 +534,7 @@ interface BracketBracket {
     }
 
     var Bracket = function (bracketCon, results, teams) : BracketBracket {
-      var rounds = []
+      var rounds : Array<BracketRound> = []
 
       return {
         el: bracketCon,
@@ -645,8 +647,7 @@ interface BracketBracket {
 
     function postProcess(container) {
       var Track = function (teamIndex : number, cssClass : string) {
-        var index = teamIndex;
-        var elements = container.find('.team[index=' + index + ']')
+        var elements = container.find('.team[index=' + teamIndex + ']')
         var addedClass
         if (!cssClass)
           addedClass = 'highlight'
@@ -808,7 +809,7 @@ interface BracketBracket {
           var round = losers.addRound()
 
           for (var m = 0; m < matches; m += 1) {
-            var teamCb = null
+            var teamCb : ()=>Array = null
 
             /* special cases */
             if (!(n % 2 === 0 && r !== 0)) {
