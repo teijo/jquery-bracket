@@ -14,11 +14,11 @@ interface Connector {
 }
 
 interface ConnectorProvider {
-  (tc : any) : Connector;
+  (tc : any, match : BracketMatch) : Connector;
 }
 
 interface TeamBlock {
-  source: TeamBlock;
+  source: ()=>TeamBlock;
   name: string;
   id: number;
   idx: number;
@@ -35,8 +35,8 @@ interface BracketRound {
   id: number;
   bracket: any;
   addMatch: any;
-  match: any;
-  prev: any;
+  match: (id : number)=>BracketMatch
+  prev: ()=>BracketRound
   size: ()=>number;
   render: any;
   results: any;
@@ -46,10 +46,10 @@ interface BracketMatch {
   el: any;
   id: number;
   round: any;
-  connectorCb: any;
-  connect: any;
-  winner: any;
-  second: any;
+  connectorCb: (cb : ConnectorProvider)=>void;
+  connect: (cb : ConnectorProvider)=>void;
+  winner: ()=>TeamBlock;
+  second: ()=>TeamBlock;
   setAlignCb: any;
   render: any;
   results: any;
@@ -62,8 +62,8 @@ interface BracketBracket {
   round: any;
   size: ()=>number;
   final: any;
-  winner: any;
-  loser: any;
+  winner: ()=>TeamBlock;
+  loser: ()=>TeamBlock;
   render: any;
   results: any;
 }
@@ -149,7 +149,8 @@ interface BracketBracket {
       }
     }
 
-    var Match = function (round, data, idx : number, results, renderCb : Function) : BracketMatch {
+    var Match = function (round : BracketRound, data : any,
+                          idx : number, results, renderCb : Function) : BracketMatch {
       function connector(height : number, shift : number, teamCon) {
         var width = parseInt($('.round:first').css('margin-right'), 10) / 2
         var drop = true;
@@ -369,13 +370,13 @@ interface BracketBracket {
       return {
         el: matchCon,
         id: idx,
-        round: function () {
+        round: function () : BracketRound {
           return round
         },
         connectorCb: function (cb : ConnectorProvider) {
           connectorCb = cb
         },
-        connect: function (cb : Function) {
+        connect: function (cb : ConnectorProvider) {
           var connectorOffset = teamCon.height() / 4
           var matchupOffset = matchCon.height() / 2
           var shift
@@ -476,7 +477,8 @@ interface BracketBracket {
       }
     }
 
-    var Round = function (bracket, previousRound, roundIdx : number, results, doRenderCb : Function) : BracketRound {
+    var Round = function (bracket : BracketBracket,  previousRound : BracketRound,
+                          roundIdx : number,  results,  doRenderCb : ()=>boolean) : BracketRound {
       var matches = []
       var roundCon = $('<div class="round"></div>')
 
@@ -500,10 +502,10 @@ interface BracketBracket {
           matches.push(match)
           return match;
         },
-        match: function (id : number) {
+        match: function (id : number) : BracketMatch {
           return matches[id]
         },
-        prev: function () {
+        prev: function () : BracketRound {
           return previousRound
         },
         size: function () : number {
@@ -534,7 +536,7 @@ interface BracketBracket {
 
       return {
         el: bracketCon,
-        addRound: function (doRenderCb : Function) : BracketRound {
+        addRound: function (doRenderCb : ()=>boolean) : BracketRound {
           var id = rounds.length
           var previous = null
           if (id > 0)
@@ -547,19 +549,19 @@ interface BracketBracket {
         dropRound: function () {
           rounds.pop()
         },
-        round: function (id : number) {
+        round: function (id : number) : BracketRound {
           return rounds[id]
         },
         size: function () : number {
           return rounds.length
         },
-        final: function () {
+        final: function () : BracketMatch {
           return rounds[rounds.length - 1].match(0)
         },
-        winner: function () {
+        winner: function () : TeamBlock {
           return rounds[rounds.length - 1].match(0).winner()
         },
-        loser: function () {
+        loser: function () : TeamBlock {
           return rounds[rounds.length - 1].match(0).loser()
         },
         render: function () {
@@ -697,7 +699,7 @@ interface BracketBracket {
 
     }
 
-    function winnerBubbles(match) : boolean {
+    function winnerBubbles(match : BracketMatch) : boolean {
       var el = match.el
       var winner = el.find('.team.win')
       winner.append('<div class="bubble">1st</div>')
@@ -706,7 +708,7 @@ interface BracketBracket {
       return true
     }
 
-    function consolationBubbles(match) : boolean {
+    function consolationBubbles(match : BracketMatch) : boolean {
       var el = match.el
       var winner = el.find('.team.win')
       winner.append('<div class="bubble third">3rd</div>')
@@ -715,7 +717,7 @@ interface BracketBracket {
       return true
     }
 
-    function prepareWinners(winners, data, isSingleElimination : boolean) {
+    function prepareWinners(winners : BracketBracket, data, isSingleElimination : boolean) {
       var teams = data.teams;
       var results = data.results;
       var rounds = Math.log(teams.length * 2) / Math.log(2);
@@ -794,7 +796,7 @@ interface BracketBracket {
       }
     }
 
-    function prepareLosers(winners, losers, data) {
+    function prepareLosers(winners : BracketBracket, losers : BracketBracket, data) {
       var teams = data.teams;
       var results = data.results;
       var rounds = Math.log(teams.length * 2) / Math.log(2) - 1;
@@ -869,7 +871,8 @@ interface BracketBracket {
       }
     }
 
-    function prepareFinals(finals, winners, losers, data) {
+    function prepareFinals(finals : BracketBracket, winners : BracketBracket,
+                           losers : BracketBracket, data) {
       var round = finals.addRound()
       var match = round.addMatch(function () {
             return [
