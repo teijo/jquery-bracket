@@ -76,6 +76,22 @@ interface BracketBracket {
     return !isNaN(parseFloat(n)) && isFinite(n);
   }
 
+  function depth(a) : number {
+    function df(a, d : number) : number {
+      if (a instanceof Array)
+        return df(a[0], d + 1)
+      return d
+    }
+
+    return df(a, 0)
+  }
+
+  function wrap(a, d : number) {
+    if (d > 0)
+      a = wrap([a], d - 1)
+    return a
+  }
+
   function winner(data: Array<TeamBlock>) : TeamBlock {
     if (isNumber(data[0].score) && isNumber(data[1].score)) {
       if (data[0].score > data[1].score)
@@ -1020,22 +1036,6 @@ interface BracketBracket {
     var w, l, f
 
     var r = data.results
-
-    function depth(a) : number {
-      function df(a, d : number) : number {
-        if (a instanceof Array)
-          return df(a[0], d + 1)
-        return d
-      }
-
-      return df(a, 0)
-    }
-
-    function wrap(a, d : number) {
-      if (d > 0)
-        a = wrap([a], d - 1)
-      return a
-    }
 
     /* wrap data to into necessary arrays */
     r = wrap(r, 4 - depth(r))
