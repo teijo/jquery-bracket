@@ -185,7 +185,7 @@ interface BracketBracket {
     })
   }
 
-  function defaultRender(container, team, score) {
+  function defaultRender(container, team) {
     container.append(team)
   }
 
@@ -209,10 +209,8 @@ interface BracketBracket {
 
   function prepareWinners(winners : BracketBracket, data, isSingleElimination : boolean, skipConsolationRound : boolean) {
     var teams = data.teams;
-    var results = data.results;
     var rounds = Math.log(teams.length * 2) / Math.log(2);
     var matches = teams.length;
-    var graphHeight = winners.el.height();
     var round
 
     for (var r = 0; r < rounds; r += 1) {
@@ -286,12 +284,9 @@ interface BracketBracket {
     }
   }
 
-  function prepareLosers(winners : BracketBracket, losers : BracketBracket, data) {
-    var teams = data.teams;
-    var results = data.results;
+  function prepareLosers(winners : BracketBracket, losers : BracketBracket, teams) {
     var rounds = Math.log(teams.length * 2) / Math.log(2) - 1;
     var matches = teams.length / 2;
-    var graphHeight = losers.el.height();
 
     for (var r = 0; r < rounds; r += 1) {
       for (var n = 0; n < 2; n += 1) {
@@ -362,9 +357,7 @@ interface BracketBracket {
   }
 
   function prepareFinals(finals : BracketBracket, winners : BracketBracket,
-                         losers : BracketBracket, data,
-                         skipConsolationRound : boolean,
-                         topCon : any) {
+                         losers : BracketBracket, skipConsolationRound : boolean, topCon : any) {
     var round = finals.addRound()
     var match = round.addMatch(function () {
         return [
@@ -921,7 +914,7 @@ interface BracketBracket {
       }
     }
 
-    var Bracket = function (bracketCon, results, teams) : BracketBracket {
+    var Bracket = function (bracketCon, results) : BracketBracket {
       var rounds : Array<BracketRound> = []
 
       return {
@@ -1121,18 +1114,18 @@ interface BracketBracket {
     else
       topCon.css('width', rounds * 140 + 10)
 
-    w = Bracket(wEl, !r || !r[0] ? null : r[0], data.teams)
+    w = Bracket(wEl, !r || !r[0] ? null : r[0])
 
     if (!isSingleElimination) {
-      l = Bracket(lEl, !r || !r[1] ? null : r[1], null)
-      f = Bracket(fEl, !r || !r[2] ? null : r[2], null)
+      l = Bracket(lEl, !r || !r[1] ? null : r[1])
+      f = Bracket(fEl, !r || !r[2] ? null : r[2])
     }
 
     prepareWinners(w, data, isSingleElimination, opts.skipConsolationRound)
 
     if (!isSingleElimination) {
-      prepareLosers(w, l, data);
-      prepareFinals(f, w, l, data, opts.skipConsolationRound, topCon);
+      prepareLosers(w, l, data.teams);
+      prepareFinals(f, w, l, opts.skipConsolationRound, topCon);
     }
 
     renderAll(false)
