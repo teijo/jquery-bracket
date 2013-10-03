@@ -532,7 +532,7 @@ interface BracketBracket {
         l.render()
         f.render()
       }
-      postProcess(topCon, f, w)
+      postProcess(topCon, w, f)
 
       if (save) {
         data.results[0] = w.results()
