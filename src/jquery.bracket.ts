@@ -98,34 +98,34 @@ interface BracketBracket {
     return {source: null, name: null, id: -1, idx: -1, score: null}
   }
 
-  function postProcess(container, w : BracketBracket, f : BracketBracket) {
-    var Track = function (teamIndex : number, cssClass : string) {
-      var elements = container.find('.team[index=' + teamIndex + ']')
-      var addedClass
-      if (!cssClass)
-        addedClass = 'highlight'
-      else
-        addedClass = cssClass
+  function trackHighlighter(teamIndex : number, cssClass : string, container) {
+    var elements = container.find('.team[index=' + teamIndex + ']')
+    var addedClass
+    if (!cssClass)
+      addedClass = 'highlight'
+    else
+      addedClass = cssClass
 
-      return {
-        highlight: function () {
-          elements.each(function () {
-            $(this).addClass(addedClass)
+    return {
+      highlight: function () {
+        elements.each(function () {
+          $(this).addClass(addedClass)
 
-            if ($(this).hasClass('win'))
-              $(this).parent().find('.connector').addClass(addedClass)
-          })
-        },
+          if ($(this).hasClass('win'))
+            $(this).parent().find('.connector').addClass(addedClass)
+        })
+      },
 
-        deHighlight: function () {
-          elements.each(function () {
-            $(this).removeClass(addedClass)
-            $(this).parent().find('.connector').removeClass(addedClass)
-          })
-        }
+      deHighlight: function () {
+        elements.each(function () {
+          $(this).removeClass(addedClass)
+          $(this).parent().find('.connector').removeClass(addedClass)
+        })
       }
     }
+  }
 
+  function postProcess(container, w : BracketBracket, f : BracketBracket) {
     var source = f || w
 
     var winner = source.winner()
@@ -135,15 +135,15 @@ interface BracketBracket {
     var loseTrack = null
 
     if (winner && loser) {
-      winTrack = Track(winner.idx, 'highlightWinner');
-      loseTrack = Track(loser.idx, 'highlightLoser');
+      winTrack = trackHighlighter(winner.idx, 'highlightWinner', container);
+      loseTrack = trackHighlighter(loser.idx, 'highlightLoser', container);
       winTrack.highlight()
       loseTrack.highlight()
     }
 
     container.find('.team').mouseover(function () {
       var i = $(this).attr('index')
-      var track = Track(i, null);
+      var track = trackHighlighter(i, null, container);
       track.highlight()
       $(this).mouseout(function () {
         track.deHighlight()
