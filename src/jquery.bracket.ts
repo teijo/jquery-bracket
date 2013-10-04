@@ -14,7 +14,7 @@ interface Connector {
 }
 
 interface ConnectorProvider {
-  (tc : any, match : BracketMatch) : Connector;
+  (tc : any, match : Match) : Connector;
 }
 
 interface TeamBlock {
@@ -30,19 +30,19 @@ interface MatchIndicator {
   idx: number;
 }
 
-interface BracketRound {
+interface Round {
   el: any;
   id: number;
-  bracket: BracketBracket;
-  addMatch: (teamCb : ()=>Array, renderCb : ()=>boolean) => BracketMatch;
-  match: (id : number)=>BracketMatch
-  prev: ()=>BracketRound
+  bracket: Bracket;
+  addMatch: (teamCb : ()=>Array, renderCb : ()=>boolean) => Match;
+  match: (id : number)=>Match
+  prev: ()=>Round
   size: ()=>number;
   render: ()=>void;
   results: any;
 }
 
-interface BracketMatch {
+interface Match {
   el: any;
   id: number;
   round: any;
@@ -57,20 +57,20 @@ interface BracketMatch {
   results: any;
 }
 
-interface BracketBracket {
+interface Bracket {
   el: any;
   addRound: any;
   dropRound: ()=>void;
-  round: (id : number)=>BracketRound;
+  round: (id : number)=>Round;
   size: ()=>number;
-  final: ()=>BracketMatch;
+  final: ()=>Match;
   winner: ()=>TeamBlock;
   loser: ()=>TeamBlock;
   render: ()=>void;
   results: any;
 }
 
-interface Match {
+interface MatchResult {
   a: TeamBlock;
   b: TeamBlock;
 }
@@ -97,7 +97,7 @@ interface Match {
     return a
   }
 
-  function matchWinner(match: Match) : TeamBlock {
+  function matchWinner(match: MatchResult) : TeamBlock {
     if (isNumber(match.a.score) && isNumber(match.b.score)) {
       if (match.a.score > match.b.score)
         return match.a
@@ -108,7 +108,7 @@ interface Match {
     return {source: null, name: null, id: -1, idx: -1, score: null}
   }
 
-  function matchLoser(match : Match) : TeamBlock {
+  function matchLoser(match : MatchResult) : TeamBlock {
     if (isNumber(match.a.score) && isNumber(match.b.score)) {
       if (match.a.score > match.b.score)
         return match.b
@@ -146,7 +146,7 @@ interface Match {
     }
   }
 
-  function postProcess(container, w : BracketBracket, f : BracketBracket) {
+  function postProcess(container, w : Bracket, f : Bracket) {
     var source = f || w
 
     var winner = source.winner()
@@ -194,7 +194,7 @@ interface Match {
     container.append(team)
   }
 
-  function winnerBubbles(match : BracketMatch) : boolean {
+  function winnerBubbles(match : Match) : boolean {
     var el = match.el
     var winner = el.find('.team.win')
     winner.append('<div class="bubble">1st</div>')
@@ -203,7 +203,7 @@ interface Match {
     return true
   }
 
-  function consolationBubbles(match : BracketMatch) : boolean {
+  function consolationBubbles(match : Match) : boolean {
     var el = match.el
     var winner = el.find('.team.win')
     winner.append('<div class="bubble third">3rd</div>')
@@ -212,7 +212,7 @@ interface Match {
     return true
   }
 
-  function prepareWinners(winners : BracketBracket, data, isSingleElimination : boolean, skipConsolationRound : boolean) {
+  function prepareWinners(winners : Bracket, data, isSingleElimination : boolean, skipConsolationRound : boolean) {
     var teams = data.teams;
     var rounds = Math.log(teams.length * 2) / Math.log(2);
     var matches = teams.length;
@@ -289,7 +289,7 @@ interface Match {
     }
   }
 
-  function prepareLosers(winners : BracketBracket, losers : BracketBracket, teams) {
+  function prepareLosers(winners : Bracket, losers : Bracket, teams) {
     var rounds = Math.log(teams.length * 2) / Math.log(2) - 1;
     var matches = teams.length / 2;
 
@@ -361,8 +361,8 @@ interface Match {
     }
   }
 
-  function prepareFinals(finals : BracketBracket, winners : BracketBracket,
-                         losers : BracketBracket, skipConsolationRound : boolean, topCon : any) {
+  function prepareFinals(finals : Bracket, winners : Bracket,
+                         losers : Bracket, skipConsolationRound : boolean, topCon : any) {
     var round = finals.addRound()
     var match = round.addMatch(function () {
         return [
@@ -559,9 +559,9 @@ interface Match {
       }
     }
 
-    var Match = function (round : BracketRound, data : Array<TeamBlock>,
-                          idx : number, results, renderCb : Function) : BracketMatch {
-      var match : Match = {a: data[0], b: data[1]}
+    function mkMatch(round : Round, data : Array<TeamBlock>, idx : number,
+                     results, renderCb : Function) : Match {
+      var match : MatchResult = {a: data[0], b: data[1]}
       function connector(height : number, shift : number, teamCon) {
         var width = parseInt($('.round:first').css('margin-right'), 10) / 2
         var drop = true;
@@ -759,7 +759,7 @@ interface Match {
       return {
         el: matchCon,
         id: idx,
-        round: function () : BracketRound {
+        round: function () : Round {
           return round
         },
         connectorCb: function (cb : ConnectorProvider) {
@@ -866,16 +866,16 @@ interface Match {
       }
     }
 
-    var Round = function (bracket : BracketBracket,  previousRound : BracketRound,
-                          roundIdx : number,  results,  doRenderCb : ()=>boolean) : BracketRound {
-      var matches : Array<BracketMatch> = []
+    function mkRound(bracket : Bracket,  previousRound : Round,
+                     roundIdx : number,  results,  doRenderCb : ()=>boolean) : Round {
+      var matches : Array<Match> = []
       var roundCon = $('<div class="round"></div>')
 
       return {
         el: roundCon,
         bracket: bracket,
         id: roundIdx,
-        addMatch: function (teamCb : ()=>Array, renderCb : ()=>boolean) : BracketMatch {
+        addMatch: function (teamCb : ()=>Array, renderCb : ()=>boolean) : Match {
           var matchIdx = matches.length
           var teams
 
@@ -887,14 +887,14 @@ interface Match {
               {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
             ]
 
-          var match = Match(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb)
+          var match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb)
           matches.push(match)
           return match;
         },
-        match: function (id : number) : BracketMatch {
+        match: function (id : number) : Match {
           return matches[id]
         },
-        prev: function () : BracketRound {
+        prev: function () : Round {
           return previousRound
         },
         size: function () : number {
@@ -920,31 +920,31 @@ interface Match {
       }
     }
 
-    var Bracket = function (bracketCon, results) : BracketBracket {
-      var rounds : Array<BracketRound> = []
+    function mkBracket(bracketCon, results) : Bracket {
+      var rounds : Array<Round> = []
 
       return {
         el: bracketCon,
-        addRound: function (doRenderCb : ()=>boolean) : BracketRound {
+        addRound: function (doRenderCb : ()=>boolean) : Round {
           var id = rounds.length
           var previous = null
           if (id > 0)
             previous = rounds[id - 1]
 
-          var round = Round(this, previous, id, !results ? null : results[id], doRenderCb)
+          var round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb)
           rounds.push(round)
           return round;
         },
         dropRound: function () {
           rounds.pop()
         },
-        round: function (id : number) : BracketRound {
+        round: function (id : number) : Round {
           return rounds[id]
         },
         size: function () : number {
           return rounds.length
         },
-        final: function () : BracketMatch {
+        final: function () : Match {
           return rounds[rounds.length - 1].match(0)
         },
         winner: function () : TeamBlock {
@@ -1120,11 +1120,11 @@ interface Match {
     else
       topCon.css('width', rounds * 140 + 10)
 
-    w = Bracket(wEl, !r || !r[0] ? null : r[0])
+    w = mkBracket(wEl, !r || !r[0] ? null : r[0])
 
     if (!isSingleElimination) {
-      l = Bracket(lEl, !r || !r[1] ? null : r[1])
-      f = Bracket(fEl, !r || !r[2] ? null : r[2])
+      l = mkBracket(lEl, !r || !r[1] ? null : r[1])
+      f = mkBracket(fEl, !r || !r[2] ? null : r[2])
     }
 
     prepareWinners(w, data, isSingleElimination, opts.skipConsolationRound)
