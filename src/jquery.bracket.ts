@@ -212,8 +212,7 @@ interface MatchResult {
     return true
   }
 
-  function prepareWinners(winners : Bracket, data, isSingleElimination : boolean, skipConsolationRound : boolean) {
-    var teams = data.teams;
+  function prepareWinners(winners : Bracket, teams, isSingleElimination : boolean, skipConsolationRound : boolean) {
     var rounds = Math.log(teams.length * 2) / Math.log(2);
     var matches = teams.length;
     var round
@@ -289,9 +288,9 @@ interface MatchResult {
     }
   }
 
-  function prepareLosers(winners : Bracket, losers : Bracket, teams) {
-    var rounds = Math.log(teams.length * 2) / Math.log(2) - 1;
-    var matches = teams.length / 2;
+  function prepareLosers(winners : Bracket, losers : Bracket, teamCount : number) {
+    var rounds = Math.log(teamCount * 2) / Math.log(2) - 1;
+    var matches = teamCount / 2;
 
     for (var r = 0; r < rounds; r += 1) {
       for (var n = 0; n < 2; n += 1) {
@@ -1127,10 +1126,10 @@ interface MatchResult {
       f = mkBracket(fEl, !r || !r[2] ? null : r[2])
     }
 
-    prepareWinners(w, data, isSingleElimination, opts.skipConsolationRound)
+    prepareWinners(w, data.teams, isSingleElimination, opts.skipConsolationRound)
 
     if (!isSingleElimination) {
-      prepareLosers(w, l, data.teams);
+      prepareLosers(w, l, data.teams.length);
       prepareFinals(f, w, l, opts.skipConsolationRound, topCon);
     }
 
