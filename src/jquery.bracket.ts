@@ -70,6 +70,11 @@ interface BracketBracket {
   results: any;
 }
 
+interface Match {
+  a: TeamBlock;
+  b: TeamBlock;
+}
+
 (function ($) {
   // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
   function isNumber(n : any) : boolean {
@@ -92,23 +97,23 @@ interface BracketBracket {
     return a
   }
 
-  function winner(data: Array<TeamBlock>) : TeamBlock {
-    if (isNumber(data[0].score) && isNumber(data[1].score)) {
-      if (data[0].score > data[1].score)
-        return data[0]
-      else if (data[0].score < data[1].score)
-        return data[1]
+  function matchWinner(match: Match) : TeamBlock {
+    if (isNumber(match.a.score) && isNumber(match.b.score)) {
+      if (match.a.score > match.b.score)
+        return match.a
+      else if (match.a.score < match.b.score)
+        return match.b
     }
 
     return {source: null, name: null, id: -1, idx: -1, score: null}
   }
 
-  function loser(data : Array<TeamBlock>) : TeamBlock {
-    if (isNumber(data[0].score) && isNumber(data[1].score)) {
-      if (data[0].score > data[1].score)
-        return data[1]
-      else if (data[0].score < data[1].score)
-        return data[0]
+  function matchLoser(match : Match) : TeamBlock {
+    if (isNumber(match.a.score) && isNumber(match.b.score)) {
+      if (match.a.score > match.b.score)
+        return match.b
+      else if (match.a.score < match.b.score)
+        return match.a
     }
 
     return {source: null, name: null, id: -1, idx: -1, score: null}
@@ -554,8 +559,9 @@ interface BracketBracket {
       }
     }
 
-    var Match = function (round : BracketRound, data : any,
+    var Match = function (round : BracketRound, data : Array<TeamBlock>,
                           idx : number, results, renderCb : Function) : BracketMatch {
+      var match : Match = {a: data[0], b: data[1]}
       function connector(height : number, shift : number, teamCon) {
         var width = parseInt($('.round:first').css('margin-right'), 10) / 2
         var drop = true;
@@ -629,9 +635,9 @@ interface BracketBracket {
 
         if (team.name === null)
           tEl.addClass('na')
-        else if (winner(data).name === team.name)
+        else if (matchWinner(match).name === team.name)
           tEl.addClass('win')
-        else if (loser(data).name === team.name)
+        else if (matchLoser(match).name === team.name)
           tEl.addClass('lose')
 
         tEl.append(sEl)
@@ -734,20 +740,20 @@ interface BracketBracket {
           teamCon.click(function() { opts.onMatchClick(matchUserData) })
       }
 
-      data[0].id = 0
-      data[1].id = 1
+      match.a.id = 0
+      match.b.id = 1
 
-      data[0].name = data[0].source().name
-      data[1].name = data[1].source().name
+      match.a.name = match.a.source().name
+      match.b.name = match.b.source().name
 
-      data[0].score = !results ? null : results[0]
-      data[1].score = !results ? null : results[1]
+      match.a.score = !results ? null : results[0]
+      match.b.score = !results ? null : results[1]
 
       /* match has score even though teams haven't yet been decided */
       /* todo: would be nice to have in preload check, maybe too much work */
-      if ((!data[0].name || !data[1].name) && (isNumber(data[0].score) || isNumber(data[1].score))) {
-        console.log('ERROR IN SCORE DATA: ' + data[0].source().name + ': ' + data[0].score + ', ' + data[1].source().name + ': ' + data[1].score)
-        data[0].score = data[1].score = null
+      if ((!match.a.name || !match.b.name) && (isNumber(match.a.score) || isNumber(match.b.score))) {
+        console.log('ERROR IN SCORE DATA: ' + match.a.source().name + ': ' + match.a.score + ', ' + match.b.source().name + ': ' + match.b.score)
+        match.a.score = match.b.score = null
       }
 
       return {
@@ -804,13 +810,13 @@ interface BracketBracket {
           }
           teamCon.append(connector(height, shift, teamCon));
         },
-        winner: function() { return winner(data) },
-        loser: function() { return loser(data) },
+        winner: function() { return matchWinner(match) },
+        loser: function() { return matchLoser(match) },
         first: function () : TeamBlock {
-          return data[0]
+          return match.a
         },
         second: function () : TeamBlock {
-          return data[1]
+          return match.b
         },
         setAlignCb: function (cb : Function) {
           alignCb = cb
@@ -819,23 +825,23 @@ interface BracketBracket {
           matchCon.empty()
           teamCon.empty()
 
-          data[0].name = data[0].source().name
-          data[1].name = data[1].source().name
-          data[0].idx = data[0].source().idx
-          data[1].idx = data[1].source().idx
+          match.a.name = match.a.source().name
+          match.b.name = match.b.source().name
+          match.a.idx = match.a.source().idx
+          match.b.idx = match.b.source().idx
 
           var isReady = false
-          if ((data[0].name || data[0].name === '') &&
-              (data[1].name || data[1].name === ''))
+          if ((match.a.name || match.a.name === '') &&
+              (match.b.name || match.b.name === ''))
             isReady = true
 
-          if (!winner(data).name)
+          if (!matchWinner(match).name)
             teamCon.addClass('np')
           else
             teamCon.removeClass('np')
 
-          teamCon.append(teamElement(round.id, data[0], isReady))
-          teamCon.append(teamElement(round.id, data[1], isReady))
+          teamCon.append(teamElement(round.id, match.a, isReady))
+          teamCon.append(teamElement(round.id, match.b, isReady))
 
           matchCon.appendTo(round.el)
           matchCon.append(teamCon)
@@ -855,7 +861,7 @@ interface BracketBracket {
             this.connect(connectorCb)
         },
         results: function () {
-          return [data[0].score, data[1].score]
+          return [match.a.score, match.b.score]
         }
       }
     }
