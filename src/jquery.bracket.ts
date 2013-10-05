@@ -78,6 +78,27 @@ interface MatchResult {
   b: TeamBlock;
 }
 
+interface DoneCallback {
+  (val: string, next: boolean): void;
+}
+
+interface Decorator {
+  edit: (span: JQuery, name: string, done_fn: DoneCallback) => void;
+  render: Function;
+}
+
+interface Options {
+  el: JQuery;
+  init: any;
+  save: (data: any, userData: any) => void;
+  userData: any;
+  decorator: Decorator;
+  skipConsolationRound: boolean;
+  dir: string;
+  onMatchClick: (data: any) => void;
+  onMatchHover: (data: any, hover: boolean) => void;
+}
+
 (function($) {
   // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
   function isNumber(n: any): boolean {
@@ -507,7 +528,7 @@ interface MatchResult {
     })
   }
 
-  var JqueryBracket = function(opts) {
+  var JqueryBracket = function(opts: Options) {
     var align = opts.dir === 'lr' ? 'right' : 'left'
     var resultIdentifier
 
@@ -727,7 +748,7 @@ interface MatchResult {
       var matchCon = $('<div class="match"></div>')
       var teamCon = $('<div class="teamContainer"></div>')
 
-      if (!opts.edit) {
+      if (!opts.save) {
         var matchUserData = (results ? results[2] : null)
 
         if (opts.onMatchHover)
@@ -1141,7 +1162,7 @@ interface MatchResult {
   }
 
   var methods = {
-    init: function(opts) {
+    init: function(opts: Options) {
       var that = this
       opts.el = this
       if (opts.save && (opts.onMatchClick || opts.onMatchHover))
