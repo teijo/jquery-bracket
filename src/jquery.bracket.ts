@@ -633,6 +633,49 @@ interface Options {
     }
   }
 
+  function connector(height: number, shift: number, teamCon: JQuery, align: string) {
+    var width = parseInt($('.round:first').css('margin-right'), 10) / 2
+    var drop = true;
+    // drop:
+    // [team]'\
+    //         \_[team]
+    // !drop:
+    //         /'[team]
+    // [team]_/
+    if (height < 0) {
+      drop = false;
+      height = -height;
+    }
+    /* straight lines are prettier */
+    if (height < 2)
+      height = 0
+
+    var src = $('<div class="connector"></div>').appendTo(teamCon);
+    src.css('height', height);
+    src.css('width', width + 'px');
+    src.css(align, (-width - 2) + 'px');
+
+    if (shift >= 0)
+      src.css('top', shift + 'px');
+    else
+      src.css('bottom', (-shift) + 'px');
+
+    if (drop)
+      src.css('border-bottom', 'none');
+    else
+      src.css('border-top', 'none');
+
+    var dst = $('<div class="connector"></div>').appendTo(src);
+    dst.css('width', width + 'px');
+    dst.css(align, -width + 'px');
+    if (drop)
+      dst.css('bottom', '0px');
+    else
+      dst.css('top', '0px');
+
+    return src;
+  }
+
   var JqueryBracket = function(opts: Options) {
     var align = opts.dir === 'lr' ? 'right' : 'left'
     var resultIdentifier
@@ -685,49 +728,6 @@ interface Options {
     function mkMatch(round: Round, data: Array<TeamBlock>, idx: number,
                      results, renderCb: Function): Match {
       var match: MatchResult = {a: data[0], b: data[1]}
-      function connector(height: number, shift: number, teamCon) {
-        var width = parseInt($('.round:first').css('margin-right'), 10) / 2
-        var drop = true;
-        // drop:
-        // [team]'\
-        //         \_[team]
-        // !drop:
-        //         /'[team]
-        // [team]_/
-        if (height < 0) {
-          drop = false;
-          height = -height;
-        }
-        /* straight lines are prettier */
-        if (height < 2)
-          height = 0
-
-        var src = $('<div class="connector"></div>').appendTo(teamCon);
-        src.css('height', height);
-        src.css('width', width + 'px');
-        src.css(align, (-width - 2) + 'px');
-
-        if (shift >= 0)
-          src.css('top', shift + 'px');
-        else
-          src.css('bottom', (-shift) + 'px');
-
-        if (drop)
-          src.css('border-bottom', 'none');
-        else
-          src.css('border-top', 'none');
-
-        var dst = $('<div class="connector"></div>').appendTo(src);
-        dst.css('width', width + 'px');
-        dst.css(align, -width + 'px');
-        if (drop)
-          dst.css('bottom', '0px');
-        else
-          dst.css('top', '0px');
-
-        return src;
-      }
-
       function teamElement(round: number, team: TeamBlock, isReady: boolean) {
         var rId = resultIdentifier
         var sEl = $('<span id="result-' + rId + '"></span>')
@@ -931,7 +931,7 @@ interface Options {
             shift = info.shift
             height = info.height
           }
-          teamCon.append(connector(height, shift, teamCon));
+          teamCon.append(connector(height, shift, teamCon, align));
         },
         winner: function() { return matchWinner(match) },
         loser: function() { return matchLoser(match) },
