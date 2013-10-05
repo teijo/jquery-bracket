@@ -528,7 +528,61 @@ interface Options {
     })
   }
 
-  function mkBracket(bracketCon: JQuery, results, mkRound): Bracket {
+  function mkRound(bracket: Bracket,  previousRound: Round,
+                   roundIdx: number,  results,  doRenderCb: () => boolean, mkMatch): Round {
+    var matches: Array<Match> = []
+    var roundCon = $('<div class="round"></div>')
+
+    return {
+      el: roundCon,
+      bracket: bracket,
+      id: roundIdx,
+      addMatch: function(teamCb: () => Array, renderCb: () => boolean): Match {
+        var matchIdx = matches.length
+        var teams
+
+        if (teamCb !== null)
+          teams = teamCb()
+        else
+          teams = [
+            {source: bracket.round(roundIdx - 1).match(matchIdx * 2).winner},
+            {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
+          ]
+
+        var match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb)
+        matches.push(match)
+        return match;
+      },
+      match: function(id: number): Match {
+        return matches[id]
+      },
+      prev: function(): Round {
+        return previousRound
+      },
+      size: function(): number {
+        return matches.length
+      },
+      render: function() {
+        roundCon.empty()
+        if (typeof(doRenderCb) === 'function')
+          if (!doRenderCb())
+            return
+        roundCon.appendTo(bracket.el)
+        $.each(matches, function(i, ma) {
+          ma.render()
+        })
+      },
+      results: function() {
+        var results = []
+        $.each(matches, function(i, ma) {
+          results.push(ma.results())
+        })
+        return results
+      }
+    }
+  }
+
+  function mkBracket(bracketCon: JQuery, results, mkMatch): Bracket {
     var rounds: Array<Round> = []
 
     return {
@@ -539,7 +593,7 @@ interface Options {
         if (id > 0)
           previous = rounds[id - 1]
 
-        var round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb)
+        var round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch)
         rounds.push(round)
         return round;
       },
@@ -935,60 +989,6 @@ interface Options {
       }
     }
 
-    function mkRound(bracket: Bracket,  previousRound: Round,
-                     roundIdx: number,  results,  doRenderCb: () => boolean): Round {
-      var matches: Array<Match> = []
-      var roundCon = $('<div class="round"></div>')
-
-      return {
-        el: roundCon,
-        bracket: bracket,
-        id: roundIdx,
-        addMatch: function(teamCb: () => Array, renderCb: () => boolean): Match {
-          var matchIdx = matches.length
-          var teams
-
-          if (teamCb !== null)
-            teams = teamCb()
-          else
-            teams = [
-              {source: bracket.round(roundIdx - 1).match(matchIdx * 2).winner},
-              {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
-            ]
-
-          var match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb)
-          matches.push(match)
-          return match;
-        },
-        match: function(id: number): Match {
-          return matches[id]
-        },
-        prev: function(): Round {
-          return previousRound
-        },
-        size: function(): number {
-          return matches.length
-        },
-        render: function() {
-          roundCon.empty()
-          if (typeof(doRenderCb) === 'function')
-            if (!doRenderCb())
-              return
-          roundCon.appendTo(bracket.el)
-          $.each(matches, function(i, ma) {
-            ma.render()
-          })
-        },
-        results: function() {
-          var results = []
-          $.each(matches, function(i, ma) {
-            results.push(ma.results())
-          })
-          return results
-        }
-      }
-    }
-
     function isValid(data): boolean {
       var t = data.teams
       var r = data.results
@@ -1138,11 +1138,11 @@ interface Options {
     else
       topCon.css('width', rounds * 140 + 10)
 
-    w = mkBracket(wEl, !r || !r[0] ? null : r[0], mkRound)
+    w = mkBracket(wEl, !r || !r[0] ? null : r[0], mkMatch)
 
     if (!isSingleElimination) {
-      l = mkBracket(lEl, !r || !r[1] ? null : r[1], mkRound)
-      f = mkBracket(fEl, !r || !r[2] ? null : r[2], mkRound)
+      l = mkBracket(lEl, !r || !r[1] ? null : r[1], mkMatch)
+      f = mkBracket(fEl, !r || !r[2] ? null : r[2], mkMatch)
     }
 
     prepareWinners(w, data.teams, isSingleElimination, opts.skipConsolationRound)
