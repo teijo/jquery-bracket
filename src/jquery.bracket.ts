@@ -33,18 +33,6 @@ interface MatchIndicator {
   idx: number;
 }
 
-interface Round {
-  el: JQuery;
-  id: number;
-  bracket: Bracket;
-  addMatch: (teamCb : ()=>Array, renderCb : ()=>boolean) => Match;
-  match: (id : number)=>Match
-  prev: ()=>Round
-  size: ()=>number;
-  render: ()=>void;
-  results: any;
-}
-
 interface Match {
   el: JQuery;
   id: number;
@@ -57,7 +45,19 @@ interface Match {
   second: ()=>TeamBlock;
   setAlignCb: (cb : (Object)=>void)=>void;
   render: ()=>void;
-  results: any;
+  results: ()=>Array<number>;
+}
+
+interface Round {
+  el: JQuery;
+  id: number;
+  bracket: Bracket;
+  addMatch: (teamCb : ()=>Array, renderCb : ()=>boolean) => Match;
+  match: (id : number)=>Match
+  prev: ()=>Round
+  size: ()=>number;
+  render: ()=>void;
+  results: ()=>Array<Array<number>>;
 }
 
 interface Bracket {
@@ -70,7 +70,7 @@ interface Bracket {
   winner: ()=>TeamBlock;
   loser: ()=>TeamBlock;
   render: ()=>void;
-  results: any;
+  results: ()=>Array<Array<Array<number>>>;
 }
 
 interface MatchResult {
