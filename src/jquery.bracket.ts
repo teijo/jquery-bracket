@@ -528,6 +528,57 @@ interface Options {
     })
   }
 
+  function mkBracket(bracketCon: JQuery, results, mkRound): Bracket {
+    var rounds: Array<Round> = []
+
+    return {
+      el: bracketCon,
+      addRound: function(doRenderCb: () => boolean): Round {
+        var id = rounds.length
+        var previous = null
+        if (id > 0)
+          previous = rounds[id - 1]
+
+        var round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb)
+        rounds.push(round)
+        return round;
+      },
+      dropRound: function() {
+        rounds.pop()
+      },
+      round: function(id: number): Round {
+        return rounds[id]
+      },
+      size: function(): number {
+        return rounds.length
+      },
+      final: function(): Match {
+        return rounds[rounds.length - 1].match(0)
+      },
+      winner: function(): TeamBlock {
+        return rounds[rounds.length - 1].match(0).winner()
+      },
+      loser: function(): TeamBlock {
+        return rounds[rounds.length - 1].match(0).loser()
+      },
+      render: function() {
+        bracketCon.empty()
+        /* Length of 'rounds' can increase during render in special case when
+         LB win in finals adds new final round in match render callback.
+         Therefore length must be read on each iteration. */
+        for (var i = 0; i < rounds.length; i += 1)
+          rounds[i].render()
+      },
+      results: function() {
+        var results = []
+        $.each(rounds, function(i, ro) {
+          results.push(ro.results())
+        })
+        return results
+      }
+    }
+  }
+
   var JqueryBracket = function(opts: Options) {
     var align = opts.dir === 'lr' ? 'right' : 'left'
     var resultIdentifier
@@ -938,57 +989,6 @@ interface Options {
       }
     }
 
-    function mkBracket(bracketCon: JQuery, results): Bracket {
-      var rounds: Array<Round> = []
-
-      return {
-        el: bracketCon,
-        addRound: function(doRenderCb: () => boolean): Round {
-          var id = rounds.length
-          var previous = null
-          if (id > 0)
-            previous = rounds[id - 1]
-
-          var round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb)
-          rounds.push(round)
-          return round;
-        },
-        dropRound: function() {
-          rounds.pop()
-        },
-        round: function(id: number): Round {
-          return rounds[id]
-        },
-        size: function(): number {
-          return rounds.length
-        },
-        final: function(): Match {
-          return rounds[rounds.length - 1].match(0)
-        },
-        winner: function(): TeamBlock {
-          return rounds[rounds.length - 1].match(0).winner()
-        },
-        loser: function(): TeamBlock {
-          return rounds[rounds.length - 1].match(0).loser()
-        },
-        render: function() {
-          bracketCon.empty()
-          /* Length of 'rounds' can increase during render in special case when
-           LB win in finals adds new final round in match render callback.
-           Therefore length must be read on each iteration. */
-          for (var i = 0; i < rounds.length; i += 1)
-            rounds[i].render()
-        },
-        results: function() {
-          var results = []
-          $.each(rounds, function(i, ro) {
-            results.push(ro.results())
-          })
-          return results
-        }
-      }
-    }
-
     function isValid(data): boolean {
       var t = data.teams
       var r = data.results
@@ -1138,11 +1138,11 @@ interface Options {
     else
       topCon.css('width', rounds * 140 + 10)
 
-    w = mkBracket(wEl, !r || !r[0] ? null : r[0])
+    w = mkBracket(wEl, !r || !r[0] ? null : r[0], mkRound)
 
     if (!isSingleElimination) {
-      l = mkBracket(lEl, !r || !r[1] ? null : r[1])
-      f = mkBracket(fEl, !r || !r[2] ? null : r[2])
+      l = mkBracket(lEl, !r || !r[1] ? null : r[1], mkRound)
+      f = mkBracket(fEl, !r || !r[2] ? null : r[2], mkRound)
     }
 
     prepareWinners(w, data.teams, isSingleElimination, opts.skipConsolationRound)
