@@ -508,11 +508,6 @@ interface MatchResult {
     var align = opts.dir === 'lr' ? 'right' : 'left'
     var resultIdentifier
 
-    function assert(statement : boolean) {
-      if (!statement)
-        throw new Error('Assertion error')
-    }
-
     if (!opts)
       throw Error('Options not set')
     if (!opts.el)
