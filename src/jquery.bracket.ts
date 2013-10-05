@@ -17,11 +17,11 @@ interface Connector {
 }
 
 interface ConnectorProvider {
-  (tc : any, match : Match) : Connector;
+  (tc: any, match: Match): Connector;
 }
 
 interface TeamBlock {
-  source: ()=>TeamBlock;
+  source: () => TeamBlock;
   name: string;
   id: number;
   idx: number;
@@ -37,40 +37,40 @@ interface Match {
   el: JQuery;
   id: number;
   round: any;
-  connectorCb: (cb : ConnectorProvider)=>void;
-  connect: (cb : ConnectorProvider)=>void;
-  winner: ()=>TeamBlock;
-  loser: ()=>TeamBlock;
-  first: ()=>TeamBlock;
-  second: ()=>TeamBlock;
-  setAlignCb: (cb : (Object)=>void)=>void;
-  render: ()=>void;
-  results: ()=>Array<number>;
+  connectorCb: (cb: ConnectorProvider) => void;
+  connect: (cb: ConnectorProvider) => void;
+  winner: () => TeamBlock;
+  loser: () => TeamBlock;
+  first: () => TeamBlock;
+  second: () => TeamBlock;
+  setAlignCb: (cb: (Object) => void) => void;
+  render: () => void;
+  results: () => Array<number>;
 }
 
 interface Round {
   el: JQuery;
   id: number;
   bracket: Bracket;
-  addMatch: (teamCb : ()=>Array, renderCb : ()=>boolean) => Match;
-  match: (id : number)=>Match
-  prev: ()=>Round
-  size: ()=>number;
-  render: ()=>void;
-  results: ()=>Array<Array<number>>;
+  addMatch: (teamCb: () => Array, renderCb: () => boolean) =>  Match;
+  match: (id: number) => Match
+  prev: () => Round
+  size: () => number;
+  render: () => void;
+  results: () => Array<Array<number>>;
 }
 
 interface Bracket {
   el: JQuery;
   addRound: any;
-  dropRound: ()=>void;
-  round: (id : number)=>Round;
-  size: ()=>number;
-  final: ()=>Match;
-  winner: ()=>TeamBlock;
-  loser: ()=>TeamBlock;
-  render: ()=>void;
-  results: ()=>Array<Array<Array<number>>>;
+  dropRound: () => void;
+  round: (id: number) => Round;
+  size: () => number;
+  final: () => Match;
+  winner: () => TeamBlock;
+  loser: () => TeamBlock;
+  render: () => void;
+  results: () => Array<Array<Array<number>>>;
 }
 
 interface MatchResult {
@@ -78,14 +78,14 @@ interface MatchResult {
   b: TeamBlock;
 }
 
-(function ($) {
+(function($) {
   // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
-  function isNumber(n : any) : boolean {
+  function isNumber(n: any): boolean {
     return !isNaN(parseFloat(n)) && isFinite(n);
   }
 
-  function depth(a) : number {
-    function df(a, d : number) : number {
+  function depth(a): number {
+    function df(a, d: number): number {
       if (a instanceof Array)
         return df(a[0], d + 1)
       return d
@@ -94,13 +94,13 @@ interface MatchResult {
     return df(a, 0)
   }
 
-  function wrap(a, d : number) {
+  function wrap(a, d: number) {
     if (d > 0)
       a = wrap([a], d - 1)
     return a
   }
 
-  function emptyTeam() : TeamBlock {
+  function emptyTeam(): TeamBlock {
      return {source: null, name: null, id: -1, idx: -1, score: null}
   }
 
@@ -114,15 +114,15 @@ interface MatchResult {
     return []
   }
 
-  function matchWinner(match: MatchResult) : TeamBlock {
+  function matchWinner(match: MatchResult): TeamBlock {
     return teamsInResultOrder(match)[0] || emptyTeam()
   }
 
-  function matchLoser(match : MatchResult) : TeamBlock {
+  function matchLoser(match: MatchResult): TeamBlock {
     return teamsInResultOrder(match)[1] || emptyTeam()
   }
 
-  function trackHighlighter(teamIndex : number, cssClass : string, container : JQuery) {
+  function trackHighlighter(teamIndex: number, cssClass: string, container: JQuery) {
     var elements = container.find('.team[index=' + teamIndex + ']')
     var addedClass
     if (!cssClass)
@@ -131,8 +131,8 @@ interface MatchResult {
       addedClass = cssClass
 
     return {
-      highlight: function () {
-        elements.each(function () {
+      highlight: function() {
+        elements.each(function() {
           $(this).addClass(addedClass)
 
           if ($(this).hasClass('win'))
@@ -140,8 +140,8 @@ interface MatchResult {
         })
       },
 
-      deHighlight: function () {
-        elements.each(function () {
+      deHighlight: function() {
+        elements.each(function() {
           $(this).removeClass(addedClass)
           $(this).parent().find('.connector').removeClass(addedClass)
         })
@@ -149,7 +149,7 @@ interface MatchResult {
     }
   }
 
-  function postProcess(container : JQuery, w : Bracket, f : Bracket) {
+  function postProcess(container: JQuery, w: Bracket, f: Bracket) {
     var source = f || w
 
     var winner = source.winner()
@@ -165,26 +165,26 @@ interface MatchResult {
       loseTrack.highlight()
     }
 
-    container.find('.team').mouseover(function () {
+    container.find('.team').mouseover(function() {
       var i = $(this).attr('index')
       var track = trackHighlighter(i, null, container);
       track.highlight()
-      $(this).mouseout(function () {
+      $(this).mouseout(function() {
         track.deHighlight()
         $(this).unbind('mouseout')
       })
     })
   }
 
-  function defaultEdit(span : JQuery, data : string, done : (value : string, done ?: boolean)=>void) {
+  function defaultEdit(span: JQuery, data: string, done: (value: string, done?: boolean) => void) {
     var input = $('<input type="text">')
     input.val(data)
     span.html(input)
     input.focus()
-    input.blur(function () {
+    input.blur(function() {
       done(input.val())
     })
-    input.keydown(function (e) {
+    input.keydown(function(e) {
       var key = (e.keyCode || e.which)
       if (key === 9 /*tab*/ || key === 13 /*return*/ || key === 27 /*esc*/) {
         e.preventDefault()
@@ -193,11 +193,11 @@ interface MatchResult {
     })
   }
 
-  function defaultRender(container : JQuery, team : JQuery) {
+  function defaultRender(container: JQuery, team: JQuery) {
     container.append(team)
   }
 
-  function winnerBubbles(match : Match) : boolean {
+  function winnerBubbles(match: Match): boolean {
     var el = match.el
     var winner = el.find('.team.win')
     winner.append('<div class="bubble">1st</div>')
@@ -206,7 +206,7 @@ interface MatchResult {
     return true
   }
 
-  function consolationBubbles(match : Match) : boolean {
+  function consolationBubbles(match: Match): boolean {
     var el = match.el
     var winner = el.find('.team.win')
     winner.append('<div class="bubble third">3rd</div>')
@@ -215,7 +215,7 @@ interface MatchResult {
     return true
   }
 
-  function prepareWinners(winners : Bracket, teams, isSingleElimination : boolean, skipConsolationRound : boolean) {
+  function prepareWinners(winners: Bracket, teams, isSingleElimination: boolean, skipConsolationRound: boolean) {
     var rounds = Math.log(teams.length * 2) / Math.log(2);
     var matches = teams.length;
     var round
@@ -227,14 +227,14 @@ interface MatchResult {
         var teamCb = null
 
         if (r === 0) {
-          teamCb = function () {
+          teamCb = function() {
             var t = teams[m]
             var i = m
             return [
-              {source: function () : MatchIndicator {
+              {source: function(): MatchIndicator {
                 return {name: t[0], idx: (i * 2)}
               }},
-              {source: function () : MatchIndicator {
+              {source: function(): MatchIndicator {
                 return {name: t[1], idx: (i * 2 + 1)}
               }}
             ]
@@ -246,7 +246,7 @@ interface MatchResult {
         }
         else {
           var match = round.addMatch(teamCb, winnerBubbles)
-          match.setAlignCb(function (tC) {
+          match.setAlignCb(function(tC) {
             tC.css('top', '');
             tC.css('position', 'absolute');
             if (skipConsolationRound)
@@ -260,14 +260,14 @@ interface MatchResult {
     }
 
     if (isSingleElimination) {
-      winners.final().connectorCb(function () {
+      winners.final().connectorCb(function() {
         return null
       })
 
       if (teams.length > 1 && !skipConsolationRound) {
         var third = winners.final().round().prev().match(0).loser
         var fourth = winners.final().round().prev().match(1).loser
-        var consol = round.addMatch(function () {
+        var consol = round.addMatch(function() {
             return [
               {source: third},
               {source: fourth}
@@ -275,7 +275,7 @@ interface MatchResult {
           },
           consolationBubbles)
 
-        consol.setAlignCb(function (tC) {
+        consol.setAlignCb(function(tC) {
           var height = (winners.el.height()) / 2
           consol.el.css('height', (height) + 'px');
 
@@ -284,14 +284,14 @@ interface MatchResult {
           tC.css('top', (topShift) + 'px');
         })
 
-        consol.connectorCb(function () {
+        consol.connectorCb(function() {
           return null
         })
       }
     }
   }
 
-  function prepareLosers(winners : Bracket, losers : Bracket, teamCount : number) {
+  function prepareLosers(winners: Bracket, losers: Bracket, teamCount: number) {
     var rounds = Math.log(teamCount * 2) / Math.log(2) - 1;
     var matches = teamCount / 2;
 
@@ -300,11 +300,11 @@ interface MatchResult {
         var round = losers.addRound()
 
         for (var m = 0; m < matches; m += 1) {
-          var teamCb : ()=>Array = null
+          var teamCb: () => Array = null
 
           /* special cases */
           if (!(n % 2 === 0 && r !== 0)) {
-            teamCb = function () {
+            teamCb = function() {
               /* first round comes from winner bracket */
               if (n % 2 === 0 && r === 0) {
                 return [
@@ -329,7 +329,7 @@ interface MatchResult {
 
           var match = round.addMatch(teamCb)
           var teamCon = match.el.find('.teamContainer')
-          match.setAlignCb(function () {
+          match.setAlignCb(function() {
             teamCon.css('top', (match.el.height() / 2 - teamCon.height() / 2) + 'px');
           })
 
@@ -337,7 +337,7 @@ interface MatchResult {
             var cb = null
             // inside lower bracket
             if (n % 2 === 0) {
-              cb = function (tC, match) : Connector {
+              cb = function(tC, match): Connector {
                 var connectorOffset = tC.height() / 4
                 var height = 0;
                 var shift = 0;
@@ -363,16 +363,16 @@ interface MatchResult {
     }
   }
 
-  function prepareFinals(finals : Bracket, winners : Bracket,
-                         losers : Bracket, skipConsolationRound : boolean, topCon : JQuery) {
+  function prepareFinals(finals: Bracket, winners: Bracket,
+                         losers: Bracket, skipConsolationRound: boolean, topCon: JQuery) {
     var round = finals.addRound()
-    var match = round.addMatch(function () {
+    var match = round.addMatch(function() {
         return [
           {source: winners.winner},
           {source: losers.winner}
         ]
       },
-      function (match) {
+      function(match) {
         /* Track if container has been resized for final rematch */
         var _isResized = false
         /* LB winner won first final match, need a new one */
@@ -380,7 +380,7 @@ interface MatchResult {
           if (finals.size() === 2)
             return
           /* This callback is ugly, would be nice to make more sensible solution */
-          var round = finals.addRound(function () {
+          var round = finals.addRound(function() {
             var rematch = ((match.winner().name !== null && match.winner().name === losers.winner().name))
             if (_isResized === false) {
               if (rematch) {
@@ -396,7 +396,7 @@ interface MatchResult {
             return rematch
           })
           /* keep order the same, WB winner top, LB winner below */
-          var match2 = round.addMatch(function () {
+          var match2 = round.addMatch(function() {
               return [
                 {source: match.first},
                 {source: match.second}
@@ -404,14 +404,14 @@ interface MatchResult {
             },
             winnerBubbles)
 
-          match.connectorCb(function (tC) : Connector {
+          match.connectorCb(function(tC): Connector {
             return {height: 0, shift: tC.height() / 2}
           })
 
-          match2.connectorCb(function () {
+          match2.connectorCb(function() {
             return null
           })
-          match2.setAlignCb(function (tC) {
+          match2.setAlignCb(function(tC) {
             var height = (winners.el.height() + losers.el.height())
             match2.el.css('height', (height) + 'px');
 
@@ -426,7 +426,7 @@ interface MatchResult {
         }
       })
 
-    match.setAlignCb(function (tC) {
+    match.setAlignCb(function(tC) {
       var height = (winners.el.height() + losers.el.height())
       if (!skipConsolationRound)
         height /= 2
@@ -442,14 +442,14 @@ interface MatchResult {
 
     if (!skipConsolationRound) {
       var fourth = losers.final().round().prev().match(0).loser
-      var consol = round.addMatch(function () {
+      var consol = round.addMatch(function() {
           return [
             {source: fourth},
             {source: losers.loser}
           ]
         },
         consolationBubbles)
-      consol.setAlignCb(function (tC) {
+      consol.setAlignCb(function(tC) {
         var height = (winners.el.height() + losers.el.height()) / 2
         consol.el.css('height', (height) + 'px');
 
@@ -458,15 +458,15 @@ interface MatchResult {
         tC.css('top', (topShift) + 'px');
       })
 
-      match.connectorCb(function () : Connector {
+      match.connectorCb(function(): Connector {
         return null
       })
-      consol.connectorCb(function () : Connector {
+      consol.connectorCb(function(): Connector {
         return null
       })
     }
 
-    winners.final().connectorCb(function (tC) : Connector {
+    winners.final().connectorCb(function(tC): Connector {
       var connectorOffset = tC.height() / 4
       var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2
       var matchupOffset = topShift - winners.el.height() / 2
@@ -486,7 +486,7 @@ interface MatchResult {
       return {height: height, shift: shift}
     })
 
-    losers.final().connectorCb(function (tC) : Connector {
+    losers.final().connectorCb(function(tC): Connector {
       var connectorOffset = tC.height() / 4
       var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2
       var matchupOffset = topShift - winners.el.height() / 2
@@ -507,7 +507,7 @@ interface MatchResult {
     })
   }
 
-  var JqueryBracket = function (opts) {
+  var JqueryBracket = function(opts) {
     var align = opts.dir === 'lr' ? 'right' : 'left'
     var resultIdentifier
 
@@ -536,7 +536,7 @@ interface MatchResult {
 
     var topCon = $('<div class="jQBracket ' + opts.dir + '"></div>').appendTo(opts.el.empty())
 
-    function renderAll(save : boolean) : void {
+    function renderAll(save: boolean): void {
       resultIdentifier = 0
       w.render()
       if (l && f) {
@@ -556,10 +556,10 @@ interface MatchResult {
       }
     }
 
-    function mkMatch(round : Round, data : Array<TeamBlock>, idx : number,
-                     results, renderCb : Function) : Match {
-      var match : MatchResult = {a: data[0], b: data[1]}
-      function connector(height : number, shift : number, teamCon) {
+    function mkMatch(round: Round, data: Array<TeamBlock>, idx: number,
+                     results, renderCb: Function): Match {
+      var match: MatchResult = {a: data[0], b: data[1]}
+      function connector(height: number, shift: number, teamCon) {
         var width = parseInt($('.round:first').css('margin-right'), 10) / 2
         var drop = true;
         // drop:
@@ -602,7 +602,7 @@ interface MatchResult {
         return src;
       }
 
-      function teamElement(round : number, team : TeamBlock, isReady : boolean) {
+      function teamElement(round: number, team: TeamBlock, isReady: boolean) {
         var rId = resultIdentifier
         var sEl = $('<span id="result-' + rId + '"></span>')
         var score
@@ -641,11 +641,11 @@ interface MatchResult {
 
         if (!(team.name === null || !isReady || !opts.save) && opts.save) {
           nEl.addClass('editable')
-          nEl.click(function () {
+          nEl.click(function() {
             var span = $(this)
 
             function editor() {
-              function done_fn(val, next : boolean) {
+              function done_fn(val, next: boolean) {
                 if (val)
                   opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val
                 renderAll(true)
@@ -663,7 +663,7 @@ interface MatchResult {
           })
           if (team.name) {
             sEl.addClass('editable')
-            sEl.click(function () {
+            sEl.click(function() {
               var span = $(this)
 
               function editor() {
@@ -680,7 +680,7 @@ interface MatchResult {
                 span.html(input)
 
                 input.focus().select()
-                input.keydown(function (e) {
+                input.keydown(function(e) {
                   if (!isNumber($(this).val()))
                     $(this).addClass('error')
                   else
@@ -698,7 +698,7 @@ interface MatchResult {
                       next.click()
                   }
                 })
-                input.blur(function () {
+                input.blur(function() {
                   var val = input.val()
                   if ((!val || !isNumber(val)) && !isNumber(team.score))
                     val = '0'
@@ -721,7 +721,7 @@ interface MatchResult {
         return tEl;
       }
 
-      var connectorCb : ConnectorProvider = null
+      var connectorCb: ConnectorProvider = null
       var alignCb = null
 
       var matchCon = $('<div class="match"></div>')
@@ -756,13 +756,13 @@ interface MatchResult {
       return {
         el: matchCon,
         id: idx,
-        round: function () : Round {
+        round: function(): Round {
           return round
         },
-        connectorCb: function (cb : ConnectorProvider) {
+        connectorCb: function(cb: ConnectorProvider) {
           connectorCb = cb
         },
-        connect: function (cb : ConnectorProvider) {
+        connect: function(cb: ConnectorProvider) {
           var connectorOffset = teamCon.height() / 4
           var matchupOffset = matchCon.height() / 2
           var shift
@@ -809,16 +809,16 @@ interface MatchResult {
         },
         winner: function() { return matchWinner(match) },
         loser: function() { return matchLoser(match) },
-        first: function () : TeamBlock {
+        first: function(): TeamBlock {
           return match.a
         },
-        second: function () : TeamBlock {
+        second: function(): TeamBlock {
           return match.b
         },
-        setAlignCb: function (cb : Function) {
+        setAlignCb: function(cb: Function) {
           alignCb = cb
         },
-        render: function () {
+        render: function() {
           matchCon.empty()
           teamCon.empty()
 
@@ -857,22 +857,22 @@ interface MatchResult {
           if (!isLast)
             this.connect(connectorCb)
         },
-        results: function () {
+        results: function() {
           return [match.a.score, match.b.score]
         }
       }
     }
 
-    function mkRound(bracket : Bracket,  previousRound : Round,
-                     roundIdx : number,  results,  doRenderCb : ()=>boolean) : Round {
-      var matches : Array<Match> = []
+    function mkRound(bracket: Bracket,  previousRound: Round,
+                     roundIdx: number,  results,  doRenderCb: () => boolean): Round {
+      var matches: Array<Match> = []
       var roundCon = $('<div class="round"></div>')
 
       return {
         el: roundCon,
         bracket: bracket,
         id: roundIdx,
-        addMatch: function (teamCb : ()=>Array, renderCb : ()=>boolean) : Match {
+        addMatch: function(teamCb: () => Array, renderCb: () => boolean): Match {
           var matchIdx = matches.length
           var teams
 
@@ -888,28 +888,28 @@ interface MatchResult {
           matches.push(match)
           return match;
         },
-        match: function (id : number) : Match {
+        match: function(id: number): Match {
           return matches[id]
         },
-        prev: function () : Round {
+        prev: function(): Round {
           return previousRound
         },
-        size: function () : number {
+        size: function(): number {
           return matches.length
         },
-        render: function () {
+        render: function() {
           roundCon.empty()
           if (typeof(doRenderCb) === 'function')
             if (!doRenderCb())
               return
           roundCon.appendTo(bracket.el)
-          $.each(matches, function (i, ma) {
+          $.each(matches, function(i, ma) {
             ma.render()
           })
         },
-        results: function () {
+        results: function() {
           var results = []
-          $.each(matches, function (i, ma) {
+          $.each(matches, function(i, ma) {
             results.push(ma.results())
           })
           return results
@@ -917,12 +917,12 @@ interface MatchResult {
       }
     }
 
-    function mkBracket(bracketCon : JQuery, results) : Bracket {
-      var rounds : Array<Round> = []
+    function mkBracket(bracketCon: JQuery, results): Bracket {
+      var rounds: Array<Round> = []
 
       return {
         el: bracketCon,
-        addRound: function (doRenderCb : ()=>boolean) : Round {
+        addRound: function(doRenderCb: () => boolean): Round {
           var id = rounds.length
           var previous = null
           if (id > 0)
@@ -932,25 +932,25 @@ interface MatchResult {
           rounds.push(round)
           return round;
         },
-        dropRound: function () {
+        dropRound: function() {
           rounds.pop()
         },
-        round: function (id : number) : Round {
+        round: function(id: number): Round {
           return rounds[id]
         },
-        size: function () : number {
+        size: function(): number {
           return rounds.length
         },
-        final: function () : Match {
+        final: function(): Match {
           return rounds[rounds.length - 1].match(0)
         },
-        winner: function () : TeamBlock {
+        winner: function(): TeamBlock {
           return rounds[rounds.length - 1].match(0).winner()
         },
-        loser: function () : TeamBlock {
+        loser: function(): TeamBlock {
           return rounds[rounds.length - 1].match(0).loser()
         },
-        render: function () {
+        render: function() {
           bracketCon.empty()
           /* Length of 'rounds' can increase during render in special case when
            LB win in finals adds new final round in match render callback.
@@ -958,9 +958,9 @@ interface MatchResult {
           for (var i = 0; i < rounds.length; i += 1)
             rounds[i].render()
         },
-        results: function () {
+        results: function() {
           var results = []
-          $.each(rounds, function (i, ro) {
+          $.each(rounds, function(i, ro) {
             results.push(ro.results())
           })
           return results
@@ -968,7 +968,7 @@ interface MatchResult {
       }
     }
 
-    function isValid(data) : boolean {
+    function isValid(data): boolean {
       var t = data.teams
       var r = data.results
 
@@ -1005,9 +1005,9 @@ interface MatchResult {
       }
 
       try {
-        $.each(r, function (i, br) {
-          $.each(br, function (i, ro) {
-            $.each(ro, function (i, ma) {
+        $.each(r, function(i, br) {
+          $.each(br, function(i, ro) {
+            $.each(ro, function(i, ma) {
               if (ma.length !== 2) {
                 console.log('match size not valid', ma)
                 throw 'match size not valid'
@@ -1042,7 +1042,7 @@ interface MatchResult {
     if (opts.save) {
       var tools = $('<div class="tools"></div>').appendTo(topCon)
       var inc = $('<span class="increment">+</span>').appendTo(tools)
-      inc.click(function () {
+      inc.click(function() {
         var i
         var len = data.teams.length
         for (i = 0; i < len; i += 1)
@@ -1053,7 +1053,7 @@ interface MatchResult {
       if (data.teams.length > 1 && data.results.length === 1 ||
           data.teams.length > 2 && data.results.length === 3) {
         var dec = $('<span class="decrement">-</span>').appendTo(tools)
-        dec.click(function () {
+        dec.click(function() {
           if (data.teams.length > 1) {
             data.teams = data.teams.slice(0, data.teams.length / 2)
             return JqueryBracket(opts)
@@ -1064,7 +1064,7 @@ interface MatchResult {
       var type
       if (data.results.length === 1 && data.teams.length > 1) {
         type = $('<span class="doubleElimination">de</span>').appendTo(tools)
-        type.click(function () {
+        type.click(function() {
           if (data.teams.length > 1 && data.results.length < 3) {
             data.results.push([], [])
             return JqueryBracket(opts)
@@ -1073,7 +1073,7 @@ interface MatchResult {
       }
       else if (data.results.length === 3 && data.teams.length > 1) {
         type = $('<span class="singleElimination">se</span>').appendTo(tools)
-        type.click(function () {
+        type.click(function() {
           if (data.results.length === 3) {
             data.results = data.results.slice(0, 1)
             return JqueryBracket(opts)
@@ -1134,14 +1134,14 @@ interface MatchResult {
     renderAll(false)
 
     return {
-      data: function () {
+      data: function() {
         return opts.init
       }
     }
   }
 
   var methods = {
-    init: function (opts) {
+    init: function(opts) {
       var that = this
       opts.el = this
       if (opts.save && (opts.onMatchClick || opts.onMatchHover))
@@ -1154,13 +1154,13 @@ interface MatchResult {
       $(this).data('bracket', {target: that, obj: bracket})
       return bracket
     },
-    data: function () {
+    data: function() {
       var bracket = $(this).data('bracket')
       return bracket.obj.data()
     }
   }
 
-  $.fn.bracket = function (method) {
+  $.fn.bracket = function(method) {
     if (methods[method]) {
       return methods[method].apply(this, Array.prototype.slice.call(arguments, 1))
     } else if (typeof method === 'object' || !method) {
