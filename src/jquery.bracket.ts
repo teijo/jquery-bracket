@@ -97,26 +97,26 @@ interface MatchResult {
     return a
   }
 
-  function matchWinner(match: MatchResult) : TeamBlock {
+  function emptyTeam() : TeamBlock {
+     return {source: null, name: null, id: -1, idx: -1, score: null}
+  }
+
+  function teamsInResultOrder(match: MatchResult) {
     if (isNumber(match.a.score) && isNumber(match.b.score)) {
       if (match.a.score > match.b.score)
-        return match.a
+        return [match.a, match.b]
       else if (match.a.score < match.b.score)
-        return match.b
+        return [match.b, match.a]
     }
+    return []
+  }
 
-    return {source: null, name: null, id: -1, idx: -1, score: null}
+  function matchWinner(match: MatchResult) : TeamBlock {
+    return teamsInResultOrder(match)[0] || emptyTeam()
   }
 
   function matchLoser(match : MatchResult) : TeamBlock {
-    if (isNumber(match.a.score) && isNumber(match.b.score)) {
-      if (match.a.score > match.b.score)
-        return match.b
-      else if (match.a.score < match.b.score)
-        return match.a
-    }
-
-    return {source: null, name: null, id: -1, idx: -1, score: null}
+    return teamsInResultOrder(match)[1] || emptyTeam()
   }
 
   function trackHighlighter(teamIndex : number, cssClass : string, container) {
