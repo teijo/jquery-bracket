@@ -6,6 +6,9 @@
  *
  * Licenced under the MIT licence
  */
+
+/// <reference path="../lib/jquery.d.ts" />
+
 declare var jQuery: any;
 
 interface Connector {
@@ -31,7 +34,7 @@ interface MatchIndicator {
 }
 
 interface Round {
-  el: any;
+  el: JQuery;
   id: number;
   bracket: Bracket;
   addMatch: (teamCb : ()=>Array, renderCb : ()=>boolean) => Match;
@@ -43,7 +46,7 @@ interface Round {
 }
 
 interface Match {
-  el: any;
+  el: JQuery;
   id: number;
   round: any;
   connectorCb: (cb : ConnectorProvider)=>void;
@@ -58,7 +61,7 @@ interface Match {
 }
 
 interface Bracket {
-  el: any;
+  el: JQuery;
   addRound: any;
   dropRound: ()=>void;
   round: (id : number)=>Round;
@@ -119,7 +122,7 @@ interface MatchResult {
     return teamsInResultOrder(match)[1] || emptyTeam()
   }
 
-  function trackHighlighter(teamIndex : number, cssClass : string, container) {
+  function trackHighlighter(teamIndex : number, cssClass : string, container : JQuery) {
     var elements = container.find('.team[index=' + teamIndex + ']')
     var addedClass
     if (!cssClass)
@@ -146,7 +149,7 @@ interface MatchResult {
     }
   }
 
-  function postProcess(container, w : Bracket, f : Bracket) {
+  function postProcess(container : JQuery, w : Bracket, f : Bracket) {
     var source = f || w
 
     var winner = source.winner()
@@ -173,7 +176,7 @@ interface MatchResult {
     })
   }
 
-  function defaultEdit(span, data : string, done : (value : string, done ?: boolean)=>void) {
+  function defaultEdit(span : JQuery, data : string, done : (value : string, done ?: boolean)=>void) {
     var input = $('<input type="text">')
     input.val(data)
     span.html(input)
@@ -190,7 +193,7 @@ interface MatchResult {
     })
   }
 
-  function defaultRender(container, team) {
+  function defaultRender(container : JQuery, team : JQuery) {
     container.append(team)
   }
 
@@ -361,7 +364,7 @@ interface MatchResult {
   }
 
   function prepareFinals(finals : Bracket, winners : Bracket,
-                         losers : Bracket, skipConsolationRound : boolean, topCon : any) {
+                         losers : Bracket, skipConsolationRound : boolean, topCon : JQuery) {
     var round = finals.addRound()
     var match = round.addMatch(function () {
         return [
@@ -533,7 +536,7 @@ interface MatchResult {
 
     var topCon = $('<div class="jQBracket ' + opts.dir + '"></div>').appendTo(opts.el.empty())
 
-    function renderAll(save) : void {
+    function renderAll(save : boolean) : void {
       resultIdentifier = 0
       w.render()
       if (l && f) {
@@ -914,7 +917,7 @@ interface MatchResult {
       }
     }
 
-    function mkBracket(bracketCon, results) : Bracket {
+    function mkBracket(bracketCon : JQuery, results) : Bracket {
       var rounds : Array<Round> = []
 
       return {
