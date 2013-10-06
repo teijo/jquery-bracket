@@ -676,6 +676,49 @@ interface Options {
     return src;
   }
 
+  function embedEditButtons(topCon: JQuery, data: any, opts: Options) {
+    var tools = $('<div class="tools"></div>').appendTo(topCon)
+    var inc = $('<span class="increment">+</span>').appendTo(tools)
+    inc.click(function () {
+      var i
+      var len = data.teams.length
+      for (i = 0; i < len; i += 1)
+        data.teams.push(['', ''])
+      return JqueryBracket(opts)
+    })
+
+    if (data.teams.length > 1 && data.results.length === 1 ||
+      data.teams.length > 2 && data.results.length === 3) {
+      var dec = $('<span class="decrement">-</span>').appendTo(tools)
+      dec.click(function () {
+        if (data.teams.length > 1) {
+          data.teams = data.teams.slice(0, data.teams.length / 2)
+          return JqueryBracket(opts)
+        }
+      })
+    }
+
+    var type
+    if (data.results.length === 1 && data.teams.length > 1) {
+      type = $('<span class="doubleElimination">de</span>').appendTo(tools)
+      type.click(function () {
+        if (data.teams.length > 1 && data.results.length < 3) {
+          data.results.push([], [])
+          return JqueryBracket(opts)
+        }
+      })
+    }
+    else if (data.results.length === 3 && data.teams.length > 1) {
+      type = $('<span class="singleElimination">se</span>').appendTo(tools)
+      type.click(function () {
+        if (data.results.length === 3) {
+          data.results = data.results.slice(0, 1)
+          return JqueryBracket(opts)
+        }
+      })
+    }
+  }
+
   var JqueryBracket = function(opts: Options) {
     var align = opts.dir === 'lr' ? 'right' : 'left'
     var resultIdentifier
@@ -1060,48 +1103,8 @@ interface Options {
 
     var isSingleElimination = (r.length <= 1)
 
-    if (opts.save) {
-      var tools = $('<div class="tools"></div>').appendTo(topCon)
-      var inc = $('<span class="increment">+</span>').appendTo(tools)
-      inc.click(function() {
-        var i
-        var len = data.teams.length
-        for (i = 0; i < len; i += 1)
-          data.teams.push(['', ''])
-        return JqueryBracket(opts)
-      })
-
-      if (data.teams.length > 1 && data.results.length === 1 ||
-          data.teams.length > 2 && data.results.length === 3) {
-        var dec = $('<span class="decrement">-</span>').appendTo(tools)
-        dec.click(function() {
-          if (data.teams.length > 1) {
-            data.teams = data.teams.slice(0, data.teams.length / 2)
-            return JqueryBracket(opts)
-          }
-        })
-      }
-
-      var type
-      if (data.results.length === 1 && data.teams.length > 1) {
-        type = $('<span class="doubleElimination">de</span>').appendTo(tools)
-        type.click(function() {
-          if (data.teams.length > 1 && data.results.length < 3) {
-            data.results.push([], [])
-            return JqueryBracket(opts)
-          }
-        })
-      }
-      else if (data.results.length === 3 && data.teams.length > 1) {
-        type = $('<span class="singleElimination">se</span>').appendTo(tools)
-        type.click(function() {
-          if (data.results.length === 3) {
-            data.results = data.results.slice(0, 1)
-            return JqueryBracket(opts)
-          }
-        })
-      }
-    }
+    if (opts.save)
+      embedEditButtons(topCon, data, opts)
 
     var fEl, wEl, lEl
 
