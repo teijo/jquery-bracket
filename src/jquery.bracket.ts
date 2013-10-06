@@ -779,9 +779,11 @@ interface Options {
           score = '--'
         }
         else {
-          if (!isNumber(team.score))
-            team.score = 0
-          score = team.score
+          if (!isNumber(team.score)) {
+            score = '--'
+          } else {
+            score = team.score
+          }
         }
         sEl.append(score)
 
