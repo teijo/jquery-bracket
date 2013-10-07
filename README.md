@@ -26,6 +26,11 @@ Examples can be found from the project site at http://www.aropupu.fi/bracket/
 Changes
 -------
 
+*   2013-10-07: `skipSecondaryFinal` boolean to finish double elimination
+    tournament after first match. Skips the second match normally created if
+    LB winner wins the first match. Display '--' score for non-played matches.
+    Project ported to TypeScript with additional refactorings (not visible for
+    library users).
 *   2013-06-05: `onMatchHover` and `onMatchClick` callbacks created in order
     to allow more interaction with the bracket.
 *   2013-04-03: "skipConsolationRound" option, minified distribution files
