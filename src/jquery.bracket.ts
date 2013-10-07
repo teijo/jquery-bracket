@@ -94,6 +94,7 @@ interface Options {
   userData: any;
   decorator: Decorator;
   skipConsolationRound: boolean;
+  skipSecondaryFinal: boolean;
   dir: string;
   onMatchClick: (data: any) => void;
   onMatchHover: (data: any, hover: boolean) => void;
@@ -384,8 +385,8 @@ interface Options {
     }
   }
 
-  function prepareFinals(finals: Bracket, winners: Bracket,
-                         losers: Bracket, skipConsolationRound: boolean, topCon: JQuery) {
+  function prepareFinals(finals: Bracket, winners: Bracket, losers: Bracket,
+                         skipSecondaryFinal: boolean, skipConsolationRound: boolean, topCon: JQuery) {
     var round = finals.addRound()
     var match = round.addMatch(function() {
         return [
@@ -397,7 +398,7 @@ interface Options {
         /* Track if container has been resized for final rematch */
         var _isResized = false
         /* LB winner won first final match, need a new one */
-        if ((match.winner().name !== null && match.winner().name === losers.winner().name)) {
+        if (!skipSecondaryFinal && (match.winner().name !== null && match.winner().name === losers.winner().name)) {
           if (finals.size() === 2)
             return
           /* This callback is ugly, would be nice to make more sensible solution */
@@ -1105,6 +1106,9 @@ interface Options {
 
     var isSingleElimination = (r.length <= 1)
 
+    if (opts.skipSecondaryFinal && isSingleElimination)
+      $.error('skipSecondaryFinal setting is viable only in double elimination mode')
+
     if (opts.save)
       embedEditButtons(topCon, data, opts)
 
@@ -1154,7 +1158,7 @@ interface Options {
 
     if (!isSingleElimination) {
       prepareLosers(w, l, data.teams.length);
-      prepareFinals(f, w, l, opts.skipConsolationRound, topCon);
+      prepareFinals(f, w, l, opts.skipSecondaryFinal, opts.skipConsolationRound, topCon);
     }
 
     renderAll(false)
@@ -1174,6 +1178,7 @@ interface Options {
         $.error('Match callbacks may not be passed in edit mode (in conjunction with save callback)')
       opts.dir = opts.dir || 'lr'
       opts.skipConsolationRound = opts.skipConsolationRound || false
+      opts.skipSecondaryFinal = opts.skipSecondaryFinal || false
       if (opts.dir !== 'lr' && opts.dir !== 'rl')
         $.error('Direction must be either: "lr" or "rl"')
       var bracket = JqueryBracket(opts)
