@@ -20,9 +20,6 @@ div.jQBracket
   float: left
   clear: both
   position: relative
-  background-color: #333
-  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#222), to(#333))
-  background: -moz-linear-gradient(-90deg, #222, #333)
 
   .tools
     position: absolute
@@ -77,21 +74,19 @@ div.jQBracket
     position: relative
     z-index: 1
     float: left
-    background-color: #666
-    color: #FFF
+    background-color: #EEE
+    color: #333
     width: 100px
-    height: 16px
-    border-radius: 5px
     margin: 1px 0px
     cursor: default
-    box-shadow: 1px 1px 2px rgba(0,0,0,0.4)
 
     b
+      padding: 3px
       font-weight: normal
-      padding-left: 3px
       height: inherit
       position: absolute
       width: 70px
+      height: 22px
       white-space: nowrap
       overflow: hidden
 
@@ -99,20 +94,17 @@ div.jQBracket
         cursor: default
 
       input
-        font-size: 10px
+        font-size: 12px
         padding: 0px
         width: 60px
-        height: 16px
         position: absolute
+        border: none
 
     span
-      font-weight: bold
       float: right
-      padding: 0px
-      padding-right: 5px
+      padding: 3px
       background-color: rgba(255,255,255,0.3)
-      border-radius: 0px 3px 3px 0px
-      text-align: right
+      text-align: center
       width: 20px
 
       &[disabled]
@@ -123,7 +115,6 @@ div.jQBracket
         font-size: 10px
         padding: 0px
         width: inherit
-        height: 16px
 
     b input.error,
     span input.error
@@ -138,7 +129,7 @@ div.jQBracket
       color: #CCC
 
     &.win
-      color: #EEE
+      color: #333
 
     &.win span
       color: #060
@@ -147,8 +138,8 @@ div.jQBracket
       color: #900
 
     &.lose
-      background-color: #666
-      color: #333
+      background-color: #DDD
+      color: #999
 
     &.tie span
       color: #00F
@@ -202,17 +193,18 @@ div.jQBracket
     border-color: #222
 
   .bubble
+    height: 22px
+    line-height: 22px
     display: block
     width: 30px
     right: -35px
     position: absolute
     text-align: center
     font-size: 11px
-    height: 16px
 
     &.third
       background-color: $thirdColor
-      color: #310
+      color: #D95
 
     &.fourth
       background-color: $fourthColor
@@ -222,7 +214,7 @@ div.jQBracket
       content: ''
       display: block
       position: absolute
-      top: 3px
+      top: 6px
       width: 0
       height: 0
       border-top:    5px solid transparent
@@ -278,13 +270,10 @@ div.jQBracket.rl
     float: right
 
     b
-      padding-right: 3px
       right: 0
 
     span
       float: left
-      padding-right: 0
-      padding-left: 5px
       text-align: left
 
   .teamContainer

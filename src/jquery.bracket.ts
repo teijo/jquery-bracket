@@ -1123,13 +1123,13 @@ interface Options {
       lEl = $('<div class="loserBracket"></div>').appendTo(topCon)
     }
 
-    var height = data.teams.length * 50
+    var height = data.teams.length * 64
 
     wEl.css('height', height)
 
     // reserve space for consolation round
     if (isSingleElimination && data.teams.length <= 2 && !opts.skipConsolationRound) {
-      height += 30
+      height += 40
       topCon.css('height', height)
     }
 
