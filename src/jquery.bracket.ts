@@ -145,7 +145,7 @@ interface Options {
   }
 
   function trackHighlighter(teamIndex: number, cssClass: string, container: JQuery) {
-    var elements = container.find('.team[index=' + teamIndex + ']')
+    var elements = container.find('.team[data-teamid=' + teamIndex + ']')
     var addedClass
     if (!cssClass)
       addedClass = 'highlight'
@@ -188,7 +188,7 @@ interface Options {
     }
 
     container.find('.team').mouseover(function() {
-      var i = $(this).attr('index')
+      var i = $(this).attr('data-teamid')
       var track = trackHighlighter(i, null, container);
       track.highlight()
       $(this).mouseout(function() {
@@ -774,7 +774,7 @@ interface Options {
       var match: MatchResult = {a: data[0], b: data[1]}
       function teamElement(round: number, team: TeamBlock, isReady: boolean) {
         var rId = resultIdentifier
-        var sEl = $('<span id="result-' + rId + '"></span>')
+        var sEl = $('<span data-resultid="result-' + rId + '"></span>')
         var score
         if (!team.name || !isReady) {
           score = '--'
@@ -795,12 +795,12 @@ interface Options {
         var nEl = $('<b></b>').appendTo(tEl)
 
         if (round === 0)
-          tEl.attr('id', 'team-' + rId)
+          tEl.attr('data-resultid', 'team-' + rId)
 
         opts.decorator.render(nEl, name, score)
 
         if (isNumber(team.idx))
-          tEl.attr('index', team.idx)
+          tEl.attr('data-teamid', team.idx)
 
         if (team.name === null)
           tEl.addClass('na')
@@ -822,7 +822,7 @@ interface Options {
                   opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val
                 renderAll(true)
                 span.click(editor)
-                var labels = opts.el.find('#team-' + (team.idx + 1) + ' b:first')
+                var labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] b:first')
                 if (labels.length && next === true && round === 0)
                   $(labels).click()
               }
@@ -865,7 +865,7 @@ interface Options {
                     if (key === 27)
                       return
 
-                    var next = topCon.find('span[id=result-' + (rId + 1) + ']')
+                    var next = topCon.find('span[data-resultid=result-' + (rId + 1) + ']')
                     if (next)
                       next.click()
                   }
