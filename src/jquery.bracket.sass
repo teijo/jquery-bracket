@@ -17,8 +17,6 @@ $connectorColor: #666
 div.jQBracket
   font-family: "Arial"
   font-size: 14px
-  float: left
-  clear: both
   position: relative
 
   .tools
@@ -46,12 +44,10 @@ div.jQBracket
 
   .bracket
     float: right
-    height: 400px
     clear: left
 
   .loserBracket
     float: right
-    height: 200px
     clear: left
     position: relative
 
@@ -63,9 +59,6 @@ div.jQBracket
 
   .match
     position: relative
-    float: left
-    display: block
-    width: 100%
 
   .editable
     cursor: pointer
@@ -75,7 +68,6 @@ div.jQBracket
     z-index: 1
     float: left
     background-color: #EEE
-    color: #333
     width: 100px
     cursor: default
 
@@ -91,8 +83,6 @@ div.jQBracket
 
     div.label
       padding: 3px
-      font-weight: normal
-      height: inherit
       position: absolute
       width: 70px
       height: 22px
@@ -157,13 +147,11 @@ div.jQBracket
     z-index: 1
     position: relative
     float: left
-    display: block
 
   .connector
     border: 2px solid $connectorColor
     border-left-style: none
     position: absolute
-    display: block
     z-index: 1
 
     div.connector
@@ -171,7 +159,6 @@ div.jQBracket
       border-bottom: 2px solid $connectorColor
       height: 0px
       position: absolute
-      display: block
 
     &.highlightWinner,
     div.connector.highlightWinner
@@ -192,7 +179,6 @@ div.jQBracket
   .bubble
     height: 22px
     line-height: 22px
-    display: block
     width: 30px
     right: -35px
     position: absolute
@@ -209,7 +195,6 @@ div.jQBracket
 
     &:after
       content: ''
-      display: block
       position: absolute
       top: 6px
       width: 0
@@ -258,9 +243,6 @@ div.jQBracket.rl
   .round
     margin-right: 0
     margin-left: 40px
-    float: right
-
-  .match
     float: right
 
   .team
