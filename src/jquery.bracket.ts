@@ -774,7 +774,7 @@ interface Options {
       var match: MatchResult = {a: data[0], b: data[1]}
       function teamElement(round: number, team: TeamBlock, isReady: boolean) {
         var rId = resultIdentifier
-        var sEl = $('<span data-resultid="result-' + rId + '"></span>')
+        var sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>')
         var score
         if (!team.name || !isReady) {
           score = '--'
@@ -792,7 +792,7 @@ interface Options {
 
         var name = !team.name ? '--' : team.name
         var tEl = $('<div class="team"></div>');
-        var nEl = $('<b></b>').appendTo(tEl)
+        var nEl = $('<div class="label"></div>').appendTo(tEl)
 
         if (round === 0)
           tEl.attr('data-resultid', 'team-' + rId)
@@ -822,7 +822,7 @@ interface Options {
                   opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val
                 renderAll(true)
                 span.click(editor)
-                var labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] b:first')
+                var labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] div.label:first')
                 if (labels.length && next === true && round === 0)
                   $(labels).click()
               }
@@ -865,7 +865,7 @@ interface Options {
                     if (key === 27)
                       return
 
-                    var next = topCon.find('span[data-resultid=result-' + (rId + 1) + ']')
+                    var next = topCon.find('div.score[data-resultid=result-' + (rId + 1) + ']')
                     if (next)
                       next.click()
                   }
