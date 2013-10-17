@@ -146,16 +146,16 @@ div.jQBracket
     &.tie span
       color: #00F
 
-    &.highlight
-      background-color: #3C0
-      color: #000
-
     &.highlightWinner
       background-color: $winColor
       color: #000
 
     &.highlightLoser
       background-color: $loseColor
+      color: #000
+
+    &.highlight
+      background-color: #3C0
       color: #000
 
   .teamContainer
@@ -178,10 +178,6 @@ div.jQBracket
       position: absolute
       display: block
 
-    &.highlight,
-    div.connector.highlight
-      border-color: #0C0
-
     &.highlightWinner,
     div.connector.highlightWinner
       border-color: $winColor
@@ -189,6 +185,10 @@ div.jQBracket
     &.highlightLoser,
     div.connector.highlightLoser
       border-color: $loseColor
+
+    &.highlight,
+    div.connector.highlight
+      border-color: #0C0
 
   .np .connector,
   .np .connector div.connector
@@ -285,10 +285,6 @@ div.jQBracket.rl
     border-left-style: solid
     border-right-style: none
     border-width: 2px
-    &.highlight,
-    div.connector.highlight
-      border-color: #0C0
-
     &.highlightWinner,
     div.connector.highlightWinner
       border-color: $winColor
@@ -297,6 +293,9 @@ div.jQBracket.rl
     div.connector.highlightLoser
       border-color: $loseColor
 
+    &.highlight,
+    div.connector.highlight
+      border-color: #0C0
 
   .bubble
     left: -35px
