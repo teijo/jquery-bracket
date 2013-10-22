@@ -14,6 +14,9 @@ $fourthColor: #678
 
 $connectorColor: #666
 
+$boxHeight: 22px
+$boxPadding: 3px
+
 div.jQBracket
   font-family: "Arial"
   font-size: 14px
@@ -82,10 +85,10 @@ div.jQBracket
       margin: 0
 
     div.label
-      padding: 3px
+      padding: $boxPadding
       position: absolute
       width: 70px
-      height: 22px
+      height: $boxHeight
       white-space: nowrap
       overflow: hidden
 
@@ -94,7 +97,7 @@ div.jQBracket
 
     div.score
       float: right
-      padding: 3px
+      padding: $boxPadding
       background-color: rgba(255,255,255,0.3)
       text-align: center
       width: 20px
@@ -177,8 +180,8 @@ div.jQBracket
     border-color: #222
 
   .bubble
-    height: 22px
-    line-height: 22px
+    height: $boxHeight
+    line-height: $boxHeight
     width: 30px
     right: -35px
     position: absolute
