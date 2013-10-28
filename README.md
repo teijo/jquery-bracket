@@ -26,6 +26,9 @@ Examples can be found from the project site at http://www.aropupu.fi/bracket/
 Changes
 -------
 
+*   2013-10-29: Remove redundant styles. Make HTML more standards compliant.
+    Streamline CSS and HTML to some extent with jQuery Group plugin. Markup
+    and CSS in this release **are not backwards compatible!**
 *   2013-10-07: `skipSecondaryFinal` boolean to finish double elimination
     tournament after first match. Skips the second match normally created if
     LB winner wins the first match. Display '--' score for non-played matches.
