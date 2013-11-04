@@ -1,5 +1,6 @@
 module.exports = function(grunt) {
   grunt.initConfig({
+    licenseString: '/* jQuery Bracket | Copyright (c) Teijo Laine 2011-<%= grunt.template.today("yyyy") %> | Licenced under the MIT licence */',
     pkg: grunt.file.readJSON('package.json'),
     watch: {
       scripts: {
@@ -29,6 +30,9 @@ module.exports = function(grunt) {
       }
     },
     cssmin: {
+      options: {
+        banner: '<%= licenseString %>'
+      },
       dist: {
         files: {
           'dist/<%= pkg.name %>.min.css': 'dist/<%= pkg.name %>.css'
@@ -38,6 +42,7 @@ module.exports = function(grunt) {
     uglify: {
       options: {
         compress: true,
+        banner: '<%= licenseString %>\n'
       },
       dist: {
         files: {
