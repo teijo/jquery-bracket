@@ -46,14 +46,14 @@ module.exports = function(grunt) {
       },
       dist: {
         files: {
-          'dist/<%= pkg.name %>.min.js': ['src/<%= pkg.name %>.js']
+          'dist/<%= pkg.name %>.min.js': ['dist/<%= pkg.name %>.js']
         }
       }
     },
     typescript: {
       base: {
         src: ['src/*.ts'],
-        dest: 'src/jquery.bracket.js'
+        dest: 'dist/jquery.bracket.js'
       }
     }
   });
