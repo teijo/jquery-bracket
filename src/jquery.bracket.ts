@@ -1177,6 +1177,7 @@ interface Options {
       if (opts.save && (opts.onMatchClick || opts.onMatchHover))
         $.error('Match callbacks may not be passed in edit mode (in conjunction with save callback)')
       opts.dir = opts.dir || 'lr'
+      opts.init.teams = !opts.init.teams || opts.init.teams.length == 0 ? [["", ""]] : opts.init.teams
       opts.skipConsolationRound = opts.skipConsolationRound || false
       opts.skipSecondaryFinal = opts.skipSecondaryFinal || false
       if (opts.dir !== 'lr' && opts.dir !== 'rl')
