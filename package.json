@@ -12,8 +12,5 @@
     "grunt-shell": "^0.7.0",
     "grunt-css": "^0.5.4",
     "typescript": "^1.0.0"
-  },
-  "engines": {
-    "node": "0.8.21"
   }
 }
