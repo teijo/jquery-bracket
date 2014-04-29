@@ -9,8 +9,6 @@
 
 /// <reference path="../lib/jquery.d.ts" />
 
-declare var jQuery: any;
-
 interface Connector {
   height: number;
   shift: number;
@@ -48,11 +46,15 @@ interface Match {
   results: () => Array<number>;
 }
 
+interface MatchSource {
+  source: () => TeamBlock
+}
+
 interface Round {
   el: JQuery;
   id: number;
   bracket: Bracket;
-  addMatch: (teamCb: () => Array, renderCb: () => boolean) =>  Match;
+  addMatch: (teamCb: () => Array<MatchSource>, renderCb: (match: Match) => boolean) =>  Match;
   match: (id: number) => Match
   prev: () => Round
   size: () => number;
@@ -79,12 +81,12 @@ interface MatchResult {
 }
 
 interface DoneCallback {
-  (val: string, next: boolean): void;
+  (val: string, next?: boolean): void;
 }
 
 interface Decorator {
   edit: (span: JQuery, name: string, done_fn: DoneCallback) => void;
-  render: Function;
+  render: (container: JQuery, team: string, score: any) => void;
 }
 
 interface Options {
@@ -198,7 +200,7 @@ interface Options {
     })
   }
 
-  function defaultEdit(span: JQuery, data: string, done: (value: string, done?: boolean) => void) {
+  function defaultEdit(span: JQuery, data: string, done: DoneCallback) {
     var input = $('<input type="text">')
     input.val(data)
     span.html(input)
@@ -215,7 +217,7 @@ interface Options {
     })
   }
 
-  function defaultRender(container: JQuery, team: JQuery) {
+  function defaultRender(container: JQuery, team: string, score: any) {
     container.append(team)
   }
 
@@ -322,7 +324,7 @@ interface Options {
         var round = losers.addRound()
 
         for (var m = 0; m < matches; m += 1) {
-          var teamCb: () => Array = null
+          var teamCb: () => Array<MatchSource> = null
 
           /* special cases */
           if (!(n % 2 === 0 && r !== 0)) {
@@ -538,7 +540,7 @@ interface Options {
       el: roundCon,
       bracket: bracket,
       id: roundIdx,
-      addMatch: function(teamCb: () => Array, renderCb: () => boolean): Match {
+      addMatch: function(teamCb: () => Array<MatchSource>, renderCb: () => boolean): Match {
         var matchIdx = matches.length
         var teams
 

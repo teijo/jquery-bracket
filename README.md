@@ -18,6 +18,7 @@ Building
 *   Install node
 *   Run `npm install -g typescript` to install TypeScript globally
 *   Run `npm install` to get dependencies
+*   Install Ruby compass `gem install compass`
 *   Run `grunt watch` to auto-compile changed files in src/
 *   Run `grunt` to compile once
 
