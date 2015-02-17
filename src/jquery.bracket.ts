@@ -356,6 +356,7 @@ interface Options {
 
           var match = round.addMatch(teamCb)
           var teamCon = match.el.find('.teamContainer')
+
           match.setAlignCb(function() {
             teamCon.css('top', (match.el.height() / 2 - teamCon.height() / 2) + 'px');
           })
@@ -781,6 +782,7 @@ interface Options {
         var rId = resultIdentifier
         var sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>')
         var score
+
         if (!team.name || !isReady) {
           score = '--'
         }
@@ -791,6 +793,9 @@ interface Options {
             score = team.score
           }
         }
+        if (team.name == 'BYE')
+          score = team.score = 0
+
         sEl.append(score)
 
         resultIdentifier += 1
@@ -798,6 +803,9 @@ interface Options {
         var name = !team.name ? '--' : team.name
         var tEl = $('<div class="team"></div>');
         var nEl = $('<div class="label"></div>').appendTo(tEl)
+
+        if (team.name == 'BYE')
+          tEl.css('visibility', 'hidden');
 
         if (round === 0)
           tEl.attr('data-resultid', 'team-' + rId)
@@ -920,9 +928,14 @@ interface Options {
       match.a.name = match.a.source().name
       match.b.name = match.b.source().name
 
-      if (match.b.name == 'BYE') {
+      if (match.a.name == 'BYE') {
+        match.a.score = 0
+        match.b.score = 1
+        matchCon.css('visibility', 'hidden');
+      } else if (match.b.name == 'BYE') {
         match.a.score = 1
         match.b.score = 0
+        matchCon.css('visibility', 'hidden');
       } else {
         match.a.score = !results ? null : results[0]
         match.b.score = !results ? null : results[1]
