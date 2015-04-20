@@ -2,3 +2,4 @@
 node_modules
 dist/jquery.bracket.css
 dist/jquery.bracket.js
+.idea
