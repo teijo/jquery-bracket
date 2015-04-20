@@ -97,6 +97,7 @@ interface Options {
   decorator: Decorator;
   skipConsolationRound: boolean;
   skipSecondaryFinal: boolean;
+  isDoubleElimination: boolean;
   dir: string;
   onMatchClick: (data: any) => void;
   onMatchHover: (data: any, hover: boolean) => void;
@@ -111,7 +112,7 @@ interface Options {
   function depth(a): number {
     function df(a, d: number): number {
       if (a instanceof Array)
-        return df(a[0], d + 1)
+        return df(a[0], d + 1);
       return d
     }
 
@@ -120,7 +121,7 @@ interface Options {
 
   function wrap(a, d: number) {
     if (d > 0)
-      a = wrap([a], d - 1)
+      a = wrap([a], d - 1);
     return a
   }
 
@@ -1107,7 +1108,7 @@ interface Options {
     r = wrap(r, 4 - depth(r));
     data.results = r;
 
-    var isSingleElimination = (r.length <= 1);
+    var isSingleElimination = (r.length <= 1 && !opts.isDoubleElimination);
 
     if (opts.skipSecondaryFinal && isSingleElimination)
       $.error('skipSecondaryFinal setting is viable only in double elimination mode');
@@ -1182,6 +1183,7 @@ interface Options {
       opts.dir = opts.dir || 'lr';
       opts.init.teams = !opts.init.teams || opts.init.teams.length == 0 ? [["", ""]] : opts.init.teams;
       opts.skipConsolationRound = opts.skipConsolationRound || false;
+      opts.isDoubleElimination = opts.isDoubleElimination || false;
       opts.skipSecondaryFinal = opts.skipSecondaryFinal || false;
       if (opts.dir !== 'lr' && opts.dir !== 'rl')
         $.error('Direction must be either: "lr" or "rl"');
