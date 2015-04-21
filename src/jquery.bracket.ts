@@ -98,6 +98,8 @@ interface Options {
   skipConsolationRound: boolean;
   skipSecondaryFinal: boolean;
   isDoubleElimination: boolean;
+  disableTeamNameEdit: boolean;
+  disableEditButtons: boolean;
   dir: string;
   onMatchClick: (data: any) => void;
   onMatchHover: (data: any, hover: boolean) => void;
@@ -132,7 +134,7 @@ interface Options {
   function teamsInResultOrder(match: MatchResult) {
     if (isNumber(match.a.score) && isNumber(match.b.score)) {
       if (match.a.score > match.b.score)
-        return [match.a, match.b]
+        return [match.a, match.b];
       else if (match.a.score < match.b.score)
         return [match.b, match.a]
     }
@@ -186,7 +188,7 @@ interface Options {
     if (winner && loser) {
       winTrack = trackHighlighter(winner.idx, 'highlightWinner', container);
       loseTrack = trackHighlighter(loser.idx, 'highlightLoser', container);
-      winTrack.highlight()
+      winTrack.highlight();
       loseTrack.highlight()
     }
 
@@ -212,7 +214,7 @@ interface Options {
     input.keydown(function(e) {
       var key = (e.keyCode || e.which);
       if (key === 9 /*tab*/ || key === 13 /*return*/ || key === 27 /*esc*/) {
-        e.preventDefault()
+        e.preventDefault();
         done(input.val(), (key !== 27))
       }
     })
@@ -287,7 +289,7 @@ interface Options {
     if (isSingleElimination) {
       winners.final().connectorCb(function() {
         return null
-      })
+      });
 
       if (teams.length > 1 && !skipConsolationRound) {
         var third = winners.final().round().prev().match(0).loser;
@@ -420,7 +422,7 @@ interface Options {
               topCon.css('width', (parseInt(topCon.css('width'), 10) - 140) + 'px')
             }
             return rematch
-          })
+          });
           /* keep order the same, WB winner top, LB winner below */
           var match2 = round.addMatch(function() {
               return [
@@ -438,10 +440,10 @@ interface Options {
             return null
           });
           match2.setAlignCb(function(tC) {
-            var height = (winners.el.height() + losers.el.height())
+            var height = (winners.el.height() + losers.el.height());
             match2.el.css('height', (height) + 'px');
 
-            var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height()
+            var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height();
 
             tC.css('top', (topShift) + 'px')
           });
@@ -453,12 +455,12 @@ interface Options {
       });
 
     match.setAlignCb(function(tC) {
-      var height = (winners.el.height() + losers.el.height())
+      var height = (winners.el.height() + losers.el.height());
       if (!skipConsolationRound)
         height /= 2;
       match.el.css('height', (height) + 'px');
 
-      var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height()
+      var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height();
 
       tC.css('top', (topShift) + 'px')
     });
@@ -467,7 +469,7 @@ interface Options {
     var height;
 
     if (!skipConsolationRound) {
-      var fourth = losers.final().round().prev().match(0).loser
+      var fourth = losers.final().round().prev().match(0).loser;
       var consol = round.addMatch(function() {
           return [
             {source: fourth},
@@ -476,7 +478,7 @@ interface Options {
         },
         consolationBubbles);
       consol.setAlignCb(function(tC) {
-        var height = (winners.el.height() + losers.el.height()) / 2
+        var height = (winners.el.height() + losers.el.height()) / 2;
         consol.el.css('height', (height) + 'px');
 
         var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 + tC.height() / 2 - height
@@ -525,10 +527,10 @@ interface Options {
         shift = connectorOffset
       }
       else {
-        height = matchupOffset + connectorOffset
+        height = matchupOffset + connectorOffset;
         shift = connectorOffset * 2
       }
-      height += tC.height() / 2
+      height += tC.height() / 2;
       return {height: -height, shift: -shift}
     })
   }
@@ -554,7 +556,7 @@ interface Options {
             {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
           ];
 
-        var match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb)
+        var match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb);
         matches.push(match);
         return match;
       },
@@ -598,7 +600,7 @@ interface Options {
         if (id > 0)
           previous = rounds[id - 1];
 
-        var round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch)
+        var round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch);
         rounds.push(round);
         return round;
       },
@@ -682,6 +684,11 @@ interface Options {
   }
 
   function embedEditButtons(topCon: JQuery, data: any, opts: Options) {
+
+    if(opts.disableEditButtons) {
+        return false;
+    }
+
     var tools = $('<div class="tools"></div>').appendTo(topCon);
     var inc = $('<span class="increment">+</span>').appendTo(tools);
     inc.click(function () {
@@ -735,7 +742,7 @@ interface Options {
     if (!opts.init && !opts.save)
       throw Error('No bracket data or save callback given');
     if (opts.userData === undefined)
-      opts.userData = null
+      opts.userData = null;
 
     if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render))
       throw Error('Invalid decorator input');
@@ -778,8 +785,9 @@ interface Options {
       var match: MatchResult = {a: data[0], b: data[1]};
       function teamElement(round: number, team: TeamBlock, isReady: boolean) {
         var rId = resultIdentifier;
-        var sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>')
+        var sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
         var score;
+
         if (!team.name || !isReady) {
           score = '--'
         }
@@ -813,30 +821,34 @@ interface Options {
         else if (matchLoser(match).name === team.name)
           tEl.addClass('lose');
 
-        tEl.append(sEl)
+        tEl.append(sEl);
 
         if (!(team.name === null || !isReady || !opts.save) && opts.save) {
-          nEl.addClass('editable');
-          nEl.click(function() {
-            var span = $(this);
 
-            function editor() {
-              function done_fn(val, next: boolean) {
-                if (val)
-                  opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val;
-                renderAll(true);
-                span.click(editor);
-                var labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] div.label:first');
-                if (labels.length && next === true && round === 0)
-                  $(labels).click()
-              }
+          if (!opts.disableTeamNameEdit) {
+              nEl.addClass('editable');
+              nEl.click(function() {
+                  var span = $(this);
 
-              span.unbind();
-              opts.decorator.edit(span, team.name, done_fn)
-            }
+                  function editor() {
+                      function done_fn(val, next: boolean) {
+                          if (val)
+                              opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val;
+                          renderAll(true);
+                          span.click(editor);
+                          var labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] div.label:first');
+                          if (labels.length && next === true && round === 0)
+                              $(labels).click()
+                      }
 
-            editor()
-          });
+                      span.unbind();
+                      opts.decorator.edit(span, team.name, done_fn)
+                  }
+
+                  editor()
+              });
+          }
+
           if (team.name) {
             sEl.addClass('editable');
             sEl.click(function() {
@@ -1049,7 +1061,7 @@ interface Options {
       }
 
       if (!r)
-        return true
+        return true;
 
       if (t.length < r[0][0].length) {
         console.log('more results than teams', data);
@@ -1155,7 +1167,7 @@ interface Options {
 
     if (!isSingleElimination) {
       l = mkBracket(lEl, !r || !r[1] ? null : r[1], mkMatch);
-      f = mkBracket(fEl, !r || !r[2] ? null : r[2], mkMatch)
+      f = mkBracket(fEl, !r || !r[2] ? null : r[2], mkMatch);
     }
 
     prepareWinners(w, data.teams, isSingleElimination, opts.skipConsolationRound);
@@ -1165,14 +1177,14 @@ interface Options {
       prepareFinals(f, w, l, opts.skipSecondaryFinal, opts.skipConsolationRound, topCon);
     }
 
-    renderAll(false)
+    renderAll(false);
 
     return {
       data: function() {
         return opts.init
       }
     }
-  }
+  };
 
   var methods = {
     init: function(opts: Options) {
@@ -1185,6 +1197,8 @@ interface Options {
       opts.skipConsolationRound = opts.skipConsolationRound || false;
       opts.isDoubleElimination = opts.isDoubleElimination || false;
       opts.skipSecondaryFinal = opts.skipSecondaryFinal || false;
+      opts.disableTeamNameEdit = opts.disableTeamNameEdit || false;
+      opts.disableEditButtons = opts.disableEditButtons || false;
       if (opts.dir !== 'lr' && opts.dir !== 'rl')
         $.error('Direction must be either: "lr" or "rl"');
       var bracket = JqueryBracket(opts);
