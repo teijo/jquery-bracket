@@ -50,6 +50,14 @@ module.exports = function(grunt) {
         }
       }
     },
+    tslint: {
+      options: {
+        configuration: grunt.file.readJSON("tslint.json")
+      },
+      files: {
+        src: ['src/*.ts']
+      }
+    },
     typescript: {
       base: {
         src: ['src/*.ts'],
@@ -63,7 +71,8 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-typescript');
+  grunt.loadNpmTasks('grunt-tslint');
   grunt.loadNpmTasks('grunt-css');
 
-  grunt.registerTask('default', ['shell', 'typescript', 'uglify', 'cssmin']);
+  grunt.registerTask('default', ['tslint', 'shell', 'typescript', 'uglify', 'cssmin']);
 };

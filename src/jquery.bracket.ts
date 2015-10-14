@@ -240,7 +240,8 @@ interface Options {
     return true
   }
 
-  function prepareWinners(winners: Bracket, teams, isSingleElimination: boolean, skipConsolationRound: boolean, skipGrandFinalComeback: boolean) {
+  function prepareWinners(winners: Bracket, teams, isSingleElimination: boolean,
+                          skipConsolationRound: boolean, skipGrandFinalComeback: boolean) {
     var rounds = Math.log(teams.length * 2) / Math.log(2);
     var matches = teams.length;
     var round
@@ -694,49 +695,6 @@ interface Options {
     return src;
   }
 
-  function embedEditButtons(topCon: JQuery, data: any, opts: Options) {
-    var tools = $('<div class="tools"></div>').appendTo(topCon)
-    var inc = $('<span class="increment">+</span>').appendTo(tools)
-    inc.click(function () {
-      var i
-      var len = data.teams.length
-      for (i = 0; i < len; i += 1)
-        data.teams.push(['', ''])
-      return JqueryBracket(opts)
-    })
-
-    if (data.teams.length > 1 && data.results.length === 1 ||
-      data.teams.length > 2 && data.results.length === 3) {
-      var dec = $('<span class="decrement">-</span>').appendTo(tools)
-      dec.click(function () {
-        if (data.teams.length > 1) {
-          data.teams = data.teams.slice(0, data.teams.length / 2)
-          return JqueryBracket(opts)
-        }
-      })
-    }
-
-    var type
-    if (data.results.length === 1 && data.teams.length > 1) {
-      type = $('<span class="doubleElimination">de</span>').appendTo(tools)
-      type.click(function () {
-        if (data.teams.length > 1 && data.results.length < 3) {
-          data.results.push([], [])
-          return JqueryBracket(opts)
-        }
-      })
-    }
-    else if (data.results.length === 3 && data.teams.length > 1) {
-      type = $('<span class="singleElimination">se</span>').appendTo(tools)
-      type.click(function () {
-        if (data.results.length === 3) {
-          data.results = data.results.slice(0, 1)
-          return JqueryBracket(opts)
-        }
-      })
-    }
-  }
-
   var JqueryBracket = function(opts: Options) {
     var align = opts.dir === 'lr' ? 'right' : 'left'
     var resultIdentifier
@@ -765,6 +723,8 @@ interface Options {
     data = opts.init
 
     var topCon = $('<div class="jQBracket ' + opts.dir + '"></div>').appendTo(opts.el.empty())
+
+    var w, l, f
 
     function renderAll(save: boolean): void {
       resultIdentifier = 0
@@ -942,7 +902,8 @@ interface Options {
       /* match has score even though teams haven't yet been decided */
       /* todo: would be nice to have in preload check, maybe too much work */
       if ((!match.a.name || !match.b.name) && (isNumber(match.a.score) || isNumber(match.b.score))) {
-        console.log('ERROR IN SCORE DATA: ' + match.a.source().name + ': ' + match.a.score + ', ' + match.b.source().name + ': ' + match.b.score)
+        console.log('ERROR IN SCORE DATA: ' + match.a.source().name + ': ' +
+          match.a.score + ', ' + match.b.source().name + ': ' + match.b.score)
         match.a.score = match.b.score = null
       }
 
@@ -1056,69 +1017,6 @@ interface Options {
       }
     }
 
-    function isValid(data): boolean {
-      var t = data.teams
-      var r = data.results
-
-      if (!t) {
-        console.log('no teams', data)
-        return false
-      }
-
-      if (!r)
-        return true
-
-      if (t.length < r[0][0].length) {
-        console.log('more results than teams', data)
-        return false
-      }
-
-      for (var b = 0; b < r.length; b += 1) {
-        for (var i = 0; i < ~~(r[b].length / 2); i += 1) {
-          if (r[b][2 * i].length < r[b][2 * i + 1].length) {
-            console.log('previous round has less scores than next one', data)
-            return false
-          }
-        }
-      }
-
-      for (var i = 0; i < r[0].length; i += 1) {
-        if (!r[1] || !r[1][i * 2])
-          break;
-
-        if (r[0][i].length <= r[1][i * 2].length) {
-          console.log('lb has more results than wb', data)
-          return false
-        }
-      }
-
-      try {
-        $.each(r, function(i, br) {
-          $.each(br, function(i, ro) {
-            $.each(ro, function(i, ma) {
-              if (ma.length !== 2) {
-                console.log('match size not valid', ma)
-                throw 'match size not valid'
-              }
-              /*logical xor*/
-              if (!(isNumber(ma[0]) ? isNumber(ma[1]) : !isNumber(ma[1]))) {
-                console.log('mixed results', ma)
-                throw 'mixed results'
-              }
-            })
-          })
-        })
-      }
-      catch (e) {
-        console.log(e)
-        return false
-      }
-
-      return true
-    }
-
-    var w, l, f
-
     var r = data.results
 
     /* wrap data to into necessary arrays */
@@ -1199,6 +1097,50 @@ interface Options {
     }
   }
 
+  function embedEditButtons(topCon: JQuery, data: any, opts: Options) {
+    var tools = $('<div class="tools"></div>').appendTo(topCon)
+    var inc = $('<span class="increment">+</span>').appendTo(tools)
+    inc.click(function () {
+      var i
+      var len = data.teams.length
+      for (i = 0; i < len; i += 1)
+        data.teams.push(['', ''])
+      return JqueryBracket(opts)
+    })
+
+    if (data.teams.length > 1 && data.results.length === 1 ||
+        data.teams.length > 2 && data.results.length === 3) {
+      var dec = $('<span class="decrement">-</span>').appendTo(tools)
+      dec.click(function () {
+        if (data.teams.length > 1) {
+          data.teams = data.teams.slice(0, data.teams.length / 2)
+          return JqueryBracket(opts)
+        }
+      })
+    }
+
+    var type
+    if (data.results.length === 1 && data.teams.length > 1) {
+      type = $('<span class="doubleElimination">de</span>').appendTo(tools)
+      type.click(function () {
+        if (data.teams.length > 1 && data.results.length < 3) {
+          data.results.push([], [])
+          return JqueryBracket(opts)
+        }
+      })
+    }
+    else if (data.results.length === 3 && data.teams.length > 1) {
+      type = $('<span class="singleElimination">se</span>').appendTo(tools)
+      type.click(function () {
+        if (data.results.length === 3) {
+          data.results = data.results.slice(0, 1)
+          return JqueryBracket(opts)
+        }
+      })
+    }
+  }
+
+
   var methods = {
     init: function(opts: Options) {
       var that = this
@@ -1206,7 +1148,7 @@ interface Options {
       if (opts.save && (opts.onMatchClick || opts.onMatchHover))
         $.error('Match callbacks may not be passed in edit mode (in conjunction with save callback)')
       opts.dir = opts.dir || 'lr'
-      opts.init.teams = !opts.init.teams || opts.init.teams.length == 0 ? [["", ""]] : opts.init.teams
+      opts.init.teams = !opts.init.teams || opts.init.teams.length === 0 ? [['', '']] : opts.init.teams
       opts.skipConsolationRound = opts.skipConsolationRound || false
       opts.skipSecondaryFinal = opts.skipSecondaryFinal || false
       if (opts.dir !== 'lr' && opts.dir !== 'rl')

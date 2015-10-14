@@ -12,5 +12,9 @@
     "grunt-shell": "^0.7.0",
     "grunt-css": "^0.5.4",
     "typescript": "^1.0.0"
+  },
+  "devDependencies": {
+    "grunt-tslint": "^2.5.0",
+    "tslint": "^2.5.1"
   }
 }
