@@ -1162,8 +1162,10 @@ interface Options {
     var rounds
     if (isSingleElimination)
       rounds = Math.log(data.teams.length * 2) / Math.log(2)
+    else if (opts.skipGrandFinalComeback)
+      rounds = (Math.log(data.teams.length * 2) / Math.log(2) - 1) * 2 - 1 // DE - grand finals
     else
-      rounds = (Math.log(data.teams.length * 2) / Math.log(2) - 1) * 2 + 1
+      rounds = (Math.log(data.teams.length * 2) / Math.log(2) - 1) * 2 + 1 // DE + grand finals
 
     if (opts.save)
       topCon.css('width', rounds * 140 + 40)
