@@ -97,6 +97,7 @@ interface Options {
   decorator: Decorator;
   skipConsolationRound: boolean;
   skipSecondaryFinal: boolean;
+  skipGrandFinalComeback: boolean;
   dir: string;
   onMatchClick: (data: any) => void;
   onMatchHover: (data: any, hover: boolean) => void;
@@ -239,7 +240,7 @@ interface Options {
     return true
   }
 
-  function prepareWinners(winners: Bracket, teams, isSingleElimination: boolean, skipConsolationRound: boolean) {
+  function prepareWinners(winners: Bracket, teams, isSingleElimination: boolean, skipConsolationRound: boolean, skipGrandFinalComeback: boolean) {
     var rounds = Math.log(teams.length * 2) / Math.log(2);
     var matches = teams.length;
     var round
@@ -265,19 +266,21 @@ interface Options {
           }
         }
 
-        if (!(r === rounds - 1 && isSingleElimination)) {
+        if (!(r === rounds - 1 && isSingleElimination) && !(r === rounds - 1 && skipGrandFinalComeback)) {
           round.addMatch(teamCb)
         }
         else {
           var match = round.addMatch(teamCb, winnerBubbles)
-          match.setAlignCb(function(tC) {
-            tC.css('top', '');
-            tC.css('position', 'absolute');
-            if (skipConsolationRound)
-              tC.css('top', (match.el.height() / 2 - tC.height() / 2) + 'px');
-            else
-              tC.css('bottom', (-tC.height() / 2) + 'px');
-          })
+          if (!skipGrandFinalComeback) {
+            match.setAlignCb(function(tC) {
+              tC.css('top', '');
+              tC.css('position', 'absolute');
+              if (skipConsolationRound)
+                tC.css('top', (match.el.height() / 2 - tC.height() / 2) + 'px');
+              else
+                tC.css('bottom', (-tC.height() / 2) + 'px');
+            })
+          }
         }
       }
       matches /= 2;
@@ -315,12 +318,16 @@ interface Options {
     }
   }
 
-  function prepareLosers(winners: Bracket, losers: Bracket, teamCount: number) {
+  function prepareLosers(winners: Bracket, losers: Bracket, teamCount: number, skipGrandFinalComeback: boolean) {
     var rounds = Math.log(teamCount * 2) / Math.log(2) - 1;
     var matches = teamCount / 2;
 
     for (var r = 0; r < rounds; r += 1) {
-      for (var n = 0; n < 2; n += 1) {
+      /* if player cannot rise back to grand final, last round of loser
+       * bracket will be player between two LB players, eliminating match
+       * between last WB loser and current LB winner */
+      var subRounds = (skipGrandFinalComeback && r === (rounds - 1) ? 1 : 2)
+      for (var n = 0; n < subRounds; n += 1) {
         var round = losers.addRound()
 
         for (var m = 0; m < matches; m += 1) {
@@ -351,13 +358,21 @@ interface Options {
             }
           }
 
-          var match = round.addMatch(teamCb)
+          var isLastMatch = r === rounds - 1 && skipGrandFinalComeback
+
+          var match = round.addMatch(teamCb, isLastMatch ? consolationBubbles : null)
           var teamCon = match.el.find('.teamContainer')
           match.setAlignCb(function() {
             teamCon.css('top', (match.el.height() / 2 - teamCon.height() / 2) + 'px');
           })
 
-          if (r < rounds - 1 || n < 1) {
+          if (isLastMatch) {
+            // Override default connector
+            match.connectorCb(function() {
+              return null
+            })
+          }
+          else if (r < rounds - 1 || n < 1) {
             var cb = null
             // inside lower bracket
             if (n % 2 === 0) {
@@ -754,16 +769,20 @@ interface Options {
     function renderAll(save: boolean): void {
       resultIdentifier = 0
       w.render()
-      if (l && f) {
+      if (l) {
         l.render()
+      }
+      if (f && !opts.skipGrandFinalComeback) {
         f.render()
       }
       postProcess(topCon, w, f)
 
       if (save) {
         data.results[0] = w.results()
-        if (l && f) {
+        if (l) {
           data.results[1] = l.results()
+        }
+        if (f && !opts.skipGrandFinalComeback) {
           data.results[2] = f.results()
         }
         if (opts.save)
@@ -1120,7 +1139,9 @@ interface Options {
       wEl = $('<div class="bracket"></div>').appendTo(topCon)
     }
     else {
-      fEl = $('<div class="finals"></div>').appendTo(topCon)
+      if (!opts.skipGrandFinalComeback) {
+        fEl = $('<div class="finals"></div>').appendTo(topCon)
+      }
       wEl = $('<div class="bracket"></div>').appendTo(topCon)
       lEl = $('<div class="loserBracket"></div>').appendTo(topCon)
     }
@@ -1153,14 +1174,18 @@ interface Options {
 
     if (!isSingleElimination) {
       l = mkBracket(lEl, !r || !r[1] ? null : r[1], mkMatch)
-      f = mkBracket(fEl, !r || !r[2] ? null : r[2], mkMatch)
+      if (!opts.skipGrandFinalComeback) {
+        f = mkBracket(fEl, !r || !r[2] ? null : r[2], mkMatch)
+      }
     }
 
-    prepareWinners(w, data.teams, isSingleElimination, opts.skipConsolationRound)
+    prepareWinners(w, data.teams, isSingleElimination, opts.skipConsolationRound, opts.skipGrandFinalComeback && !isSingleElimination)
 
     if (!isSingleElimination) {
-      prepareLosers(w, l, data.teams.length);
-      prepareFinals(f, w, l, opts.skipSecondaryFinal, opts.skipConsolationRound, topCon);
+      prepareLosers(w, l, data.teams.length, opts.skipGrandFinalComeback);
+      if (!opts.skipGrandFinalComeback) {
+        prepareFinals(f, w, l, opts.skipSecondaryFinal, opts.skipConsolationRound, topCon);
+      }
     }
 
     renderAll(false)
