@@ -1163,7 +1163,7 @@ interface Options {
     if (isSingleElimination)
       rounds = Math.log(data.teams.length * 2) / Math.log(2)
     else if (opts.skipGrandFinalComeback)
-      rounds = (Math.log(data.teams.length * 2) / Math.log(2) - 1) * 2 - 1 // DE - grand finals
+      rounds = Math.max(2, (Math.log(data.teams.length * 2) / Math.log(2) - 1) * 2 - 1) // DE - grand finals
     else
       rounds = (Math.log(data.teams.length * 2) / Math.log(2) - 1) * 2 + 1 // DE + grand finals
 
