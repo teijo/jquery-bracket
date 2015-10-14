@@ -32,6 +32,10 @@ Examples can be found from the project site at http://www.aropupu.fi/bracket/
 Changes
 -------
 
+*   2015-10-14: Tagged latest commit (3a4210c) as **0.6.0** to indicate it
+    being the latest stable version and keep future development more flexible.
+    From now on, take only a tagged version from this repository unless you're
+    developing it further.
 *   2013-10-29: Remove redundant styles. Make HTML more standards compliant.
     Streamline CSS and HTML to some extent with jQuery Group plugin. Markup
     and CSS in this release **are not backwards compatible!**
