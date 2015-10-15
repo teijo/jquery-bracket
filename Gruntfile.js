@@ -13,22 +13,6 @@ module.exports = function(grunt) {
         command: 'compass compile'
       }
     },
-    jshint: {
-      options: {
-        jshintrc: '.jshintrc'
-      },
-      with_overrides: {
-        options: {
-          asi: true,
-          curly: false,
-          strict: false,
-          predef : ['jQuery', 'console'],
-        },
-        files: {
-          src: ['src/jquery.bracket.ts']
-        }
-      }
-    },
     cssmin: {
       options: {
         banner: '<%= licenseString %>'
@@ -68,7 +52,6 @@ module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
-  grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-typescript');
   grunt.loadNpmTasks('grunt-tslint');
