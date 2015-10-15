@@ -10,7 +10,7 @@
     "grunt-css": "^0.5.4",
     "grunt-shell": "^0.7.0",
     "grunt-tslint": "^2.5.0",
-    "grunt-typescript": "^0.3.8",
+    "grunt-typescript": "^0.7.0",
     "tslint": "^2.5.1",
     "typescript": "^1.6.2"
   }
