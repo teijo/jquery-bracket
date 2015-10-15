@@ -152,7 +152,7 @@ interface Options {
   }
 
   function trackHighlighter(teamIndex: number, cssClass: string, container: JQuery) {
-    var elements = container.find('.team[data-teamid=' + teamIndex + ']');
+    const elements = container.find('.team[data-teamid=' + teamIndex + ']');
     var addedClass;
     if (!cssClass) {
       addedClass = 'highlight';
@@ -182,10 +182,10 @@ interface Options {
   }
 
   function postProcess(container: JQuery, w: Bracket, f: Bracket) {
-    var source = f || w;
+    const source = f || w;
 
-    var winner = source.winner();
-    var loser = source.loser();
+    const winner = source.winner();
+    const loser = source.loser();
 
     var winTrack = null;
     var loseTrack = null;
@@ -198,8 +198,8 @@ interface Options {
     }
 
     container.find('.team').mouseover(function() {
-      var i = $(this).attr('data-teamid');
-      var track = trackHighlighter(i, null, container);
+      const i = $(this).attr('data-teamid');
+      const track = trackHighlighter(i, null, container);
       track.highlight();
       $(this).mouseout(function() {
         track.deHighlight();
@@ -209,7 +209,7 @@ interface Options {
   }
 
   function defaultEdit(span: JQuery, data: string, done: DoneCallback) {
-    var input = $('<input type="text">');
+    const input = $('<input type="text">');
     input.val(data);
     span.html(input);
     input.focus();
@@ -217,7 +217,7 @@ interface Options {
       done(input.val());
     });
     input.keydown(function(e) {
-      var key = (e.keyCode || e.which);
+      const key = (e.keyCode || e.which);
       if (key === 9 /*tab*/ || key === 13 /*return*/ || key === 27 /*esc*/) {
         e.preventDefault();
         done(input.val(), (key !== 27));
@@ -230,26 +230,26 @@ interface Options {
   }
 
   function winnerBubbles(match: Match): boolean {
-    var el = match.el;
-    var winner = el.find('.team.win');
+    const el = match.el;
+    const winner = el.find('.team.win');
     winner.append('<div class="bubble">1st</div>');
-    var loser = el.find('.team.lose');
+    const loser = el.find('.team.lose');
     loser.append('<div class="bubble">2nd</div>');
     return true;
   }
 
   function consolationBubbles(match: Match): boolean {
-    var el = match.el;
-    var winner = el.find('.team.win');
+    const el = match.el;
+    const winner = el.find('.team.win');
     winner.append('<div class="bubble third">3rd</div>');
-    var loser = el.find('.team.lose');
+    const loser = el.find('.team.lose');
     loser.append('<div class="bubble fourth">4th</div>');
     return true;
   }
 
   function prepareWinners(winners: Bracket, teams, isSingleElimination: boolean,
                           skipConsolationRound: boolean, skipGrandFinalComeback: boolean) {
-    var rounds = Math.log(teams.length * 2) / Math.log(2);
+    const rounds = Math.log(teams.length * 2) / Math.log(2);
     var matches = teams.length;
     var round;
 
@@ -261,8 +261,8 @@ interface Options {
 
         if (r === 0) {
           teamCb = function() {
-            var t = teams[m];
-            var i = m;
+            const t = teams[m];
+            const i = m;
             return [
               {source: function(): MatchIndicator {
                 return {name: t[0], idx: (i * 2)};
@@ -302,9 +302,9 @@ interface Options {
       });
 
       if (teams.length > 1 && !skipConsolationRound) {
-        var third = winners.final().round().prev().match(0).loser;
-        var fourth = winners.final().round().prev().match(1).loser;
-        var consol = round.addMatch(function() {
+        const third = winners.final().round().prev().match(0).loser;
+        const fourth = winners.final().round().prev().match(1).loser;
+        const consol = round.addMatch(function() {
             return [
               {source: third},
               {source: fourth}
@@ -313,10 +313,10 @@ interface Options {
           consolationBubbles);
 
         consol.setAlignCb(function(tC) {
-          var height = (winners.el.height()) / 2;
+          const height = (winners.el.height()) / 2;
           consol.el.css('height', (height) + 'px');
 
-          var topShift = tC.height();
+          const topShift = tC.height();
 
           tC.css('top', (topShift) + 'px');
         });
@@ -329,16 +329,16 @@ interface Options {
   }
 
   function prepareLosers(winners: Bracket, losers: Bracket, teamCount: number, skipGrandFinalComeback: boolean) {
-    var rounds = Math.log(teamCount * 2) / Math.log(2) - 1;
+    const rounds = Math.log(teamCount * 2) / Math.log(2) - 1;
     var matches = teamCount / 2;
 
     for (var r = 0; r < rounds; r += 1) {
       /* if player cannot rise back to grand final, last round of loser
        * bracket will be player between two LB players, eliminating match
        * between last WB loser and current LB winner */
-      var subRounds = (skipGrandFinalComeback && r === (rounds - 1) ? 1 : 2);
+      const subRounds = (skipGrandFinalComeback && r === (rounds - 1) ? 1 : 2);
       for (var n = 0; n < subRounds; n += 1) {
-        var round = losers.addRound();
+        const round = losers.addRound();
 
         for (var m = 0; m < matches; m += 1) {
           var teamCb: () => Array<MatchSource> = null;
@@ -369,7 +369,7 @@ interface Options {
             };
           }
 
-          var isLastMatch = r === rounds - 1 && skipGrandFinalComeback;
+          const isLastMatch = r === rounds - 1 && skipGrandFinalComeback;
 
           var match = round.addMatch(teamCb, isLastMatch ? consolationBubbles : null);
           var teamCon = match.el.find('.teamContainer');
@@ -388,7 +388,7 @@ interface Options {
             // inside lower bracket
             if (n % 2 === 0) {
               cb = function(tC, match): Connector {
-                var connectorOffset = tC.height() / 4;
+                const connectorOffset = tC.height() / 4;
                 var height = 0;
                 var shift = 0;
 
@@ -415,8 +415,8 @@ interface Options {
 
   function prepareFinals(finals: Bracket, winners: Bracket, losers: Bracket,
                          skipSecondaryFinal: boolean, skipConsolationRound: boolean, topCon: JQuery) {
-    var round = finals.addRound();
-    var match = round.addMatch(function() {
+    const round = finals.addRound();
+    const match = round.addMatch(function() {
         return [
           {source: winners.winner},
           {source: losers.winner}
@@ -431,8 +431,8 @@ interface Options {
             return;
           }
           /* This callback is ugly, would be nice to make more sensible solution */
-          var round = finals.addRound(function() {
-            var rematch = ((match.winner().name !== null && match.winner().name === losers.winner().name));
+          const round = finals.addRound(function() {
+            const rematch = ((match.winner().name !== null && match.winner().name === losers.winner().name));
             if (_isResized === false) {
               if (rematch) {
                 _isResized = true;
@@ -447,7 +447,7 @@ interface Options {
             return rematch;
           });
           /* keep order the same, WB winner top, LB winner below */
-          var match2 = round.addMatch(function() {
+          const match2 = round.addMatch(function() {
               return [
                 {source: match.first},
                 {source: match.second}
@@ -463,10 +463,10 @@ interface Options {
             return null;
           });
           match2.setAlignCb(function(tC) {
-            var height = (winners.el.height() + losers.el.height());
+            const height = (winners.el.height() + losers.el.height());
             match2.el.css('height', (height) + 'px');
 
-            var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height();
+            const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height();
 
             tC.css('top', (topShift) + 'px');
           });
@@ -484,7 +484,7 @@ interface Options {
       }
       match.el.css('height', (height) + 'px');
 
-      var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height();
+      const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height();
 
       tC.css('top', (topShift) + 'px');
     });
@@ -493,8 +493,8 @@ interface Options {
     var height;
 
     if (!skipConsolationRound) {
-      var fourth = losers.final().round().prev().match(0).loser;
-      var consol = round.addMatch(function() {
+      const fourth = losers.final().round().prev().match(0).loser;
+      const consol = round.addMatch(function() {
           return [
             {source: fourth},
             {source: losers.loser}
@@ -502,10 +502,10 @@ interface Options {
         },
         consolationBubbles);
       consol.setAlignCb(function(tC) {
-        var height = (winners.el.height() + losers.el.height()) / 2;
+        const height = (winners.el.height() + losers.el.height()) / 2;
         consol.el.css('height', (height) + 'px');
 
-        var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 + tC.height() / 2 - height;
+        const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 + tC.height() / 2 - height;
 
         tC.css('top', (topShift) + 'px');
       });
@@ -519,9 +519,9 @@ interface Options {
     }
 
     winners.final().connectorCb(function(tC): Connector {
-      var connectorOffset = tC.height() / 4;
-      var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
-      var matchupOffset = topShift - winners.el.height() / 2;
+      const connectorOffset = tC.height() / 4;
+      const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
+      const matchupOffset = topShift - winners.el.height() / 2;
       if (winners.winner().id === 0) {
         height = matchupOffset + connectorOffset * 2;
         shift = connectorOffset;
@@ -539,9 +539,9 @@ interface Options {
     });
 
     losers.final().connectorCb(function(tC): Connector {
-      var connectorOffset = tC.height() / 4;
-      var topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
-      var matchupOffset = topShift - winners.el.height() / 2;
+      const connectorOffset = tC.height() / 4;
+      const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
+      const matchupOffset = topShift - winners.el.height() / 2;
       if (losers.winner().id === 0) {
         height = matchupOffset;
         shift = connectorOffset * 3;
@@ -561,15 +561,15 @@ interface Options {
 
   function mkRound(bracket: Bracket,  previousRound: Round,
                    roundIdx: number,  results,  doRenderCb: () => boolean, mkMatch): Round {
-    var matches: Array<Match> = [];
-    var roundCon = $('<div class="round"></div>');
+    const matches: Array<Match> = [];
+    const roundCon = $('<div class="round"></div>');
 
     return {
       el: roundCon,
       bracket: bracket,
       id: roundIdx,
       addMatch: function(teamCb: () => Array<MatchSource>, renderCb: () => boolean): Match {
-        var matchIdx = matches.length;
+        const matchIdx = matches.length;
         var teams;
 
         if (teamCb !== null) {
@@ -582,7 +582,7 @@ interface Options {
           ];
         }
 
-        var match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb);
+        const match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb);
         matches.push(match);
         return match;
       },
@@ -606,7 +606,7 @@ interface Options {
         });
       },
       results: function() {
-        var results = [];
+        const results = [];
         $.each(matches, function(i, ma) {
           results.push(ma.results());
         });
@@ -616,18 +616,18 @@ interface Options {
   }
 
   function mkBracket(bracketCon: JQuery, results, mkMatch): Bracket {
-    var rounds: Array<Round> = [];
+    const rounds: Array<Round> = [];
 
     return {
       el: bracketCon,
       addRound: function(doRenderCb: () => boolean): Round {
-        var id = rounds.length;
+        const id = rounds.length;
         var previous = null;
         if (id > 0) {
           previous = rounds[id - 1];
         }
 
-        var round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch);
+        const round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch);
         rounds.push(round);
         return round;
       },
@@ -659,7 +659,7 @@ interface Options {
         }
       },
       results: function() {
-        var results = [];
+        const results = [];
         $.each(rounds, function(i, ro) {
           results.push(ro.results());
         });
@@ -669,7 +669,7 @@ interface Options {
   }
 
   function connector(height: number, shift: number, teamCon: JQuery, align: string) {
-    var width = parseInt($('.round:first').css('margin-right'), 10) / 2;
+    const width = parseInt($('.round:first').css('margin-right'), 10) / 2;
     var drop = true;
     // drop:
     // [team]'\
@@ -686,7 +686,7 @@ interface Options {
       height = 0;
     }
 
-    var src = $('<div class="connector"></div>').appendTo(teamCon);
+    const src = $('<div class="connector"></div>').appendTo(teamCon);
     src.css('height', height);
     src.css('width', width + 'px');
     src.css(align, (-width - 2) + 'px');
@@ -705,7 +705,7 @@ interface Options {
       src.css('border-top', 'none');
     }
 
-    var dst = $('<div class="connector"></div>').appendTo(src);
+    const dst = $('<div class="connector"></div>').appendTo(src);
     dst.css('width', width + 'px');
     dst.css(align, -width + 'px');
     if (drop) {
@@ -718,8 +718,8 @@ interface Options {
     return src;
   }
 
-  var JqueryBracket = function(opts: Options) {
-    var align = opts.dir === 'lr' ? 'right' : 'left';
+  const JqueryBracket = function(opts: Options) {
+    const align = opts.dir === 'lr' ? 'right' : 'left';
     var resultIdentifier;
 
     if (!opts) {
@@ -754,7 +754,7 @@ interface Options {
 
     data = opts.init;
 
-    var topCon = $('<div class="jQBracket ' + opts.dir + '"></div>').appendTo(opts.el.empty());
+    const topCon = $('<div class="jQBracket ' + opts.dir + '"></div>').appendTo(opts.el.empty());
 
     var w, l, f;
 
@@ -785,10 +785,10 @@ interface Options {
 
     function mkMatch(round: Round, data: Array<TeamBlock>, idx: number,
                      results, renderCb: Function): Match {
-      var match: MatchResult = {a: data[0], b: data[1]};
+      const match: MatchResult = {a: data[0], b: data[1]};
       function teamElement(round: number, team: TeamBlock, isReady: boolean) {
-        var rId = resultIdentifier;
-        var sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
+        const rId = resultIdentifier;
+        const sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
         var score;
         if (!team.name || !isReady) {
           score = '--';
@@ -804,9 +804,9 @@ interface Options {
 
         resultIdentifier += 1;
 
-        var name = !team.name ? '--' : team.name;
-        var tEl = $('<div class="team"></div>');
-        var nEl = $('<div class="label"></div>').appendTo(tEl);
+        const name = !team.name ? '--' : team.name;
+        const tEl = $('<div class="team"></div>');
+        const nEl = $('<div class="label"></div>').appendTo(tEl);
 
         if (round === 0) {
           tEl.attr('data-resultid', 'team-' + rId);
@@ -833,7 +833,7 @@ interface Options {
         if (!(team.name === null || !isReady || !opts.save) && opts.save) {
           nEl.addClass('editable');
           nEl.click(function() {
-            var span = $(this);
+            const span = $(this);
 
             function editor() {
               function done_fn(val, next: boolean) {
@@ -842,7 +842,7 @@ interface Options {
                 }
                 renderAll(true);
                 span.click(editor);
-                var labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] div.label:first');
+                const labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] div.label:first');
                 if (labels.length && next === true && round === 0) {
                   $(labels).click();
                 }
@@ -857,7 +857,7 @@ interface Options {
           if (team.name) {
             sEl.addClass('editable');
             sEl.click(function() {
-              var span = $(this);
+              const span = $(this);
 
               function editor() {
                 span.unbind();
@@ -870,7 +870,7 @@ interface Options {
                   score = span.text();
                 }
 
-                var input = $('<input type="text">');
+                const input = $('<input type="text">');
                 input.val(score);
                 span.html(input);
 
@@ -883,7 +883,7 @@ interface Options {
                     $(this).removeClass('error');
                   }
 
-                  var key = (e.keyCode || e.which);
+                  const key = (e.keyCode || e.which);
                   if (key === 9 || key === 13 || key === 27) {
                     e.preventDefault();
                     $(this).blur();
@@ -891,7 +891,7 @@ interface Options {
                       return;
                     }
 
-                    var next = topCon.find('div.score[data-resultid=result-' + (rId + 1) + ']');
+                    const next = topCon.find('div.score[data-resultid=result-' + (rId + 1) + ']');
                     if (next) {
                       next.click();
                     }
@@ -925,11 +925,11 @@ interface Options {
       var connectorCb: ConnectorProvider = null;
       var alignCb = null;
 
-      var matchCon = $('<div class="match"></div>');
-      var teamCon = $('<div class="teamContainer"></div>');
+      const matchCon = $('<div class="match"></div>');
+      const teamCon = $('<div class="teamContainer"></div>');
 
       if (!opts.save) {
-        var matchUserData = (results ? results[2] : null);
+        const matchUserData = (results ? results[2] : null);
 
         if (opts.onMatchHover) {
           teamCon.hover(function () {
@@ -971,8 +971,8 @@ interface Options {
           connectorCb = cb;
         },
         connect: function(cb: ConnectorProvider) {
-          var connectorOffset = teamCon.height() / 4;
-          var matchupOffset = matchCon.height() / 2;
+          const connectorOffset = teamCon.height() / 4;
+          const matchupOffset = matchCon.height() / 2;
           var shift;
           var height;
 
@@ -1007,7 +1007,7 @@ interface Options {
             }
           }
           else {
-            var info = cb(teamCon, this);
+            const info = cb(teamCon, this);
             if (info === null) { /* no connector */
               return;
             }
@@ -1084,7 +1084,7 @@ interface Options {
     r = wrap(r, 4 - depth(r));
     data.results = r;
 
-    var isSingleElimination = (r.length <= 1);
+    const isSingleElimination = (r.length <= 1);
 
     if (opts.skipSecondaryFinal && isSingleElimination) {
       $.error('skipSecondaryFinal setting is viable only in double elimination mode');
@@ -1167,11 +1167,11 @@ interface Options {
   };
 
   function embedEditButtons(topCon: JQuery, data: any, opts: Options) {
-    var tools = $('<div class="tools"></div>').appendTo(topCon);
-    var inc = $('<span class="increment">+</span>').appendTo(tools);
+    const tools = $('<div class="tools"></div>').appendTo(topCon);
+    const inc = $('<span class="increment">+</span>').appendTo(tools);
     inc.click(function () {
       var i;
-      var len = data.teams.length;
+      const len = data.teams.length;
       for (i = 0; i < len; i += 1) {
         data.teams.push(['', '']);
       }
@@ -1180,7 +1180,7 @@ interface Options {
 
     if (data.teams.length > 1 && data.results.length === 1 ||
         data.teams.length > 2 && data.results.length === 3) {
-      var dec = $('<span class="decrement">-</span>').appendTo(tools);
+      const dec = $('<span class="decrement">-</span>').appendTo(tools);
       dec.click(function () {
         if (data.teams.length > 1) {
           data.teams = data.teams.slice(0, data.teams.length / 2);
@@ -1211,9 +1211,9 @@ interface Options {
   }
 
 
-  var methods = {
+  const methods = {
     init: function(opts: Options) {
-      var that = this;
+      const that = this;
       opts.el = this;
       if (opts.save && (opts.onMatchClick || opts.onMatchHover)) {
         $.error('Match callbacks may not be passed in edit mode (in conjunction with save callback)');
@@ -1225,12 +1225,12 @@ interface Options {
       if (opts.dir !== 'lr' && opts.dir !== 'rl') {
         $.error('Direction must be either: "lr" or "rl"');
       }
-      var bracket = JqueryBracket(opts);
+      const bracket = JqueryBracket(opts);
       $(this).data('bracket', {target: that, obj: bracket});
       return bracket;
     },
     data: function() {
-      var bracket = $(this).data('bracket');
+      const bracket = $(this).data('bracket');
       return bracket.obj.data();
     }
   };
