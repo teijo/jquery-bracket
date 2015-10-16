@@ -153,13 +153,7 @@ interface Options {
 
   function trackHighlighter(teamIndex: number, cssClass: string, container: JQuery) {
     const elements = container.find('.team[data-teamid=' + teamIndex + ']');
-    var addedClass;
-    if (!cssClass) {
-      addedClass = 'highlight';
-    }
-    else {
-      addedClass = cssClass;
-    }
+    const addedClass = !cssClass ? 'highlight' : cssClass;
 
     return {
       highlight: function() {
@@ -183,18 +177,12 @@ interface Options {
 
   function postProcess(container: JQuery, w: Bracket, f: Bracket) {
     const source = f || w;
-
     const winner = source.winner();
     const loser = source.loser();
 
-    var winTrack = null;
-    var loseTrack = null;
-
     if (winner && loser) {
-      winTrack = trackHighlighter(winner.idx, 'highlightWinner', container);
-      loseTrack = trackHighlighter(loser.idx, 'highlightLoser', container);
-      winTrack.highlight();
-      loseTrack.highlight();
+      trackHighlighter(winner.idx, 'highlightWinner', container).highlight();
+      trackHighlighter(loser.idx, 'highlightLoser', container).highlight();
     }
 
     container.find('.team').mouseover(function() {
@@ -278,8 +266,8 @@ interface Options {
           round.addMatch(teamCb);
         }
         else {
-          var match = round.addMatch(teamCb, winnerBubbles);
           if (!skipGrandFinalComeback) {
+            var match = round.addMatch(teamCb, winnerBubbles);
             match.setAlignCb(function(tC) {
               tC.css('top', '');
               tC.css('position', 'absolute');
@@ -354,13 +342,10 @@ interface Options {
                 ];
               }
               else { /* match with dropped */
-                var winnerMatch = m;
                 /* To maximize the time it takes for two teams to play against
                  * eachother twice, WB losers are assigned in reverse order
                  * every second round of LB */
-                if (r % 2 === 0) {
-                  winnerMatch = matches - m - 1;
-                }
+                const winnerMatch = (r % 2 === 0) ? (matches - m - 1) : m;
                 return [
                   {source: losers.round(r * 2).match(m).winner},
                   {source: winners.round(r + 1).match(winnerMatch).loser}
@@ -489,9 +474,6 @@ interface Options {
       tC.css('top', (topShift) + 'px');
     });
 
-    var shift;
-    var height;
-
     if (!skipConsolationRound) {
       const fourth = losers.final().round().prev().match(0).loser;
       const consol = round.addMatch(function() {
@@ -519,6 +501,9 @@ interface Options {
     }
 
     winners.final().connectorCb(function(tC): Connector {
+      var shift;
+      var height;
+
       const connectorOffset = tC.height() / 4;
       const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
       const matchupOffset = topShift - winners.el.height() / 2;
@@ -539,6 +524,9 @@ interface Options {
     });
 
     losers.final().connectorCb(function(tC): Connector {
+      var shift;
+      var height;
+
       const connectorOffset = tC.height() / 4;
       const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
       const matchupOffset = topShift - winners.el.height() / 2;
@@ -570,18 +558,10 @@ interface Options {
       id: roundIdx,
       addMatch: function(teamCb: () => Array<MatchSource>, renderCb: () => boolean): Match {
         const matchIdx = matches.length;
-        var teams;
-
-        if (teamCb !== null) {
-          teams = teamCb();
-        }
-        else {
-          teams = [
-            {source: bracket.round(roundIdx - 1).match(matchIdx * 2).winner},
-            {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
-          ];
-        }
-
+        const teams = (teamCb !== null) ? teamCb() : [
+          {source: bracket.round(roundIdx - 1).match(matchIdx * 2).winner},
+          {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
+        ];
         const match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb);
         matches.push(match);
         return match;
@@ -622,11 +602,7 @@ interface Options {
       el: bracketCon,
       addRound: function(doRenderCb: () => boolean): Round {
         const id = rounds.length;
-        var previous = null;
-        if (id > 0) {
-          previous = rounds[id - 1];
-        }
-
+        const previous = (id > 0) ? rounds[id - 1] : null;
         const round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch);
         rounds.push(round);
         return round;
@@ -789,17 +765,9 @@ interface Options {
       function teamElement(round: number, team: TeamBlock, isReady: boolean) {
         const rId = resultIdentifier;
         const sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
-        var score;
-        if (!team.name || !isReady) {
-          score = '--';
-        }
-        else {
-          if (!isNumber(team.score)) {
-            score = '--';
-          } else {
-            score = team.score;
-          }
-        }
+        const score = (!team.name || !isReady)
+            ? '--'
+            : (!isNumber(team.score) ? '--' : team.score);
         sEl.append(score);
 
         resultIdentifier += 1;
@@ -862,15 +830,9 @@ interface Options {
               function editor() {
                 span.unbind();
 
-                var score;
-                if (!isNumber(team.score)) {
-                  score = '0';
-                }
-                else {
-                  score = span.text();
-                }
-
+                const score = !isNumber(team.score) ? '0' : span.text();
                 const input = $('<input type="text">');
+
                 input.val(score);
                 span.html(input);
 
@@ -1036,18 +998,16 @@ interface Options {
           match.a.idx = match.a.source().idx;
           match.b.idx = match.b.source().idx;
 
-          var isReady = false;
-          if ((match.a.name || match.a.name === '') &&
-              (match.b.name || match.b.name === '')) {
-            isReady = true;
-          }
-
           if (!matchWinner(match).name) {
             teamCon.addClass('np');
           }
           else {
             teamCon.removeClass('np');
           }
+
+          // Coerce truthy/falsy "isset()" for Typescript
+          const isReady = ((Boolean(match.a.name) || match.a.name === '')
+            && (Boolean(match.b.name) || match.b.name === ''));
 
           teamCon.append(teamElement(round.id, match.a, isReady));
           teamCon.append(teamElement(round.id, match.b, isReady));
@@ -1063,11 +1023,7 @@ interface Options {
             alignCb(teamCon);
           }
 
-          var isLast = false;
-          if (typeof(renderCb) === 'function') {
-            isLast = renderCb(this);
-          }
-
+          const isLast = (typeof(renderCb) === 'function') ? renderCb(this) : false;
           if (!isLast) {
             this.connect(connectorCb);
           }
@@ -1078,10 +1034,8 @@ interface Options {
       };
     }
 
-    var r = data.results;
-
     /* wrap data to into necessary arrays */
-    r = wrap(r, 4 - depth(r));
+    const r = wrap(data.results, 4 - depth(data.results));
     data.results = r;
 
     const isSingleElimination = (r.length <= 1);
@@ -1107,30 +1061,32 @@ interface Options {
       lEl = $('<div class="loserBracket"></div>').appendTo(topCon);
     }
 
-    var height = data.teams.length * 64;
+    const height = data.teams.length * 64;
 
     wEl.css('height', height);
 
     // reserve space for consolation round
     if (isSingleElimination && data.teams.length <= 2 && !opts.skipConsolationRound) {
-      height += 40;
-      topCon.css('height', height);
+      topCon.css('height', height + 40);
     }
 
     if (lEl) {
       lEl.css('height', wEl.height() / 2);
     }
 
-    var rounds;
-    if (isSingleElimination) {
-      rounds = Math.log(data.teams.length * 2) / Math.log(2);
+    function roundCount(teamCount) {
+      if (isSingleElimination) {
+        return Math.log(teamCount * 2) / Math.log(2);
+      }
+      else if (opts.skipGrandFinalComeback) {
+        return Math.max(2, (Math.log(teamCount * 2) / Math.log(2) - 1) * 2 - 1); // DE - grand finals
+      }
+      else {
+        return (Math.log(teamCount * 2) / Math.log(2) - 1) * 2 + 1; // DE + grand finals
+      }
     }
-    else if (opts.skipGrandFinalComeback) {
-      rounds = Math.max(2, (Math.log(data.teams.length * 2) / Math.log(2) - 1) * 2 - 1); // DE - grand finals
-    }
-    else {
-      rounds = (Math.log(data.teams.length * 2) / Math.log(2) - 1) * 2 + 1; // DE + grand finals
-    }
+
+    const rounds = roundCount(data.teams.length);
 
     if (opts.save) {
       topCon.css('width', rounds * 140 + 40);
@@ -1170,9 +1126,8 @@ interface Options {
     const tools = $('<div class="tools"></div>').appendTo(topCon);
     const inc = $('<span class="increment">+</span>').appendTo(tools);
     inc.click(function () {
-      var i;
       const len = data.teams.length;
-      for (i = 0; i < len; i += 1) {
+      for (var i = 0; i < len; i += 1) {
         data.teams.push(['', '']);
       }
       return JqueryBracket(opts);
@@ -1189,9 +1144,8 @@ interface Options {
       });
     }
 
-    var type;
     if (data.results.length === 1 && data.teams.length > 1) {
-      type = $('<span class="doubleElimination">de</span>').appendTo(tools);
+      const type = $('<span class="doubleElimination">de</span>').appendTo(tools);
       type.click(function () {
         if (data.teams.length > 1 && data.results.length < 3) {
           data.results.push([], []);
@@ -1200,7 +1154,7 @@ interface Options {
       });
     }
     else if (data.results.length === 3 && data.teams.length > 1) {
-      type = $('<span class="singleElimination">se</span>').appendTo(tools);
+      const type = $('<span class="singleElimination">se</span>').appendTo(tools);
       type.click(function () {
         if (data.results.length === 3) {
           data.results = data.results.slice(0, 1);
