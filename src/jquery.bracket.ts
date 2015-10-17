@@ -15,7 +15,7 @@ interface Connector {
 }
 
 interface ConnectorProvider {
-  (tc: any, match: Match): Connector;
+  (tc: JQuery, match: Match): Connector;
 }
 
 interface TeamBlock {
@@ -34,14 +34,14 @@ interface MatchIndicator {
 interface Match {
   el: JQuery;
   id: number;
-  round: any;
+  round: () => Round;
   connectorCb: (cb: ConnectorProvider) => void;
   connect: (cb: ConnectorProvider) => void;
   winner: () => TeamBlock;
   loser: () => TeamBlock;
   first: () => TeamBlock;
   second: () => TeamBlock;
-  setAlignCb: (cb: (Object) => void) => void;
+  setAlignCb: (cb: (JQuery) => void) => void;
   render: () => void;
   results: () => Array<number>;
 }
@@ -59,12 +59,16 @@ interface Round {
   prev: () => Round;
   size: () => number;
   render: () => void;
-  results: () => Array<Array<number>>;
+  results: () => Array<any>;
+}
+
+interface BoolCallback {
+  (): boolean;
 }
 
 interface Bracket {
   el: JQuery;
-  addRound: any;
+  addRound: (BoolCallback?) => Round;
   dropRound: () => void;
   round: (id: number) => Round;
   size: () => number;
@@ -89,9 +93,14 @@ interface Decorator {
   render: (container: JQuery, team: string, score: any) => void;
 }
 
+interface InitData {
+  teams: Array<Array<String>>;
+  results: Array<Array<any>>;
+}
+
 interface Options {
   el: JQuery;
-  init: any;
+  init: InitData;
   save: (data: any, userData: any) => void;
   userData: any;
   decorator: Decorator;
@@ -196,10 +205,10 @@ interface Options {
     });
   }
 
-  function defaultEdit(span: JQuery, data: string, done: DoneCallback) {
+  function defaultEdit(span: JQuery, data: string, done: DoneCallback): void {
     const input = $('<input type="text">');
     input.val(data);
-    span.html(input);
+    span.html(input.html());
     input.focus();
     input.blur(function() {
       done(input.val());
@@ -213,7 +222,7 @@ interface Options {
     });
   }
 
-  function defaultRender(container: JQuery, team: string, score: any) {
+  function defaultRender(container: JQuery, team: string, score: any): void {
     container.append(team);
   }
 
@@ -240,7 +249,7 @@ interface Options {
     {source: () => ({name: teams[m][1], idx: (m * 2 + 1)})}
   ];
 
-  const winnerAlignment = (match, skipConsolationRound: boolean) => (tC) => {
+  const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (tC: JQuery) => {
     tC.css('top', '');
     tC.css('position', 'absolute');
     if (skipConsolationRound) {
@@ -291,7 +300,7 @@ interface Options {
           },
           consolationBubbles);
 
-        consol.setAlignCb(function(tC) {
+        consol.setAlignCb(function(tC: JQuery) {
           const height = (winners.el.height()) / 2;
           consol.el.css('height', (height) + 'px');
 
@@ -327,7 +336,7 @@ interface Options {
     }
   };
 
-  const loserAlignment = (teamCon, match) => () => teamCon.css('top', (match.el.height() / 2 - teamCon.height() / 2) + 'px');
+  const loserAlignment = (teamCon: JQuery, match: Match) => () => teamCon.css('top', (match.el.height() / 2 - teamCon.height() / 2) + 'px');
 
   function prepareLosers(winners: Bracket, losers: Bracket, teamCount: number, skipGrandFinalComeback: boolean) {
     const rounds = Math.log(teamCount * 2) / Math.log(2) - 1;
@@ -533,7 +542,7 @@ interface Options {
   }
 
   function mkRound(bracket: Bracket,  previousRound: Round,
-                   roundIdx: number,  results,  doRenderCb: () => boolean, mkMatch): Round {
+                   roundIdx: number,  results,  doRenderCb: BoolCallback, mkMatch): Round {
     const matches: Array<Match> = [];
     const roundCon = $('<div class="round"></div>');
 
@@ -541,7 +550,7 @@ interface Options {
       el: roundCon,
       bracket: bracket,
       id: roundIdx,
-      addMatch: function(teamCb: () => Array<MatchSource>, renderCb: () => boolean): Match {
+      addMatch: function(teamCb: () => Array<MatchSource>, renderCb: BoolCallback): Match {
         const matchIdx = matches.length;
         const teams = (teamCb !== null) ? teamCb() : [
           {source: bracket.round(roundIdx - 1).match(matchIdx * 2).winner},
@@ -585,7 +594,7 @@ interface Options {
 
     return {
       el: bracketCon,
-      addRound: function(doRenderCb: () => boolean): Round {
+      addRound: function(doRenderCb: BoolCallback): Round {
         const id = rounds.length;
         const previous = (id > 0) ? rounds[id - 1] : null;
         const round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch);
@@ -595,7 +604,7 @@ interface Options {
       dropRound: function() {
         rounds.pop();
       },
-      round: function(id: number): Round {
+      round(id: number): Round {
         return rounds[id];
       },
       size: function(): number {
@@ -819,7 +828,7 @@ interface Options {
                 const input = $('<input type="text">');
 
                 input.val(score);
-                span.html(input);
+                span.html(input.html());
 
                 input.focus().select();
                 input.keydown(function(e) {
@@ -854,7 +863,7 @@ interface Options {
                   }
 
                   span.html(val);
-                  if (isNumber(val) && score !== parseInt(val, 10)) {
+                  if (isNumber(val) && parseInt(score, 10) !== parseInt(val, 10)) {
                     team.score = parseInt(val, 10);
                     renderAll(true);
                   }
@@ -870,10 +879,10 @@ interface Options {
       }
 
       var connectorCb: ConnectorProvider = null;
-      var alignCb = null;
+      var alignCb: (JQuery) => void = null;
 
       const matchCon = $('<div class="match"></div>');
-      const teamCon = $('<div class="teamContainer"></div>');
+      const teamCon: JQuery = $('<div class="teamContainer"></div>');
 
       if (!opts.save) {
         const matchUserData = (results ? results[2] : null);
@@ -971,7 +980,7 @@ interface Options {
         second: function(): TeamBlock {
           return match.b;
         },
-        setAlignCb: function(cb: Function) {
+        setAlignCb: function(cb: (JQuery) => void) {
           alignCb = cb;
         },
         render: function() {
@@ -1004,7 +1013,7 @@ interface Options {
           teamCon.css('top', (this.el.height() / 2 - teamCon.height() / 2) + 'px');
 
           /* todo: move to class */
-          if (alignCb) {
+          if (alignCb !== null) {
             alignCb(teamCon);
           }
 
