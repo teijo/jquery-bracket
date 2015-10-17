@@ -235,6 +235,22 @@ interface Options {
     return true;
   }
 
+  const winnerMatchSources = (teams, m: number) => () => [
+    {source: () => ({name: teams[m][0], idx: (m * 2)})},
+    {source: () => ({name: teams[m][1], idx: (m * 2 + 1)})}
+  ];
+
+  const winnerAlignment = (match, skipConsolationRound: boolean) => (tC) => {
+    tC.css('top', '');
+    tC.css('position', 'absolute');
+    if (skipConsolationRound) {
+      tC.css('top', (match.el.height() / 2 - tC.height() / 2) + 'px');
+    }
+    else {
+      tC.css('bottom', (-tC.height() / 2) + 'px');
+    }
+  };
+
   function prepareWinners(winners: Bracket, teams, isSingleElimination: boolean,
                           skipConsolationRound: boolean, skipGrandFinalComeback: boolean) {
     const rounds = Math.log(teams.length * 2) / Math.log(2);
@@ -245,39 +261,14 @@ interface Options {
       round = winners.addRound();
 
       for (var m = 0; m < matches; m += 1) {
-        var teamCb = null;
-
-        if (r === 0) {
-          teamCb = function() {
-            const t = teams[m];
-            const i = m;
-            return [
-              {source: function(): MatchIndicator {
-                return {name: t[0], idx: (i * 2)};
-              }},
-              {source: function(): MatchIndicator {
-                return {name: t[1], idx: (i * 2 + 1)};
-              }}
-            ];
-          };
-        }
-
+        const teamCb = (r === 0) ? winnerMatchSources(teams, m) : null;
         if (!(r === rounds - 1 && isSingleElimination) && !(r === rounds - 1 && skipGrandFinalComeback)) {
           round.addMatch(teamCb);
         }
         else {
           if (!skipGrandFinalComeback) {
-            var match = round.addMatch(teamCb, winnerBubbles);
-            match.setAlignCb(function(tC) {
-              tC.css('top', '');
-              tC.css('position', 'absolute');
-              if (skipConsolationRound) {
-                tC.css('top', (match.el.height() / 2 - tC.height() / 2) + 'px');
-              }
-              else {
-                tC.css('bottom', (-tC.height() / 2) + 'px');
-              }
-            });
+            const match = round.addMatch(teamCb, winnerBubbles);
+            match.setAlignCb(winnerAlignment(match, skipConsolationRound));
           }
         }
       }
@@ -316,6 +307,28 @@ interface Options {
     }
   }
 
+  const loserMatchSources = (winners, losers, matches, m, n, r) => () => {
+    /* first round comes from winner bracket */
+    if (n % 2 === 0 && r === 0) {
+      return [
+        {source: winners.round(0).match(m * 2).loser},
+        {source: winners.round(0).match(m * 2 + 1).loser}
+      ];
+    }
+    else { /* match with dropped */
+      /* To maximize the time it takes for two teams to play against
+       * eachother twice, WB losers are assigned in reverse order
+       * every second round of LB */
+      const winnerMatch = (r % 2 === 0) ? (matches - m - 1) : m;
+      return [
+        {source: losers.round(r * 2).match(m).winner},
+        {source: winners.round(r + 1).match(winnerMatch).loser}
+      ];
+    }
+  };
+
+  const loserAlignment = (teamCon, match) => () => teamCon.css('top', (match.el.height() / 2 - teamCon.height() / 2) + 'px');
+
   function prepareLosers(winners: Bracket, losers: Bracket, teamCount: number, skipGrandFinalComeback: boolean) {
     const rounds = Math.log(teamCount * 2) / Math.log(2) - 1;
     var matches = teamCount / 2;
@@ -329,38 +342,10 @@ interface Options {
         const round = losers.addRound();
 
         for (var m = 0; m < matches; m += 1) {
-          var teamCb: () => Array<MatchSource> = null;
-
-          /* special cases */
-          if (!(n % 2 === 0 && r !== 0)) {
-            teamCb = function() {
-              /* first round comes from winner bracket */
-              if (n % 2 === 0 && r === 0) {
-                return [
-                  {source: winners.round(0).match(m * 2).loser},
-                  {source: winners.round(0).match(m * 2 + 1).loser}
-                ];
-              }
-              else { /* match with dropped */
-                /* To maximize the time it takes for two teams to play against
-                 * eachother twice, WB losers are assigned in reverse order
-                 * every second round of LB */
-                const winnerMatch = (r % 2 === 0) ? (matches - m - 1) : m;
-                return [
-                  {source: losers.round(r * 2).match(m).winner},
-                  {source: winners.round(r + 1).match(winnerMatch).loser}
-                ];
-              }
-            };
-          }
-
+          const teamCb = (!(n % 2 === 0 && r !== 0)) ? loserMatchSources(winners, losers, matches, m, n, r) : null;
           const isLastMatch = r === rounds - 1 && skipGrandFinalComeback;
-
-          var match = round.addMatch(teamCb, isLastMatch ? consolationBubbles : null);
-          var teamCon = match.el.find('.teamContainer');
-          match.setAlignCb(function() {
-            teamCon.css('top', (match.el.height() / 2 - teamCon.height() / 2) + 'px');
-          });
+          const match = round.addMatch(teamCb, isLastMatch ? consolationBubbles : null);
+          match.setAlignCb(loserAlignment(match.el.find('.teamContainer'), match));
 
           if (isLastMatch) {
             // Override default connector
