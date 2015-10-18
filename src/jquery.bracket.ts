@@ -363,27 +363,24 @@ interface Options {
             });
           }
           else if (r < rounds - 1 || n < 1) {
-            var cb = null;
-            // inside lower bracket
-            if (n % 2 === 0) {
-              cb = function(tC, match): Connector {
-                const connectorOffset = tC.height() / 4;
-                var height = 0;
-                var shift = 0;
+            const cb = (n % 2 === 0) ? (tC, match): Connector => {
+              // inside lower bracket
+              const connectorOffset = tC.height() / 4;
+              var height = 0;
+              var shift = 0;
 
-                if (match.winner().id === 0) {
-                  shift = connectorOffset;
-                }
-                else if (match.winner().id === 1) {
-                  height = -connectorOffset * 2;
-                  shift = connectorOffset;
-                }
-                else {
-                  shift = connectorOffset * 2;
-                }
-                return {height: height, shift: shift};
-              };
-            }
+              if (match.winner().id === 0) {
+                shift = connectorOffset;
+              }
+              else if (match.winner().id === 1) {
+                height = -connectorOffset * 2;
+                shift = connectorOffset;
+              }
+              else {
+                shift = connectorOffset * 2;
+              }
+              return {height: height, shift: shift};
+            } : null;
             match.connectorCb(cb);
           }
         }
