@@ -1,5 +1,4 @@
-jQuery Bracket library
-======================
+# jQuery Bracket library
 
 jQuery bracket is a jQuery plugin that lets users create and display single and
 double elimination brackets for tournament play.
@@ -8,13 +7,23 @@ Feedback can be sent via mail to teijo(a)aropupu.fi or via IRC to Aroppuu @
 IRC/Quakenet. If you've found use for this script, I'd be happy to hear about
 it. Drop me a link and let me know if it can be shared on this project page.
 
-Download
---------
 
-Get latest pre-compiled version from `dist/`.
+## Examples
 
-Building
---------
+Examples can be found from the project site at http://www.aropupu.fi/bracket/
+
+
+## Installing
+
+Use `bower` (`npm install -g bower`) to install jQuery Bracket as a
+dependency. If you want to take a manual copy of the code, pre-compiled
+version can be found under `dist/`.
+
+`bower install jquery-bracket`
+
+
+## Development
+
 *   Install node
 *   Run `npm install -g typescript` to install TypeScript globally
 *   Run `npm install` to get dependencies
@@ -24,14 +33,11 @@ Building
 
 Minified files are compiled to `dist/` directory.
 
-Examples
---------
 
-Examples can be found from the project site at http://www.aropupu.fi/bracket/
+## Changes
 
-Changes
--------
-
+*   2015-10-21: Published `jquery-bracket` to Bower. You can now use
+    `bower install jquery-bracket` to install the library.
 *   2015-10-14: Tagged latest commit (3a4210c) as **0.6.0** to indicate it
     being the latest stable version and keep future development more flexible.
     From now on, take only a tagged version from this repository unless you're
