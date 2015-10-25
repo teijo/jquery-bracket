@@ -1,7 +1,7 @@
 /**
  * jQuery Bracket
  *
- * Copyright (c) 2011-2013, Teijo Laine,
+ * Copyright (c) 2011-2015, Teijo Laine,
  * http://aropupu.fi/bracket/
  *
  * Licenced under the MIT licence
@@ -82,6 +82,7 @@ interface Bracket {
 interface MatchResult {
   a: TeamBlock;
   b: TeamBlock;
+  data: any;
 }
 
 interface DoneCallback {
@@ -108,6 +109,7 @@ interface Options {
   skipSecondaryFinal: boolean;
   skipGrandFinalComeback: boolean;
   dir: string;
+  determineWinner: (data: any) => void;
   onMatchClick: (data: any) => void;
   onMatchHover: (data: any, hover: boolean) => void;
 }
@@ -752,7 +754,24 @@ interface Options {
 
     function mkMatch(round: Round, data: Array<TeamBlock>, idx: number,
                      results, renderCb: Function): Match {
-      const match: MatchResult = {a: data[0], b: data[1]};
+      const match: MatchResult = {a: data[0], b: data[1], data: null};
+	  
+	  function determineMatchWinner(match: MatchResult) {
+		if (opts.determineWinner) {
+			return opts.determineWinner(match)[0] || emptyTeam();
+		} else {
+			return matchWinner(match); 
+		}
+	  }
+	  
+	  function determineMatchLoser(match: MatchResult) {
+		if (opts.determineWinner) {
+			return opts.determineWinner(match)[1] || emptyTeam();
+		} else {
+			return matchLoser(match);
+		}
+	  }
+	  
       function teamElement(round: number, team: TeamBlock, isReady: boolean) {
         const rId = resultIdentifier;
         const sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
@@ -780,10 +799,10 @@ interface Options {
         if (team.name === null) {
           tEl.addClass('na');
         }
-        else if (matchWinner(match).name === team.name) {
+        else if (determineMatchWinner(match).name === team.name) {
           tEl.addClass('win');
         }
-        else if (matchLoser(match).name === team.name) {
+        else if (determineMatchLoser(match).name === team.name) {
           tEl.addClass('lose');
         }
 
@@ -896,6 +915,14 @@ interface Options {
           teamCon.click(function () { opts.onMatchClick(matchUserData); });
         }
       }
+	  
+	  if (opts.determineWinner) {
+		  const matchUserData = (results ? results[2] : null);
+		  match.data = matchUserData;
+		  function teamsInResultOrder(match: MatchResult) {
+			  return [];
+		  }
+	  }
 
       match.a.id = 0;
       match.b.id = 1;
@@ -969,8 +996,8 @@ interface Options {
           }
           teamCon.append(connector(height, shift, teamCon, align));
         },
-        winner: function() { return matchWinner(match); },
-        loser: function() { return matchLoser(match); },
+        winner: function() { return determineMatchWinner(match) },
+        loser: function() { return determineMatchLoser(match) },
         first: function(): TeamBlock {
           return match.a;
         },
