@@ -275,8 +275,8 @@ interface Options {
           round.addMatch(teamCb);
         }
         else {
+          const match = round.addMatch(teamCb, winnerBubbles);
           if (!skipGrandFinalComeback) {
-            const match = round.addMatch(teamCb, winnerBubbles);
             match.setAlignCb(winnerAlignment(match, skipConsolationRound));
           }
         }
