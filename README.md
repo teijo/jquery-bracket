@@ -36,6 +36,8 @@ Minified files are compiled to `dist/` directory.
 
 ## Changes
 
+*   2015-11-07: **0.7.0** including source cleanup and new feature flag:
+    [`skipGrandFinalComeback`](http://www.aropupu.fi/bracket/#noGrandFinalComeback).
 *   2015-10-21: Published `jquery-bracket` to Bower. You can now use
     `bower install jquery-bracket` to install the library.
 *   2015-10-14: Tagged latest commit (3a4210c) as **0.6.0** to indicate it
