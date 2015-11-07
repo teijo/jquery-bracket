@@ -208,7 +208,7 @@ interface Options {
   function defaultEdit(span: JQuery, data: string, done: DoneCallback): void {
     const input = $('<input type="text">');
     input.val(data);
-    span.html(input.html());
+    span.html(input);
     input.focus();
     input.blur(function() {
       done(input.val());
@@ -825,7 +825,7 @@ interface Options {
                 const input = $('<input type="text">');
 
                 input.val(score);
-                span.html(input.html());
+                span.html(input);
 
                 input.focus().select();
                 input.keydown(function(e) {
