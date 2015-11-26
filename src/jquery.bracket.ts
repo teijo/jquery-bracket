@@ -860,7 +860,7 @@ interface Options {
                   }
 
                   span.html(val);
-                  if (isNumber(val) && parseInt(score, 10) !== parseInt(val, 10)) {
+                  if (isNumber(val)) {
                     team.score = parseInt(val, 10);
                     renderAll(true);
                   }
