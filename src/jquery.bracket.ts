@@ -101,7 +101,9 @@ interface InitData {
 interface Options {
   el: JQuery;
   init: InitData;
-  save: (data: any, userData: any) => void;
+  save: {callback: (data: any, userData: any) => void;
+        disableNameEdit: boolean;
+        disableFormatEdit: boolean};
   userData: any;
   decorator: Decorator;
   skipConsolationRound: boolean;
@@ -745,7 +747,7 @@ interface Options {
           data.results[2] = f.results();
         }
         if (opts.save) {
-          opts.save(data, opts.userData);
+          opts.save.callback(data, opts.userData);
         }
       }
     }
@@ -790,29 +792,31 @@ interface Options {
         tEl.append(sEl);
 
         if (!(team.name === null || !isReady || !opts.save) && opts.save) {
-          nEl.addClass('editable');
-          nEl.click(function() {
-            const span = $(this);
+          if (!opts.save.disableNameEdit) {
+            nEl.addClass('editable');
+            nEl.click(function () {
+              const span = $(this);
 
-            function editor() {
-              function done_fn(val, next: boolean) {
-                if (val) {
-                  opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val;
+              function editor() {
+                function done_fn(val, next: boolean) {
+                  if (val) {
+                    opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val;
+                  }
+                  renderAll(true);
+                  span.click(editor);
+                  const labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] div.label:first');
+                  if (labels.length && next === true && round === 0) {
+                    $(labels).click();
+                  }
                 }
-                renderAll(true);
-                span.click(editor);
-                const labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] div.label:first');
-                if (labels.length && next === true && round === 0) {
-                  $(labels).click();
-                }
+
+                span.unbind();
+                opts.decorator.edit(span, team.name, done_fn);
               }
 
-              span.unbind();
-              opts.decorator.edit(span, team.name, done_fn);
-            }
-
-            editor();
-          });
+              editor();
+            });
+          }
           if (team.name) {
             sEl.addClass('editable');
             sEl.click(function() {
@@ -1035,7 +1039,7 @@ interface Options {
       $.error('skipSecondaryFinal setting is viable only in double elimination mode');
     }
 
-    if (opts.save) {
+    if (opts.save && !opts.save.disableFormatEdit) {
       embedEditButtons(topCon, data, opts);
     }
 
@@ -1167,6 +1171,10 @@ interface Options {
       opts.init.teams = !opts.init.teams || opts.init.teams.length === 0 ? [['', '']] : opts.init.teams;
       opts.skipConsolationRound = opts.skipConsolationRound || false;
       opts.skipSecondaryFinal = opts.skipSecondaryFinal || false;
+      if (opts.save) {
+        opts.save.disableFormatEdit = opts.save.disableFormatEdit || false;
+        opts.save.disableNameEdit = opts.save.disableNameEdit || false;
+      }
       if (opts.dir !== 'lr' && opts.dir !== 'rl') {
         $.error('Direction must be either: "lr" or "rl"');
       }
