@@ -1157,7 +1157,8 @@ interface Options {
 
 
   const methods = {
-    init: function(opts: Options) {
+    init: function(originalOpts: Options) {
+      const opts = $.extend(true, {}, originalOpts); // Do not mutate inputs
       const that = this;
       opts.el = this;
       if (opts.save && (opts.onMatchClick || opts.onMatchHover)) {
