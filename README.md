@@ -36,6 +36,7 @@ Minified files are compiled to `dist/` directory.
 
 ## Changes
 
+*   2015-12-11: **0.7.3** Do not mutate original initialization data.
 *   2015-11-26: **0.7.2** Fix #49, the score initialization bug.
 *   2015-11-07: **0.7.1** (hotfix) ~~0.7.0~~ including source cleanup and new feature flag:
     [`skipGrandFinalComeback`](http://www.aropupu.fi/bracket/#noGrandFinalComeback).
