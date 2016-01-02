@@ -8,6 +8,11 @@ IRC/Quakenet. If you've found use for this script, I'd be happy to hear about
 it. Drop me a link and let me know if it can be shared on this project page.
 
 
+## [GotBracket.com](http://www.gotbracket.com/), follow and host tournaments - powered by jQuery Bracket
+
+To get an idea of how you could use the library, or if you're just looking for a quick way of hosting and tracking tournaments online, check out [GotBracket.com](http://www.gotbracket.com/) - early access out now!
+
+
 ## Examples
 
 Examples can be found from the project site at http://www.aropupu.fi/bracket/
