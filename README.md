@@ -26,6 +26,10 @@ version can be found under `dist/`.
 
 `bower install jquery-bracket`
 
+You can also use `npm`:
+
+`npm install jquery-bracket`
+
 
 ## Development
 
