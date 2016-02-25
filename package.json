@@ -1,6 +1,6 @@
 {
-  "name": "jquery.bracket",
-  "version": "0.7.1",
+  "name": "jquery-bracket",
+  "version": "0.7.3",
   "devDependencies": {
     "grunt": "^0.4.4",
     "grunt-cli": "^0.1.13",
