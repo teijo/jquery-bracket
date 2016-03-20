@@ -24,6 +24,7 @@ interface TeamBlock {
   id: number;
   idx: number;
   score: number;
+  isBye: boolean;
 }
 
 interface MatchIndicator {
@@ -56,6 +57,7 @@ interface Round {
   bracket: Bracket;
   addMatch: (teamCb: () => Array<MatchSource>, renderCb: (match: Match) => boolean) =>  Match;
   match: (id: number) => Match;
+  matches: () => Array<Match>;
   prev: () => Round;
   size: () => number;
   render: () => void;
@@ -110,6 +112,7 @@ interface Options {
   dir: string;
   onMatchClick: (data: any) => void;
   onMatchHover: (data: any, hover: boolean) => void;
+  unevenBracket: boolean;
 }
 
 (function($) {
@@ -137,10 +140,16 @@ interface Options {
   }
 
   function emptyTeam(): TeamBlock {
-     return {source: null, name: null, id: -1, idx: -1, score: null};
+     return {source: null, name: null, id: -1, idx: -1, score: null, isBye: false};
   }
 
   function teamsInResultOrder(match: MatchResult) {
+    if (match.a.isBye) {
+        return [match.b, match.a];
+    }
+    if (match.b.isBye) {
+        return [match.a, match.b];
+    }
     if (isNumber(match.a.score) && isNumber(match.b.score)) {
       if (match.a.score > match.b.score) {
         return [match.a, match.b];
@@ -245,8 +254,8 @@ interface Options {
   }
 
   const winnerMatchSources = (teams, m: number) => () => [
-    {source: () => ({name: teams[m][0], idx: (m * 2)})},
-    {source: () => ({name: teams[m][1], idx: (m * 2 + 1)})}
+    {source: () => ({name: teams[m][0], idx: (m * 2), isBye: teams[m][0] ? false : true})},
+    {source: () => ({name: teams[m][1], idx: (m * 2 + 1), isBye: teams[m][1] ? false : true})}
   ];
 
   const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (tC: JQuery) => {
@@ -548,17 +557,20 @@ interface Options {
       bracket: bracket,
       id: roundIdx,
       addMatch: function(teamCb: () => Array<MatchSource>, renderCb: BoolCallback): Match {
-        const matchIdx = matches.length;
+        const matchIdx = matches.filter(m => !m.loser().isBye).length;
         const teams = (teamCb !== null) ? teamCb() : [
           {source: bracket.round(roundIdx - 1).match(matchIdx * 2).winner},
           {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
         ];
-        const match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb);
+        const match = mkMatch(this, teams, matches.length, !results ? null : results[matchIdx], renderCb);
         matches.push(match);
         return match;
       },
       match: function(id: number): Match {
         return matches[id];
+      },
+      matches : function(): Array<Match> {
+          return matches;
       },
       prev: function(): Round {
         return previousRound;
@@ -592,9 +604,9 @@ interface Options {
     return {
       el: bracketCon,
       addRound: function(doRenderCb: BoolCallback): Round {
-        const id = rounds.length;
+        const id = rounds.filter(r => r.matches().some(m => !m.loser().isBye)).length;
         const previous = (id > 0) ? rounds[id - 1] : null;
-        const round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch);
+        const round = mkRound(this, previous, rounds.length, !results ? null : results[id], doRenderCb, mkMatch);
         rounds.push(round);
         return round;
       },
@@ -903,8 +915,13 @@ interface Options {
       match.a.name = match.a.source().name;
       match.b.name = match.b.source().name;
 
-      match.a.score = !results ? null : results[0];
-      match.b.score = !results ? null : results[1];
+      match.a.isBye = match.a.source().isBye;
+      match.b.isBye = match.b.source().isBye;
+
+      if (!match.a.isBye && !match.b.isBye) {
+          match.a.score = !results ? null : results[0];
+          match.b.score = !results ? null : results[1];
+      }
 
       /* match has score even though teams haven't yet been decided */
       /* todo: would be nice to have in preload check, maybe too much work */
@@ -989,22 +1006,24 @@ interface Options {
           match.a.idx = match.a.source().idx;
           match.b.idx = match.b.source().idx;
 
-          if (!matchWinner(match).name) {
-            teamCon.addClass('np');
+          if (!match.a.source().isBye && !match.b.source().isBye) {
+              if (!matchWinner(match).name) {
+                teamCon.addClass('np');
+              }
+              else {
+                teamCon.removeClass('np');
+              }
+
+              // Coerce truthy/falsy "isset()" for Typescript
+              const isReady = ((Boolean(match.a.name) || match.a.name === '')
+                && (Boolean(match.b.name) || match.b.name === ''));
+
+              teamCon.append(teamElement(round.id, match.a, isReady));
+              teamCon.append(teamElement(round.id, match.b, isReady));
+
+              matchCon.append(teamCon);
           }
-          else {
-            teamCon.removeClass('np');
-          }
-
-          // Coerce truthy/falsy "isset()" for Typescript
-          const isReady = ((Boolean(match.a.name) || match.a.name === '')
-            && (Boolean(match.b.name) || match.b.name === ''));
-
-          teamCon.append(teamElement(round.id, match.a, isReady));
-          teamCon.append(teamElement(round.id, match.b, isReady));
-
           matchCon.appendTo(round.el);
-          matchCon.append(teamCon);
 
           this.el.css('height', (round.bracket.el.height() / round.size()) + 'px');
           teamCon.css('top', (this.el.height() / 2 - teamCon.height() / 2) + 'px');
@@ -1050,6 +1069,23 @@ interface Options {
       }
       wEl = $('<div class="bracket"></div>').appendTo(topCon);
       lEl = $('<div class="loserBracket"></div>').appendTo(topCon);
+    }
+
+    if (opts.unevenBracket) {
+        var insertByes = (teams) => {
+            var outer = teams[0];
+            var inner = teams.length > 2 ? insertByes(teams.slice(1)) : teams[1];
+            var newTeams = [];
+
+            var outerIdx = 0;
+            for (var team of inner) {
+                newTeams.push(team[0] ? [team[0], undefined] : outer[outerIdx++]);
+                newTeams.push(team[1] ? [team[1], undefined] : outer[outerIdx++]);
+            }
+
+            return newTeams;
+        };
+        data.teams = insertByes(data.teams);
     }
 
     const height = data.teams.length * 64;
