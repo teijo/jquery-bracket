@@ -110,6 +110,8 @@ interface Options {
   dir: string;
   onMatchClick: (data: any) => void;
   onMatchHover: (data: any, hover: boolean) => void;
+  roundWidth: number;
+  teamHeight: number;
 }
 
 (function($) {
@@ -390,7 +392,7 @@ interface Options {
   }
 
   function prepareFinals(finals: Bracket, winners: Bracket, losers: Bracket,
-                         skipSecondaryFinal: boolean, skipConsolationRound: boolean, topCon: JQuery) {
+                         skipSecondaryFinal: boolean, skipConsolationRound: boolean, topCon: JQuery, roundWidth: number) {
     const round = finals.addRound();
     const match = round.addMatch(function() {
         return [
@@ -412,13 +414,13 @@ interface Options {
             if (_isResized === false) {
               if (rematch) {
                 _isResized = true;
-                topCon.css('width', (parseInt(topCon.css('width'), 10) + 140) + 'px');
+                topCon.css('width', (parseInt(topCon.css('width'), 10) + roundWidth) + 'px');
               }
             }
             if (!rematch && _isResized) {
               _isResized = false;
               finals.dropRound();
-              topCon.css('width', (parseInt(topCon.css('width'), 10) - 140) + 'px');
+              topCon.css('width', (parseInt(topCon.css('width'), 10) - roundWidth) + 'px');
             }
             return rematch;
           });
@@ -701,7 +703,6 @@ interface Options {
     if (opts.userData === undefined) {
       opts.userData = null;
     }
-
     if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render)) {
       throw Error('Invalid decorator input');
     }
@@ -1052,7 +1053,7 @@ interface Options {
       lEl = $('<div class="loserBracket"></div>').appendTo(topCon);
     }
 
-    const height = data.teams.length * 64;
+    const height = data.teams.length * opts.teamHeight;
 
     wEl.css('height', height);
 
@@ -1080,10 +1081,10 @@ interface Options {
     const rounds = roundCount(data.teams.length);
 
     if (opts.save) {
-      topCon.css('width', rounds * 140 + 40);
+      topCon.css('width', rounds * opts.roundWidth + 40);
     }
     else {
-      topCon.css('width', rounds * 140 + 10);
+      topCon.css('width', rounds * opts.roundWidth + 10);
     }
 
     w = mkBracket(wEl, !r || !r[0] ? null : r[0], mkMatch);
@@ -1100,7 +1101,7 @@ interface Options {
     if (!isSingleElimination) {
       prepareLosers(w, l, data.teams.length, opts.skipGrandFinalComeback);
       if (!opts.skipGrandFinalComeback) {
-        prepareFinals(f, w, l, opts.skipSecondaryFinal, opts.skipConsolationRound, topCon);
+        prepareFinals(f, w, l, opts.skipSecondaryFinal, opts.skipConsolationRound, topCon, opts.roundWidth);
       }
     }
 
@@ -1164,6 +1165,9 @@ interface Options {
       if (opts.save && (opts.onMatchClick || opts.onMatchHover)) {
         $.error('Match callbacks may not be passed in edit mode (in conjunction with save callback)');
       }
+      opts.roundWidth = opts.roundWidth || 100;
+      opts.teamHeight = opts.teamHeight || 64;
+      opts.roundWidth = parseInt(opts.roundWidth, 10) + 40;
       opts.dir = opts.dir || 'lr';
       opts.init.teams = !opts.init.teams || opts.init.teams.length === 0 ? [['', '']] : opts.init.teams;
       opts.skipConsolationRound = opts.skipConsolationRound || false;
