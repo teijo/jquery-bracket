@@ -19,7 +19,7 @@ module.exports = function(grunt) {
       },
       dist: {
         files: {
-          'dist/<%= pkg.name %>.min.css': 'dist/<%= pkg.name %>.css'
+          'dist/jquery.bracket.min.css': 'dist/jquery.bracket.css'
         }
       }
     },
@@ -30,7 +30,7 @@ module.exports = function(grunt) {
       },
       dist: {
         files: {
-          'dist/<%= pkg.name %>.min.js': ['dist/<%= pkg.name %>.js']
+          'dist/jquery.bracket.min.js': ['dist/jquery.bracket.js']
         }
       }
     },
