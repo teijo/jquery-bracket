@@ -750,136 +750,136 @@ interface Options {
       }
     }
 
-    function mkMatch(round: Round, data: Array<TeamBlock>, idx: number,
-                     results, renderCb: Function): Match {
-      const match: MatchResult = {a: data[0], b: data[1]};
-      function teamElement(round: number, team: TeamBlock, isReady: boolean) {
-        const rId = resultIdentifier;
-        const sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
-        const score = (!team.name || !isReady)
-            ? '--'
-            : (!isNumber(team.score) ? '--' : team.score);
-        sEl.append(score);
+    function teamElement(round: number, match: MatchResult, team: TeamBlock, isReady: boolean) {
+      const rId = resultIdentifier;
+      const sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
+      const score = (!team.name || !isReady)
+          ? '--'
+          : (!isNumber(team.score) ? '--' : team.score);
+      sEl.append(score);
 
-        resultIdentifier += 1;
+      resultIdentifier += 1;
 
-        const name = !team.name ? '--' : team.name;
-        const tEl = $('<div class="team"></div>');
-        const nEl = $('<div class="label"></div>').appendTo(tEl);
+      const name = !team.name ? '--' : team.name;
+      const tEl = $('<div class="team"></div>');
+      const nEl = $('<div class="label"></div>').appendTo(tEl);
 
-        if (round === 0) {
-          tEl.attr('data-resultid', 'team-' + rId);
-        }
+      if (round === 0) {
+        tEl.attr('data-resultid', 'team-' + rId);
+      }
 
-        opts.decorator.render(nEl, name, score);
+      opts.decorator.render(nEl, name, score);
 
-        if (isNumber(team.idx)) {
-          tEl.attr('data-teamid', team.idx);
-        }
+      if (isNumber(team.idx)) {
+        tEl.attr('data-teamid', team.idx);
+      }
 
-        if (team.name === null) {
-          tEl.addClass('na');
-        }
-        else if (matchWinner(match).name === team.name) {
-          tEl.addClass('win');
-        }
-        else if (matchLoser(match).name === team.name) {
-          tEl.addClass('lose');
-        }
+      if (team.name === null) {
+        tEl.addClass('na');
+      }
+      else if (matchWinner(match).name === team.name) {
+        tEl.addClass('win');
+      }
+      else if (matchLoser(match).name === team.name) {
+        tEl.addClass('lose');
+      }
 
-        tEl.append(sEl);
+      tEl.append(sEl);
 
-        if (!(team.name === null || !isReady || !opts.save) && opts.save) {
-          nEl.addClass('editable');
-          nEl.click(function() {
+      if (!(team.name === null || !isReady || !opts.save) && opts.save) {
+        nEl.addClass('editable');
+        nEl.click(function() {
+          const span = $(this);
+
+          function editor() {
+            function done_fn(val, next: boolean) {
+              if (val) {
+                opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val;
+              }
+              renderAll(true);
+              span.click(editor);
+              const labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] div.label:first');
+              if (labels.length && next === true && round === 0) {
+                $(labels).click();
+              }
+            }
+
+            span.unbind();
+            opts.decorator.edit(span, team.name, done_fn);
+          }
+
+          editor();
+        });
+        if (team.name) {
+          sEl.addClass('editable');
+          sEl.click(function() {
             const span = $(this);
 
             function editor() {
-              function done_fn(val, next: boolean) {
-                if (val) {
-                  opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val;
-                }
-                renderAll(true);
-                span.click(editor);
-                const labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] div.label:first');
-                if (labels.length && next === true && round === 0) {
-                  $(labels).click();
-                }
-              }
-
               span.unbind();
-              opts.decorator.edit(span, team.name, done_fn);
+
+              const score = !isNumber(team.score) ? '0' : span.text();
+              const input = $('<input type="text">');
+
+              input.val(score);
+              span.html(input);
+
+              input.focus().select();
+              input.keydown(function(e) {
+                if (!isNumber($(this).val())) {
+                  $(this).addClass('error');
+                }
+                else {
+                  $(this).removeClass('error');
+                }
+
+                const key = (e.keyCode || e.which);
+                if (key === 9 || key === 13 || key === 27) {
+                  e.preventDefault();
+                  $(this).blur();
+                  if (key === 27) {
+                    return;
+                  }
+
+                  const next = topCon.find('div.score[data-resultid=result-' + (rId + 1) + ']');
+                  if (next) {
+                    next.click();
+                  }
+                }
+              });
+              input.blur(function() {
+                var val = input.val();
+                if ((!val || !isNumber(val)) && !isNumber(team.score)) {
+                  val = '0';
+                }
+                else if ((!val || !isNumber(val)) && isNumber(team.score)) {
+                  val = team.score;
+                }
+
+                span.html(val);
+                if (isNumber(val)) {
+                  team.score = parseInt(val, 10);
+                  renderAll(true);
+                }
+                span.click(editor);
+              });
             }
 
             editor();
           });
-          if (team.name) {
-            sEl.addClass('editable');
-            sEl.click(function() {
-              const span = $(this);
-
-              function editor() {
-                span.unbind();
-
-                const score = !isNumber(team.score) ? '0' : span.text();
-                const input = $('<input type="text">');
-
-                input.val(score);
-                span.html(input);
-
-                input.focus().select();
-                input.keydown(function(e) {
-                  if (!isNumber($(this).val())) {
-                    $(this).addClass('error');
-                  }
-                  else {
-                    $(this).removeClass('error');
-                  }
-
-                  const key = (e.keyCode || e.which);
-                  if (key === 9 || key === 13 || key === 27) {
-                    e.preventDefault();
-                    $(this).blur();
-                    if (key === 27) {
-                      return;
-                    }
-
-                    const next = topCon.find('div.score[data-resultid=result-' + (rId + 1) + ']');
-                    if (next) {
-                      next.click();
-                    }
-                  }
-                });
-                input.blur(function() {
-                  var val = input.val();
-                  if ((!val || !isNumber(val)) && !isNumber(team.score)) {
-                    val = '0';
-                  }
-                  else if ((!val || !isNumber(val)) && isNumber(team.score)) {
-                    val = team.score;
-                  }
-
-                  span.html(val);
-                  if (isNumber(val)) {
-                    team.score = parseInt(val, 10);
-                    renderAll(true);
-                  }
-                  span.click(editor);
-                });
-              }
-
-              editor();
-            });
-          }
         }
-        return tEl;
       }
+      return tEl;
+    }
+
+    function mkMatch(round: Round, data: Array<TeamBlock>, idx: number,
+                     results, renderCb: Function): Match {
+      const match: MatchResult = {a: data[0], b: data[1]};
+      const matchCon = $('<div class="match"></div>');
+      const teamCon: JQuery = $('<div class="teamContainer"></div>');
 
       var connectorCb: ConnectorProvider = null;
       var alignCb: (JQuery) => void = null;
-
-      const matchCon = $('<div class="match"></div>');
-      const teamCon: JQuery = $('<div class="teamContainer"></div>');
 
       if (!opts.save) {
         const matchUserData = (results ? results[2] : null);
@@ -1000,8 +1000,8 @@ interface Options {
           const isReady = ((Boolean(match.a.name) || match.a.name === '')
             && (Boolean(match.b.name) || match.b.name === ''));
 
-          teamCon.append(teamElement(round.id, match.a, isReady));
-          teamCon.append(teamElement(round.id, match.b, isReady));
+          teamCon.append(teamElement(round.id, match, match.a, isReady));
+          teamCon.append(teamElement(round.id, match, match.b, isReady));
 
           matchCon.appendTo(round.el);
           matchCon.append(teamCon);
