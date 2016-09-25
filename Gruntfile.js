@@ -8,9 +8,11 @@ module.exports = function(grunt) {
         tasks: ['default']
       }
     },
-    shell: {
-      compass: {
-        command: 'compass compile'
+    sass: {
+      dist: {
+        files: {
+          'dist/jquery.bracket.css': 'src/jquery.bracket.sass'
+        }
       }
     },
     cssmin: {
@@ -50,12 +52,12 @@ module.exports = function(grunt) {
     }
   });
 
+  grunt.loadNpmTasks('grunt-sass');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
-  grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-typescript');
   grunt.loadNpmTasks('grunt-tslint');
   grunt.loadNpmTasks('grunt-css');
 
-  grunt.registerTask('default', ['tslint', 'shell', 'typescript', 'uglify', 'cssmin']);
+  grunt.registerTask('default', ['tslint', 'sass', 'typescript', 'uglify', 'cssmin']);
 };

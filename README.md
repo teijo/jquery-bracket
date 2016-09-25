@@ -31,10 +31,7 @@ You can also use `npm`:
 
 *   Install node
 *   Run `npm install -g typescript` to install TypeScript globally
-*   Run `npm install` to get dependencies
-*   Install Ruby compass `gem install compass`
-*   Run `grunt watch` to auto-compile changed files in src/
-*   Run `grunt` to compile once
+*   Run `npm start` to get dependencies and start "watch" for changes under `src/`
 
 Minified files are compiled to `dist/` directory.
 
