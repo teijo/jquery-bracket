@@ -6,7 +6,7 @@
     "Teijo Laine"
   ],
   "description": "Library for organizing single and double elimination tournaments",
-  "main": "dist/jquery.bracket.min.js",
+  "main": ["dist/jquery.bracket.min.js","dist/jquery.bracket.min.css"],
   "keywords": [
     "library",
     "tournament",
