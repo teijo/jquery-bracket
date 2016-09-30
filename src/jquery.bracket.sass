@@ -16,6 +16,7 @@ $connectorColor: #666
 
 $boxHeight: 22px
 $boxPadding: 3px
+$boxWidth: 100px
 
 div.jQBracket
   font-family: "Arial"
@@ -56,7 +57,7 @@ div.jQBracket
 
   .round
     position: relative
-    width: 100px
+    width: $boxWidth
     margin-right: 40px
     float: left
 
@@ -71,8 +72,9 @@ div.jQBracket
     z-index: 1
     float: left
     background-color: #EEE
-    width: 100px
+    width: $boxWidth
     cursor: default
+    height: $boxHeight
 
     &:first-child
       border-bottom: 1px solid #999
@@ -87,7 +89,7 @@ div.jQBracket
     div.label
       padding: $boxPadding
       position: absolute
-      width: 70px
+      width: $boxWidth - 30px
       height: $boxHeight
       white-space: nowrap
       overflow: hidden
