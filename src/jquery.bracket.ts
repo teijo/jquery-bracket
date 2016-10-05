@@ -222,6 +222,10 @@
 
     container.find('.team').mouseover(function() {
       const i = $(this).attr('data-teamid');
+      // Don't highlight BYEs
+      if (parseInt(i, 10) === -1) {
+        return;
+      }
       const track = trackHighlighter(i, null, container);
       track.highlight();
       $(this).mouseout(function() {
