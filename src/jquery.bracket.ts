@@ -769,7 +769,9 @@ interface Options {
           data.results[2] = f.results();
         }
         if (opts.save) {
-          opts.save(data, opts.userData);
+          const output = $.extend(true, {}, data);
+          output.teams = output.teams.map(ts => ts.map(t => t.getOr(null)));
+          opts.save(output, opts.userData);
         }
       }
     }
