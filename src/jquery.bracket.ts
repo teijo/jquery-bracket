@@ -151,8 +151,23 @@
     return a;
   }
 
-  function emptyTeam(): TeamBlock {
-     return {source: null, name: new Team(null), id: -1, idx: -1, score: null};
+  // Arbitrary (either parent) source is required so that branch emptiness
+  // can be determined by traversing to the beginning.
+  function emptyTeam(source: () => TeamBlock): TeamBlock {
+     return {source: source, name: new Team(null), id: -1, idx: -1, score: null};
+  }
+
+  // Recursively check if branch ends into a BYE
+  function emptyBranch(block: TeamBlock) {
+    const isBye = block.name.isBye();
+
+    if (block.source === undefined || block.source === null || !isBye) {
+        return isBye;
+    } else if (typeof(block.source) === 'function') {
+      return emptyBranch(block.source());
+    } else {
+      throw new Error('fail');
+    }
   }
 
   function teamsInResultOrder(match: MatchResult) {
@@ -160,9 +175,17 @@
     const bBye = match.b.name.isBye();
 
     if (bBye && !aBye) {
-      return [match.a, match.b];
+      if (emptyBranch(match.b)) {
+        return [match.a, match.b];
+      } else {
+        return [];
+      }
     } else if (aBye && !bBye) {
-      return [match.b, match.a];
+      if (emptyBranch(match.a)) {
+        return [match.b, match.a];
+      } else {
+        return [];
+      }
     } else if (isNumber(match.a.score) && isNumber(match.b.score)) {
       if (match.a.score > match.b.score) {
         return [match.a, match.b];
@@ -175,11 +198,11 @@
   }
 
   function matchWinner(match: MatchResult): TeamBlock {
-    return teamsInResultOrder(match)[0] || emptyTeam();
+    return teamsInResultOrder(match)[0] || emptyTeam(match.a.source);
   }
 
   function matchLoser(match: MatchResult): TeamBlock {
-    return teamsInResultOrder(match)[1] || emptyTeam();
+    return teamsInResultOrder(match)[1] || emptyTeam(match.a.source);
   }
 
   function trackHighlighter(teamIndex: number, cssClass: string, container: JQuery) {
