@@ -905,7 +905,7 @@
     }
 
     function mkMatch(round: Round, data: Array<TeamBlock>, idx: number,
-                     results, renderCb: Function): Match {
+                     results: Array<number>, renderCb: Function): Match {
       const match: MatchResult = {a: data[0], b: data[1]};
       const matchCon = $('<div class="match"></div>');
       const teamCon: JQuery = $('<div class="teamContainer"></div>');
@@ -1055,6 +1055,11 @@
           }
         },
         results: function() {
+          // Either team is bye -> reset (mutate) scores from that match
+          const hasBye = match.a.name.isBye() || match.b.name.isBye();
+          if (hasBye) {
+            match.a.score = match.b.score = null;
+          }
           return [match.a.score, match.b.score];
         }
       };
