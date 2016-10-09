@@ -20,7 +20,7 @@ interface ConnectorProvider {
 
 interface TeamBlock {
   source: () => TeamBlock;
-  name: string;
+  name: any;
   id: number;
   idx: number;
   score: number;
@@ -94,7 +94,7 @@ interface Decorator {
 }
 
 interface InitData {
-  teams: Array<Array<String>>;
+  teams: Array<Array<any>>;
   results: Array<Array<any>>;
 }
 
@@ -129,6 +129,26 @@ interface Options {
     return df(a, 0);
   }
 
+  class Team<T> {
+    private team: T;
+
+    constructor(team: T) {
+      this.team = team;
+    }
+    get(): T {
+      if (this.team === null) {
+        throw new Error('Cannot get a BYE team');
+      }
+      return this.team;
+    }
+    getOr(team: T) {
+      return this.isBye() ? team : this.get();
+    }
+    isBye(): boolean {
+      return this.team === null;
+    }
+  }
+
   function wrap(a, d: number) {
     if (d > 0) {
       a = wrap([a], d - 1);
@@ -137,11 +157,15 @@ interface Options {
   }
 
   function emptyTeam(): TeamBlock {
-     return {source: null, name: null, id: -1, idx: -1, score: null};
+     return {source: null, name: new Team(null), id: -1, idx: -1, score: null};
   }
 
   function teamsInResultOrder(match: MatchResult) {
-    if (isNumber(match.a.score) && isNumber(match.b.score)) {
+    if (match.b.name.isBye()) {
+      return [match.a, match.b];
+    } else if (match.a.name.isBye()) {
+      return [match.b, match.a];
+    } else if (isNumber(match.a.score) && isNumber(match.b.score)) {
       if (match.a.score > match.b.score) {
         return [match.a, match.b];
       }
@@ -205,7 +229,7 @@ interface Options {
     });
   }
 
-  function defaultEdit(span: JQuery, data: string, done: DoneCallback): void {
+  function defaultEdit(span: JQuery, data: any, done: DoneCallback): void {
     const input = $('<input type="text">');
     input.val(data);
     span.html(input);
@@ -402,13 +426,13 @@ interface Options {
         /* Track if container has been resized for final rematch */
         var _isResized = false;
         /* LB winner won first final match, need a new one */
-        if (!skipSecondaryFinal && (match.winner().name !== null && match.winner().name === losers.winner().name)) {
+        if (!skipSecondaryFinal && (!match.winner().name.isBye() && match.winner().name === losers.winner().name)) {
           if (finals.size() === 2) {
             return;
           }
           /* This callback is ugly, would be nice to make more sensible solution */
           const round = finals.addRound(function() {
-            const rematch = ((match.winner().name !== null && match.winner().name === losers.winner().name));
+            const rematch = ((!match.winner().name.isBye() && match.winner().name === losers.winner().name));
             if (_isResized === false) {
               if (rematch) {
                 _isResized = true;
@@ -750,17 +774,17 @@ interface Options {
       }
     }
 
-    function teamElement(round: number, match: MatchResult, team: TeamBlock, isReady: boolean) {
+    function teamElement(round: number, match: MatchResult, team: TeamBlock, opponent: TeamBlock, isReady: boolean) {
       const rId = resultIdentifier;
       const sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
-      const score = (!team.name || !isReady)
+      const score = (team.name.isBye() || opponent.name.isBye() || !isReady)
           ? '--'
           : (!isNumber(team.score) ? '--' : team.score);
       sEl.append(score);
 
       resultIdentifier += 1;
 
-      const name = !team.name ? '--' : team.name;
+      const name = team.name.getOr('BYE');
       const tEl = $('<div class="team"></div>');
       const nEl = $('<div class="label"></div>').appendTo(tEl);
 
@@ -774,7 +798,7 @@ interface Options {
         tEl.attr('data-teamid', team.idx);
       }
 
-      if (team.name === null) {
+      if (team.name.isBye()) {
         tEl.addClass('na');
       }
       else if (matchWinner(match).name === team.name) {
@@ -786,16 +810,15 @@ interface Options {
 
       tEl.append(sEl);
 
-      if (!(team.name === null || !isReady || !opts.save) && opts.save) {
+      if (typeof(opts.save) === 'function') {
         nEl.addClass('editable');
         nEl.click(function() {
           const span = $(this);
 
           function editor() {
             function done_fn(val, next: boolean) {
-              if (val) {
-                opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val;
-              }
+              opts.init.teams[~~(team.idx / 2)][team.idx % 2] = new Team(val ? val : null);
+
               renderAll(true);
               span.click(editor);
               const labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] div.label:first');
@@ -805,12 +828,12 @@ interface Options {
             }
 
             span.unbind();
-            opts.decorator.edit(span, team.name, done_fn);
+            opts.decorator.edit(span, team.name.getOr(null), done_fn);
           }
 
           editor();
         });
-        if (team.name) {
+        if (!team.name.isBye() && !opponent.name.isBye() && isReady) {
           sEl.addClass('editable');
           sEl.click(function() {
             const span = $(this);
@@ -1000,8 +1023,8 @@ interface Options {
           const isReady = ((Boolean(match.a.name) || match.a.name === '')
             && (Boolean(match.b.name) || match.b.name === ''));
 
-          teamCon.append(teamElement(round.id, match, match.a, isReady));
-          teamCon.append(teamElement(round.id, match, match.b, isReady));
+          teamCon.append(teamElement(round.id, match, match.a, match.b, isReady));
+          teamCon.append(teamElement(round.id, match, match.b, match.a, isReady));
 
           matchCon.appendTo(round.el);
           matchCon.append(teamCon);
@@ -1015,7 +1038,7 @@ interface Options {
           }
 
           const isLast = (typeof(renderCb) === 'function') ? renderCb(this) : false;
-          if (!isLast) {
+          if (!isLast && !(match.a.name.isBye() && (match.b.name.isBye()))) {
             this.connect(connectorCb);
           }
         },
@@ -1165,7 +1188,8 @@ interface Options {
         $.error('Match callbacks may not be passed in edit mode (in conjunction with save callback)');
       }
       opts.dir = opts.dir || 'lr';
-      opts.init.teams = !opts.init.teams || opts.init.teams.length === 0 ? [['', '']] : opts.init.teams;
+      opts.init.teams = !opts.init.teams || opts.init.teams.length === 0 ? [[null, null]] : opts.init.teams;
+      opts.init.teams = opts.init.teams.map(ts => ts.map(t => new Team(t)));
       opts.skipConsolationRound = opts.skipConsolationRound || false;
       opts.skipSecondaryFinal = opts.skipSecondaryFinal || false;
       if (opts.dir !== 'lr' && opts.dir !== 'rl') {
