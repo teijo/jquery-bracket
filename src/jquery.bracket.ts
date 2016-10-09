@@ -9,124 +9,14 @@
 
 /// <reference path="../lib/jquery.d.ts" />
 
-interface Connector {
-  height: number;
-  shift: number;
-}
-
-interface ConnectorProvider {
-  (tc: JQuery, match: Match): Connector;
-}
-
-interface TeamBlock {
-  source: () => TeamBlock;
-  name: any;
-  id: number;
-  idx: number;
-  score: number;
-}
-
-interface MatchIndicator {
-  name: string;
-  idx: number;
-}
-
-interface Match {
-  el: JQuery;
-  id: number;
-  round: () => Round;
-  connectorCb: (cb: ConnectorProvider) => void;
-  connect: (cb: ConnectorProvider) => void;
-  winner: () => TeamBlock;
-  loser: () => TeamBlock;
-  first: () => TeamBlock;
-  second: () => TeamBlock;
-  setAlignCb: (cb: (JQuery) => void) => void;
-  render: () => void;
-  results: () => Array<number>;
-}
-
-interface MatchSource {
-  source: () => TeamBlock;
-}
-
-interface Round {
-  el: JQuery;
-  id: number;
-  bracket: Bracket;
-  addMatch: (teamCb: () => Array<MatchSource>, renderCb: (match: Match) => boolean) =>  Match;
-  match: (id: number) => Match;
-  prev: () => Round;
-  size: () => number;
-  render: () => void;
-  results: () => Array<any>;
-}
-
-interface BoolCallback {
-  (): boolean;
-}
-
-interface Bracket {
-  el: JQuery;
-  addRound: (BoolCallback?) => Round;
-  dropRound: () => void;
-  round: (id: number) => Round;
-  size: () => number;
-  final: () => Match;
-  winner: () => TeamBlock;
-  loser: () => TeamBlock;
-  render: () => void;
-  results: () => Array<Array<Array<number>>>;
-}
-
-interface MatchResult {
-  a: TeamBlock;
-  b: TeamBlock;
-}
-
-interface DoneCallback {
-  (val: string, next?: boolean): void;
-}
-
-interface Decorator {
-  edit: (span: JQuery, name: string, done_fn: DoneCallback) => void;
-  render: (container: JQuery, team: string, score: any) => void;
-}
-
-interface InitData {
-  teams: Array<Array<any>>;
-  results: Array<Array<any>>;
-}
-
-interface Options {
-  el: JQuery;
-  init: InitData;
-  save: (data: any, userData: any) => void;
-  userData: any;
-  decorator: Decorator;
-  skipConsolationRound: boolean;
-  skipSecondaryFinal: boolean;
-  skipGrandFinalComeback: boolean;
-  dir: string;
-  onMatchClick: (data: any) => void;
-  onMatchHover: (data: any, hover: boolean) => void;
-}
-
 (function($) {
-  // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
-  function isNumber(n: any): boolean {
-    return !isNaN(parseFloat(n)) && isFinite(n);
+  interface Connector {
+    height: number;
+    shift: number;
   }
 
-  function depth(a): number {
-    function df(a, d: number): number {
-      if (a instanceof Array) {
-        return df(a[0], d + 1);
-      }
-      return d;
-    }
-
-    return df(a, 0);
+  interface ConnectorProvider {
+    (tc: JQuery, match: Match): Connector;
   }
 
   class Team<T> {
@@ -149,6 +39,111 @@ interface Options {
     }
   }
 
+  interface TeamBlock {
+    source: () => TeamBlock;
+    name: Team<any>;
+    id: number;
+    idx: number;
+    score: number;
+  }
+
+  interface Match {
+    el: JQuery;
+    id: number;
+    round: () => Round;
+    connectorCb: (cb: ConnectorProvider) => void;
+    connect: (cb: ConnectorProvider) => void;
+    winner: () => TeamBlock;
+    loser: () => TeamBlock;
+    first: () => TeamBlock;
+    second: () => TeamBlock;
+    setAlignCb: (cb: (JQuery) => void) => void;
+    render: () => void;
+    results: () => Array<number>;
+  }
+
+  interface MatchSource {
+    source: () => TeamBlock;
+  }
+
+  interface Round {
+    el: JQuery;
+    id: number;
+    bracket: Bracket;
+    addMatch: (teamCb: () => Array<MatchSource>, renderCb: (match: Match) => boolean) =>  Match;
+    match: (id: number) => Match;
+    prev: () => Round;
+    size: () => number;
+    render: () => void;
+    results: () => Array<any>;
+  }
+
+  interface BoolCallback {
+    (): boolean;
+  }
+
+  interface Bracket {
+    el: JQuery;
+    addRound: (BoolCallback?) => Round;
+    dropRound: () => void;
+    round: (id: number) => Round;
+    size: () => number;
+    final: () => Match;
+    winner: () => TeamBlock;
+    loser: () => TeamBlock;
+    render: () => void;
+    results: () => Array<Array<Array<number>>>;
+  }
+
+  interface MatchResult {
+    a: TeamBlock;
+    b: TeamBlock;
+  }
+
+  interface DoneCallback {
+    (val: string, next?: boolean): void;
+  }
+
+  interface Decorator {
+    edit: (span: JQuery, name: string, done_fn: DoneCallback) => void;
+    render: (container: JQuery, team: string, score: any) => void;
+  }
+
+  interface InitData {
+    teams: Array<Array<any>>;
+    results: Array<Array<any>>;
+  }
+
+  interface Options {
+    el: JQuery;
+    init: InitData;
+    save: (data: any, userData: any) => void;
+    userData: any;
+    decorator: Decorator;
+    skipConsolationRound: boolean;
+    skipSecondaryFinal: boolean;
+    skipGrandFinalComeback: boolean;
+    dir: string;
+    onMatchClick: (data: any) => void;
+    onMatchHover: (data: any, hover: boolean) => void;
+  }
+
+  // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
+  function isNumber(n: any): boolean {
+    return !isNaN(parseFloat(n)) && isFinite(n);
+  }
+
+  function depth(a): number {
+    function df(a, d: number): number {
+      if (a instanceof Array) {
+        return df(a[0], d + 1);
+      }
+      return d;
+    }
+
+    return df(a, 0);
+  }
+
   function wrap(a, d: number) {
     if (d > 0) {
       a = wrap([a], d - 1);
@@ -161,9 +156,12 @@ interface Options {
   }
 
   function teamsInResultOrder(match: MatchResult) {
-    if (match.b.name.isBye()) {
+    const aBye = match.a.name.isBye();
+    const bBye = match.b.name.isBye();
+
+    if (bBye && !aBye) {
       return [match.a, match.b];
-    } else if (match.a.name.isBye()) {
+    } else if (aBye && !bBye) {
       return [match.b, match.a];
     } else if (isNumber(match.a.score) && isNumber(match.b.score)) {
       if (match.a.score > match.b.score) {
@@ -214,8 +212,12 @@ interface Options {
     const loser = source.loser();
 
     if (winner && loser) {
-      trackHighlighter(winner.idx, 'highlightWinner', container).highlight();
-      trackHighlighter(loser.idx, 'highlightLoser', container).highlight();
+      if (!winner.name.isBye()) {
+        trackHighlighter(winner.idx, 'highlightWinner', container).highlight();
+      }
+      if (!loser.name.isBye()) {
+        trackHighlighter(loser.idx, 'highlightLoser', container).highlight();
+      }
     }
 
     container.find('.team').mouseover(function() {
@@ -737,7 +739,7 @@ interface Options {
     if (!opts.init) {
       opts.init = {
         teams: [
-          ['', '']
+          [new Team(null), new Team(null)]
         ],
         results: []
       };
@@ -812,7 +814,8 @@ interface Options {
 
       tEl.append(sEl);
 
-      if (typeof(opts.save) === 'function') {
+      // Only first round of BYEs can be edited
+      if ((!team.name.isBye() || (team.name.isBye() && round === 0)) && typeof(opts.save) === 'function') {
         nEl.addClass('editable');
         nEl.click(function() {
           const span = $(this);
@@ -1014,7 +1017,11 @@ interface Options {
           match.a.idx = match.a.source().idx;
           match.b.idx = match.b.source().idx;
 
-          if (!matchWinner(match).name) {
+          const isDoubleBye = match.a.name.isBye() && match.b.name.isBye();
+          if (isDoubleBye) {
+            teamCon.addClass('np');
+          }
+          else if (!matchWinner(match).name) {
             teamCon.addClass('np');
           }
           else {
@@ -1022,8 +1029,7 @@ interface Options {
           }
 
           // Coerce truthy/falsy "isset()" for Typescript
-          const isReady = ((Boolean(match.a.name) || match.a.name === '')
-            && (Boolean(match.b.name) || match.b.name === ''));
+          const isReady = !match.a.name.isBye() && !match.b.name.isBye();
 
           teamCon.append(teamElement(round.id, match, match.a, match.b, isReady));
           teamCon.append(teamElement(round.id, match, match.b, match.a, isReady));
@@ -1040,7 +1046,7 @@ interface Options {
           }
 
           const isLast = (typeof(renderCb) === 'function') ? renderCb(this) : false;
-          if (!isLast && !(match.a.name.isBye() && (match.b.name.isBye()))) {
+          if (!isLast) {
             this.connect(connectorCb);
           }
         },
@@ -1144,7 +1150,7 @@ interface Options {
     inc.click(function () {
       const len = data.teams.length;
       for (var i = 0; i < len; i += 1) {
-        data.teams.push(['', '']);
+        data.teams.push([new Team(null), new Team(null)]);
       }
       return JqueryBracket(opts);
     });
