@@ -48,6 +48,9 @@ module.exports = function(grunt) {
       base: {
         src: ['src/*.ts'],
         dest: 'dist/jquery.bracket.js'
+      },
+      options: {
+        sourceMap: true
       }
     }
   });

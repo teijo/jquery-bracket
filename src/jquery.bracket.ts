@@ -9,110 +9,125 @@
 
 /// <reference path="../lib/jquery.d.ts" />
 
-interface Connector {
-  height: number;
-  shift: number;
-}
-
-interface ConnectorProvider {
-  (tc: JQuery, match: Match): Connector;
-}
-
-interface TeamBlock {
-  source: () => TeamBlock;
-  name: string;
-  id: number;
-  idx: number;
-  score: number;
-}
-
-interface MatchIndicator {
-  name: string;
-  idx: number;
-}
-
-interface Match {
-  el: JQuery;
-  id: number;
-  round: () => Round;
-  connectorCb: (cb: ConnectorProvider) => void;
-  connect: (cb: ConnectorProvider) => void;
-  winner: () => TeamBlock;
-  loser: () => TeamBlock;
-  first: () => TeamBlock;
-  second: () => TeamBlock;
-  setAlignCb: (cb: (JQuery) => void) => void;
-  render: () => void;
-  results: () => Array<number>;
-}
-
-interface MatchSource {
-  source: () => TeamBlock;
-}
-
-interface Round {
-  el: JQuery;
-  id: number;
-  bracket: Bracket;
-  addMatch: (teamCb: () => Array<MatchSource>, renderCb: (match: Match) => boolean) =>  Match;
-  match: (id: number) => Match;
-  prev: () => Round;
-  size: () => number;
-  render: () => void;
-  results: () => Array<any>;
-}
-
-interface BoolCallback {
-  (): boolean;
-}
-
-interface Bracket {
-  el: JQuery;
-  addRound: (BoolCallback?) => Round;
-  dropRound: () => void;
-  round: (id: number) => Round;
-  size: () => number;
-  final: () => Match;
-  winner: () => TeamBlock;
-  loser: () => TeamBlock;
-  render: () => void;
-  results: () => Array<Array<Array<number>>>;
-}
-
-interface MatchResult {
-  a: TeamBlock;
-  b: TeamBlock;
-}
-
-interface DoneCallback {
-  (val: string, next?: boolean): void;
-}
-
-interface Decorator {
-  edit: (span: JQuery, name: string, done_fn: DoneCallback) => void;
-  render: (container: JQuery, team: string, score: any) => void;
-}
-
-interface InitData {
-  teams: Array<Array<String>>;
-  results: Array<Array<any>>;
-}
-
-interface Options {
-  el: JQuery;
-  init: InitData;
-  save: (data: any, userData: any) => void;
-  userData: any;
-  decorator: Decorator;
-  skipConsolationRound: boolean;
-  skipSecondaryFinal: boolean;
-  skipGrandFinalComeback: boolean;
-  dir: string;
-  onMatchClick: (data: any) => void;
-  onMatchHover: (data: any, hover: boolean) => void;
-}
-
 (function($) {
+  interface Connector {
+    height: number;
+    shift: number;
+  }
+
+  interface ConnectorProvider {
+    (tc: JQuery, match: Match): Connector;
+  }
+
+  class Team<T> {
+    private team: T;
+
+    constructor(team: T) {
+      this.team = team;
+    }
+    get(): T {
+      if (this.team === null) {
+        throw new Error('Cannot get a BYE team');
+      }
+      return this.team;
+    }
+    getOr(team: T) {
+      return this.isBye() ? team : this.get();
+    }
+    isBye(): boolean {
+      return this.team === null;
+    }
+  }
+
+  interface TeamBlock {
+    source: () => TeamBlock;
+    name: Team<any>;
+    id: number;
+    idx: number;
+    score: number;
+  }
+
+  interface Match {
+    el: JQuery;
+    id: number;
+    round: () => Round;
+    connectorCb: (cb: ConnectorProvider) => void;
+    connect: (cb: ConnectorProvider) => void;
+    winner: () => TeamBlock;
+    loser: () => TeamBlock;
+    first: () => TeamBlock;
+    second: () => TeamBlock;
+    setAlignCb: (cb: (JQuery) => void) => void;
+    render: () => void;
+    results: () => Array<number>;
+  }
+
+  interface MatchSource {
+    source: () => TeamBlock;
+  }
+
+  interface Round {
+    el: JQuery;
+    id: number;
+    bracket: Bracket;
+    addMatch: (teamCb: () => Array<MatchSource>, renderCb: (match: Match) => boolean) =>  Match;
+    match: (id: number) => Match;
+    prev: () => Round;
+    size: () => number;
+    render: () => void;
+    results: () => Array<any>;
+  }
+
+  interface BoolCallback {
+    (): boolean;
+  }
+
+  interface Bracket {
+    el: JQuery;
+    addRound: (BoolCallback?) => Round;
+    dropRound: () => void;
+    round: (id: number) => Round;
+    size: () => number;
+    final: () => Match;
+    winner: () => TeamBlock;
+    loser: () => TeamBlock;
+    render: () => void;
+    results: () => Array<Array<Array<number>>>;
+  }
+
+  interface MatchResult {
+    a: TeamBlock;
+    b: TeamBlock;
+  }
+
+  interface DoneCallback {
+    (val: string, next?: boolean): void;
+  }
+
+  interface Decorator {
+    edit: (span: JQuery, name: string, done_fn: DoneCallback) => void;
+    render: (container: JQuery, team: string, score: any) => void;
+  }
+
+  interface InitData {
+    teams: Array<Array<any>>;
+    results: Array<Array<any>>;
+  }
+
+  interface Options {
+    el: JQuery;
+    init: InitData;
+    save: (data: any, userData: any) => void;
+    userData: any;
+    decorator: Decorator;
+    skipConsolationRound: boolean;
+    skipSecondaryFinal: boolean;
+    skipGrandFinalComeback: boolean;
+    dir: string;
+    onMatchClick: (data: any) => void;
+    onMatchHover: (data: any, hover: boolean) => void;
+  }
+
   // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
   function isNumber(n: any): boolean {
     return !isNaN(parseFloat(n)) && isFinite(n);
@@ -136,12 +151,42 @@ interface Options {
     return a;
   }
 
-  function emptyTeam(): TeamBlock {
-     return {source: null, name: null, id: -1, idx: -1, score: null};
+  // Arbitrary (either parent) source is required so that branch emptiness
+  // can be determined by traversing to the beginning.
+  function emptyTeam(source: () => TeamBlock): TeamBlock {
+     return {source: source, name: new Team(null), id: -1, idx: -1, score: null};
+  }
+
+  // Recursively check if branch ends into a BYE
+  function emptyBranch(block: TeamBlock) {
+    const isBye = block.name.isBye();
+
+    if (block.source === undefined || block.source === null || !isBye) {
+        return isBye;
+    } else if (typeof(block.source) === 'function') {
+      return emptyBranch(block.source());
+    } else {
+      throw new Error('fail');
+    }
   }
 
   function teamsInResultOrder(match: MatchResult) {
-    if (isNumber(match.a.score) && isNumber(match.b.score)) {
+    const aBye = match.a.name.isBye();
+    const bBye = match.b.name.isBye();
+
+    if (bBye && !aBye) {
+      if (emptyBranch(match.b)) {
+        return [match.a, match.b];
+      } else {
+        return [];
+      }
+    } else if (aBye && !bBye) {
+      if (emptyBranch(match.a)) {
+        return [match.b, match.a];
+      } else {
+        return [];
+      }
+    } else if (isNumber(match.a.score) && isNumber(match.b.score)) {
       if (match.a.score > match.b.score) {
         return [match.a, match.b];
       }
@@ -153,11 +198,11 @@ interface Options {
   }
 
   function matchWinner(match: MatchResult): TeamBlock {
-    return teamsInResultOrder(match)[0] || emptyTeam();
+    return teamsInResultOrder(match)[0] || emptyTeam(match.a.source);
   }
 
   function matchLoser(match: MatchResult): TeamBlock {
-    return teamsInResultOrder(match)[1] || emptyTeam();
+    return teamsInResultOrder(match)[1] || emptyTeam(match.a.source);
   }
 
   function trackHighlighter(teamIndex: number, cssClass: string, container: JQuery) {
@@ -190,12 +235,20 @@ interface Options {
     const loser = source.loser();
 
     if (winner && loser) {
-      trackHighlighter(winner.idx, 'highlightWinner', container).highlight();
-      trackHighlighter(loser.idx, 'highlightLoser', container).highlight();
+      if (!winner.name.isBye()) {
+        trackHighlighter(winner.idx, 'highlightWinner', container).highlight();
+      }
+      if (!loser.name.isBye()) {
+        trackHighlighter(loser.idx, 'highlightLoser', container).highlight();
+      }
     }
 
     container.find('.team').mouseover(function() {
       const i = $(this).attr('data-teamid');
+      // Don't highlight BYEs
+      if (parseInt(i, 10) === -1) {
+        return;
+      }
       const track = trackHighlighter(i, null, container);
       track.highlight();
       $(this).mouseout(function() {
@@ -205,7 +258,7 @@ interface Options {
     });
   }
 
-  function defaultEdit(span: JQuery, data: string, done: DoneCallback): void {
+  function defaultEdit(span: JQuery, data: any, done: DoneCallback): void {
     const input = $('<input type="text">');
     input.val(data);
     span.html(input);
@@ -402,13 +455,13 @@ interface Options {
         /* Track if container has been resized for final rematch */
         var _isResized = false;
         /* LB winner won first final match, need a new one */
-        if (!skipSecondaryFinal && (match.winner().name !== null && match.winner().name === losers.winner().name)) {
+        if (!skipSecondaryFinal && (!match.winner().name.isBye() && match.winner().name === losers.winner().name)) {
           if (finals.size() === 2) {
             return;
           }
           /* This callback is ugly, would be nice to make more sensible solution */
           const round = finals.addRound(function() {
-            const rematch = ((match.winner().name !== null && match.winner().name === losers.winner().name));
+            const rematch = ((!match.winner().name.isBye() && match.winner().name === losers.winner().name));
             if (_isResized === false) {
               if (rematch) {
                 _isResized = true;
@@ -539,7 +592,8 @@ interface Options {
   }
 
   function mkRound(bracket: Bracket,  previousRound: Round,
-                   roundIdx: number,  results,  doRenderCb: BoolCallback, mkMatch): Round {
+                   roundIdx: number,  results,  doRenderCb: BoolCallback,
+                   mkMatch, isFirstBracket: boolean): Round {
     const matches: Array<Match> = [];
     const roundCon = $('<div class="round"></div>');
 
@@ -553,7 +607,7 @@ interface Options {
           {source: bracket.round(roundIdx - 1).match(matchIdx * 2).winner},
           {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
         ];
-        const match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb);
+        const match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb, isFirstBracket);
         matches.push(match);
         return match;
       },
@@ -586,7 +640,7 @@ interface Options {
     };
   }
 
-  function mkBracket(bracketCon: JQuery, results, mkMatch): Bracket {
+  function mkBracket(bracketCon: JQuery, results, mkMatch, isFirstBracket: boolean): Bracket {
     const rounds: Array<Round> = [];
 
     return {
@@ -594,7 +648,7 @@ interface Options {
       addRound: function(doRenderCb: BoolCallback): Round {
         const id = rounds.length;
         const previous = (id > 0) ? rounds[id - 1] : null;
-        const round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch);
+        const round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch, isFirstBracket);
         rounds.push(round);
         return round;
       },
@@ -713,7 +767,7 @@ interface Options {
     if (!opts.init) {
       opts.init = {
         teams: [
-          ['', '']
+          [new Team(null), new Team(null)]
         ],
         results: []
       };
@@ -745,22 +799,26 @@ interface Options {
           data.results[2] = f.results();
         }
         if (opts.save) {
-          opts.save(data, opts.userData);
+          const output = $.extend(true, {}, data);
+          output.teams = output.teams.map(ts => ts.map(t => t.getOr(null)));
+          opts.save(output, opts.userData);
         }
       }
     }
 
-    function teamElement(round: number, match: MatchResult, team: TeamBlock, isReady: boolean) {
+    function teamElement(round: number, match: MatchResult, team: TeamBlock,
+                         opponent: TeamBlock, isReady: boolean,
+                         isFirstBracket: boolean) {
       const rId = resultIdentifier;
       const sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
-      const score = (!team.name || !isReady)
+      const score = (team.name.isBye() || opponent.name.isBye() || !isReady)
           ? '--'
           : (!isNumber(team.score) ? '--' : team.score);
       sEl.append(score);
 
       resultIdentifier += 1;
 
-      const name = !team.name ? '--' : team.name;
+      const name = team.name.getOr('BYE');
       const tEl = $('<div class="team"></div>');
       const nEl = $('<div class="label"></div>').appendTo(tEl);
 
@@ -774,7 +832,7 @@ interface Options {
         tEl.attr('data-teamid', team.idx);
       }
 
-      if (team.name === null) {
+      if (team.name.isBye()) {
         tEl.addClass('na');
       }
       else if (matchWinner(match).name === team.name) {
@@ -786,16 +844,16 @@ interface Options {
 
       tEl.append(sEl);
 
-      if (!(team.name === null || !isReady || !opts.save) && opts.save) {
+      // Only first round of BYEs can be edited
+      if ((!team.name.isBye() || (team.name.isBye() && round === 0 && isFirstBracket)) && typeof(opts.save) === 'function') {
         nEl.addClass('editable');
         nEl.click(function() {
           const span = $(this);
 
           function editor() {
             function done_fn(val, next: boolean) {
-              if (val) {
-                opts.init.teams[~~(team.idx / 2)][team.idx % 2] = val;
-              }
+              opts.init.teams[~~(team.idx / 2)][team.idx % 2] = new Team(val ? val : null);
+
               renderAll(true);
               span.click(editor);
               const labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] div.label:first');
@@ -805,12 +863,12 @@ interface Options {
             }
 
             span.unbind();
-            opts.decorator.edit(span, team.name, done_fn);
+            opts.decorator.edit(span, team.name.getOr(null), done_fn);
           }
 
           editor();
         });
-        if (team.name) {
+        if (!team.name.isBye() && !opponent.name.isBye() && isReady) {
           sEl.addClass('editable');
           sEl.click(function() {
             const span = $(this);
@@ -873,7 +931,8 @@ interface Options {
     }
 
     function mkMatch(round: Round, data: Array<TeamBlock>, idx: number,
-                     results, renderCb: Function): Match {
+                     results: Array<number>, renderCb: Function,
+                     isFirstBracket: boolean): Match {
       const match: MatchResult = {a: data[0], b: data[1]};
       const matchCon = $('<div class="match"></div>');
       const teamCon: JQuery = $('<div class="teamContainer"></div>');
@@ -989,7 +1048,11 @@ interface Options {
           match.a.idx = match.a.source().idx;
           match.b.idx = match.b.source().idx;
 
-          if (!matchWinner(match).name) {
+          const isDoubleBye = match.a.name.isBye() && match.b.name.isBye();
+          if (isDoubleBye) {
+            teamCon.addClass('np');
+          }
+          else if (!matchWinner(match).name) {
             teamCon.addClass('np');
           }
           else {
@@ -997,11 +1060,10 @@ interface Options {
           }
 
           // Coerce truthy/falsy "isset()" for Typescript
-          const isReady = ((Boolean(match.a.name) || match.a.name === '')
-            && (Boolean(match.b.name) || match.b.name === ''));
+          const isReady = !match.a.name.isBye() && !match.b.name.isBye();
 
-          teamCon.append(teamElement(round.id, match, match.a, isReady));
-          teamCon.append(teamElement(round.id, match, match.b, isReady));
+          teamCon.append(teamElement(round.id, match, match.a, match.b, isReady, isFirstBracket));
+          teamCon.append(teamElement(round.id, match, match.b, match.a, isReady, isFirstBracket));
 
           matchCon.appendTo(round.el);
           matchCon.append(teamCon);
@@ -1020,6 +1082,11 @@ interface Options {
           }
         },
         results: function() {
+          // Either team is bye -> reset (mutate) scores from that match
+          const hasBye = match.a.name.isBye() || match.b.name.isBye();
+          if (hasBye) {
+            match.a.score = match.b.score = null;
+          }
           return [match.a.score, match.b.score];
         }
       };
@@ -1086,12 +1153,12 @@ interface Options {
       topCon.css('width', rounds * 140 + 10);
     }
 
-    w = mkBracket(wEl, !r || !r[0] ? null : r[0], mkMatch);
+    w = mkBracket(wEl, !r || !r[0] ? null : r[0], mkMatch, true);
 
     if (!isSingleElimination) {
-      l = mkBracket(lEl, !r || !r[1] ? null : r[1], mkMatch);
+      l = mkBracket(lEl, !r || !r[1] ? null : r[1], mkMatch, false);
       if (!opts.skipGrandFinalComeback) {
-        f = mkBracket(fEl, !r || !r[2] ? null : r[2], mkMatch);
+        f = mkBracket(fEl, !r || !r[2] ? null : r[2], mkMatch, false);
       }
     }
 
@@ -1119,7 +1186,7 @@ interface Options {
     inc.click(function () {
       const len = data.teams.length;
       for (var i = 0; i < len; i += 1) {
-        data.teams.push(['', '']);
+        data.teams.push([new Team(null), new Team(null)]);
       }
       return JqueryBracket(opts);
     });
@@ -1165,7 +1232,8 @@ interface Options {
         $.error('Match callbacks may not be passed in edit mode (in conjunction with save callback)');
       }
       opts.dir = opts.dir || 'lr';
-      opts.init.teams = !opts.init.teams || opts.init.teams.length === 0 ? [['', '']] : opts.init.teams;
+      opts.init.teams = !opts.init.teams || opts.init.teams.length === 0 ? [[null, null]] : opts.init.teams;
+      opts.init.teams = opts.init.teams.map(ts => ts.map(t => new Team(t)));
       opts.skipConsolationRound = opts.skipConsolationRound || false;
       opts.skipSecondaryFinal = opts.skipSecondaryFinal || false;
       if (opts.dir !== 'lr' && opts.dir !== 'rl') {
