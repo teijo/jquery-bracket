@@ -592,7 +592,8 @@
   }
 
   function mkRound(bracket: Bracket,  previousRound: Round,
-                   roundIdx: number,  results,  doRenderCb: BoolCallback, mkMatch): Round {
+                   roundIdx: number,  results,  doRenderCb: BoolCallback,
+                   mkMatch, isFirstBracket: boolean): Round {
     const matches: Array<Match> = [];
     const roundCon = $('<div class="round"></div>');
 
@@ -606,7 +607,7 @@
           {source: bracket.round(roundIdx - 1).match(matchIdx * 2).winner},
           {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
         ];
-        const match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb);
+        const match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb, isFirstBracket);
         matches.push(match);
         return match;
       },
@@ -639,7 +640,7 @@
     };
   }
 
-  function mkBracket(bracketCon: JQuery, results, mkMatch): Bracket {
+  function mkBracket(bracketCon: JQuery, results, mkMatch, isFirstBracket: boolean): Bracket {
     const rounds: Array<Round> = [];
 
     return {
@@ -647,7 +648,7 @@
       addRound: function(doRenderCb: BoolCallback): Round {
         const id = rounds.length;
         const previous = (id > 0) ? rounds[id - 1] : null;
-        const round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch);
+        const round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch, isFirstBracket);
         rounds.push(round);
         return round;
       },
@@ -805,7 +806,9 @@
       }
     }
 
-    function teamElement(round: number, match: MatchResult, team: TeamBlock, opponent: TeamBlock, isReady: boolean) {
+    function teamElement(round: number, match: MatchResult, team: TeamBlock,
+                         opponent: TeamBlock, isReady: boolean,
+                         isFirstBracket: boolean) {
       const rId = resultIdentifier;
       const sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
       const score = (team.name.isBye() || opponent.name.isBye() || !isReady)
@@ -842,7 +845,7 @@
       tEl.append(sEl);
 
       // Only first round of BYEs can be edited
-      if ((!team.name.isBye() || (team.name.isBye() && round === 0)) && typeof(opts.save) === 'function') {
+      if ((!team.name.isBye() || (team.name.isBye() && round === 0 && isFirstBracket)) && typeof(opts.save) === 'function') {
         nEl.addClass('editable');
         nEl.click(function() {
           const span = $(this);
@@ -928,7 +931,8 @@
     }
 
     function mkMatch(round: Round, data: Array<TeamBlock>, idx: number,
-                     results: Array<number>, renderCb: Function): Match {
+                     results: Array<number>, renderCb: Function,
+                     isFirstBracket: boolean): Match {
       const match: MatchResult = {a: data[0], b: data[1]};
       const matchCon = $('<div class="match"></div>');
       const teamCon: JQuery = $('<div class="teamContainer"></div>');
@@ -1058,8 +1062,8 @@
           // Coerce truthy/falsy "isset()" for Typescript
           const isReady = !match.a.name.isBye() && !match.b.name.isBye();
 
-          teamCon.append(teamElement(round.id, match, match.a, match.b, isReady));
-          teamCon.append(teamElement(round.id, match, match.b, match.a, isReady));
+          teamCon.append(teamElement(round.id, match, match.a, match.b, isReady, isFirstBracket));
+          teamCon.append(teamElement(round.id, match, match.b, match.a, isReady, isFirstBracket));
 
           matchCon.appendTo(round.el);
           matchCon.append(teamCon);
@@ -1149,12 +1153,12 @@
       topCon.css('width', rounds * 140 + 10);
     }
 
-    w = mkBracket(wEl, !r || !r[0] ? null : r[0], mkMatch);
+    w = mkBracket(wEl, !r || !r[0] ? null : r[0], mkMatch, true);
 
     if (!isSingleElimination) {
-      l = mkBracket(lEl, !r || !r[1] ? null : r[1], mkMatch);
+      l = mkBracket(lEl, !r || !r[1] ? null : r[1], mkMatch, false);
       if (!opts.skipGrandFinalComeback) {
-        f = mkBracket(fEl, !r || !r[2] ? null : r[2], mkMatch);
+        f = mkBracket(fEl, !r || !r[2] ? null : r[2], mkMatch, false);
       }
     }
 
