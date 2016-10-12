@@ -39,12 +39,12 @@
     }
   }
 
-  interface TeamBlock {
-    source: () => TeamBlock;
-    name: Team<any>;
-    id: number;
-    idx: number;
-    score: number;
+  class TeamBlock {
+    constructor(public source: () => TeamBlock,
+                public name: Team<any>,
+                public id: number,
+                public idx: number,
+                public score: number) { }
   }
 
   interface Match {
@@ -154,7 +154,7 @@
   // Arbitrary (either parent) source is required so that branch emptiness
   // can be determined by traversing to the beginning.
   function emptyTeam(source: () => TeamBlock): TeamBlock {
-     return {source: source, name: new Team(null), id: -1, idx: -1, score: null};
+     return new TeamBlock(source, new Team(null), -1, -1, null);
   }
 
   // Recursively check if branch ends into a BYE
