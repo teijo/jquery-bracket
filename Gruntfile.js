@@ -44,13 +44,14 @@ module.exports = function(grunt) {
         src: ['src/*.ts']
       }
     },
-    typescript: {
-      base: {
-        src: ['src/*.ts'],
+    ts: {
+      default: {
+        src: ['src/*.ts', '!node_modules/**'],
         dest: 'dist/jquery.bracket.js'
       },
       options: {
-        sourceMap: true
+        sourceMap: true,
+        target: 'es5'
       }
     }
   });
@@ -58,9 +59,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-sass');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
-  grunt.loadNpmTasks('grunt-typescript');
+  grunt.loadNpmTasks('grunt-ts');
   grunt.loadNpmTasks('grunt-tslint');
   grunt.loadNpmTasks('grunt-css');
 
-  grunt.registerTask('default', ['tslint', 'sass', 'typescript', 'uglify', 'cssmin']);
+  grunt.registerTask('default', ['tslint', 'sass', 'ts', 'uglify', 'cssmin']);
 };

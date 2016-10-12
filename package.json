@@ -21,8 +21,8 @@
     "grunt-contrib-watch": "^1.0.0",
     "grunt-css": "^0.5.4",
     "grunt-sass": "^1.2.1",
+    "grunt-ts": "^6.0.0-beta.3",
     "grunt-tslint": "^3.3.0",
-    "grunt-typescript": "^0.8.0",
     "tslint": "^3.15.1",
     "typescript": "^2.0.3"
   }

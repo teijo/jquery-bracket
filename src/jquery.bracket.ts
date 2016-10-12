@@ -244,9 +244,9 @@
     }
 
     container.find('.team').mouseover(function() {
-      const i = $(this).attr('data-teamid');
+      const i = parseInt($(this).attr('data-teamid'), 10);
       // Don't highlight BYEs
-      if (parseInt(i, 10) === -1) {
+      if (i === -1) {
         return;
       }
       const track = trackHighlighter(i, null, container);
@@ -261,7 +261,7 @@
   function defaultEdit(span: JQuery, data: any, done: DoneCallback): void {
     const input = $('<input type="text">');
     input.val(data);
-    span.html(input);
+    span.empty().append(input);
     input.focus();
     input.blur(function() {
       done(input.val());
@@ -513,7 +513,7 @@
       }
       match.el.css('height', (height) + 'px');
 
-      const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height();
+      const topShift: number = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height();
 
       tC.css('top', (topShift) + 'px');
     });
@@ -814,7 +814,7 @@
       const score = (team.name.isBye() || opponent.name.isBye() || !isReady)
           ? '--'
           : (!isNumber(team.score) ? '--' : team.score);
-      sEl.append(score);
+      sEl.text(score);
 
       resultIdentifier += 1;
 
@@ -880,7 +880,7 @@
               const input = $('<input type="text">');
 
               input.val(score);
-              span.html(input);
+              span.empty().append(input);
 
               input.focus().select();
               input.keydown(function(e) {
