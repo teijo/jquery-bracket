@@ -592,7 +592,7 @@
   }
 
   function mkRound(bracket: Bracket,  previousRound: Round,
-                   roundIdx: number,  results,  doRenderCb: BoolCallback,
+                   roundIdx: number, results: Array<Array<number>>, doRenderCb: BoolCallback,
                    mkMatch, isFirstBracket: boolean): Round {
     const matches: Array<Match> = [];
     const roundCon = $('<div class="round"></div>');
@@ -640,7 +640,7 @@
     };
   }
 
-  function mkBracket(bracketCon: JQuery, results, mkMatch, isFirstBracket: boolean): Bracket {
+  function mkBracket(bracketCon: JQuery, results: Array<Array<Array<number>>>, mkMatch, isFirstBracket: boolean): Bracket {
     const rounds: Array<Round> = [];
 
     return {
