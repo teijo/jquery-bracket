@@ -40,9 +40,15 @@
   }
 
   class TeamBlock {
-    constructor(public source: () => TeamBlock,
+    get id() {
+      return this._id;
+    }
+    get source() {
+      return this._source;
+    }
+    constructor(private _source: () => TeamBlock, // Where base of the information propagated from
                 public name: Team<any>,
-                public id: number,
+                private _id: number, // Order in which team is in a match, 0 or 1
                 public idx: number,
                 public score: number) { }
   }
@@ -607,7 +613,13 @@
           {source: bracket.round(roundIdx - 1).match(matchIdx * 2).winner},
           {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
         ];
-        const match = mkMatch(this, teams, matchIdx, !results ? null : results[matchIdx], renderCb, isFirstBracket);
+        const teamA = teams[0].source;
+        const teamB = teams[1].source;
+        const matchResult: MatchResult = {
+          a: new TeamBlock(teamA, teamA().name, 0, teamA().idx, null),
+          b: new TeamBlock(teamB, teamB().name, 1, teamB().idx, null)
+        };
+        const match = mkMatch(this, matchResult, matchIdx, !results ? null : results[matchIdx], renderCb, isFirstBracket);
         matches.push(match);
         return match;
       },
@@ -942,10 +954,9 @@
       return tEl;
     }
 
-    function mkMatch(round: Round, data: Array<TeamBlock>, idx: number,
+    function mkMatch(round: Round, match: MatchResult, idx: number,
                      results: Array<number>, renderCb: Function,
                      isFirstBracket: boolean): Match {
-      const match: MatchResult = {a: data[0], b: data[1]};
       const matchCon = $('<div class="match"></div>');
       const teamCon: JQuery = $('<div class="teamContainer"></div>');
 
@@ -967,9 +978,6 @@
           teamCon.click(function () { opts.onMatchClick(matchUserData); });
         }
       }
-
-      match.a.id = 0;
-      match.b.id = 1;
 
       match.a.name = match.a.source().name;
       match.b.name = match.b.source().name;
@@ -1055,6 +1063,7 @@
           matchCon.empty();
           teamCon.empty();
 
+          // This shouldn't be done at render-time
           match.a.name = match.a.source().name;
           match.b.name = match.b.source().name;
           match.a.idx = match.a.source().idx;
