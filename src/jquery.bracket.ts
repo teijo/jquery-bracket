@@ -223,7 +223,7 @@
     const addedClass = !cssClass ? 'highlight' : cssClass;
 
     return {
-      highlight: function() {
+      highlight() {
         elements.each(function() {
           $(this).addClass(addedClass);
 
@@ -233,7 +233,7 @@
         });
       },
 
-      deHighlight: function() {
+      deHighlight() {
         elements.each(function() {
           $(this).removeClass(addedClass);
           $(this).parent().find('.connector').removeClass(addedClass);
@@ -614,7 +614,7 @@
       el: roundCon,
       bracket: bracket,
       id: roundIdx,
-      addMatch: function(teamCb: () => Array<MatchSource>, renderCb: BoolCallback): Match {
+      addMatch(teamCb: () => Array<MatchSource>, renderCb: BoolCallback): Match {
         const matchIdx = matches.length;
         const teams = (teamCb !== null) ? teamCb() : [
           {source: bracket.round(roundIdx - 1).match(matchIdx * 2).winner},
@@ -629,16 +629,16 @@
         matches.push(match);
         return match;
       },
-      match: function(id: number): Match {
+      match(id: number): Match {
         return matches[id];
       },
-      prev: function(): Round {
+      prev(): Round {
         return previousRound;
       },
-      size: function(): number {
+      size(): number {
         return matches.length;
       },
-      render: function() {
+      render() {
         roundCon.empty();
         if (typeof(doRenderCb) === 'function' && !doRenderCb()) {
           return;
@@ -648,7 +648,7 @@
           ma.render();
         });
       },
-      results: function() {
+      results() {
         const results = [];
         $.each(matches, function(i, ma) {
           results.push(ma.results());
@@ -663,32 +663,32 @@
 
     return {
       el: bracketCon,
-      addRound: function(doRenderCb: BoolCallback): Round {
+      addRound(doRenderCb: BoolCallback): Round {
         const id = rounds.length;
         const previous = (id > 0) ? rounds[id - 1] : null;
         const round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch, isFirstBracket);
         rounds.push(round);
         return round;
       },
-      dropRound: function() {
+      dropRound() {
         rounds.pop();
       },
       round(id: number): Round {
         return rounds[id];
       },
-      size: function(): number {
+      size(): number {
         return rounds.length;
       },
-      final: function(): Match {
+      final(): Match {
         return rounds[rounds.length - 1].match(0);
       },
-      winner: function(): TeamBlock {
+      winner(): TeamBlock {
         return rounds[rounds.length - 1].match(0).winner();
       },
-      loser: function(): TeamBlock {
+      loser(): TeamBlock {
         return rounds[rounds.length - 1].match(0).loser();
       },
-      render: function() {
+      render() {
         bracketCon.empty();
         /* Length of 'rounds' can increase during render in special case when
          LB win in finals adds new final round in match render callback.
@@ -697,7 +697,7 @@
           rounds[i].render();
         }
       },
-      results: function() {
+      results() {
         const results = [];
         $.each(rounds, function(i, ro) {
           results.push(ro.results());
@@ -1002,13 +1002,13 @@
       return {
         el: matchCon,
         id: idx,
-        round: function(): Round {
+        round(): Round {
           return round;
         },
-        connectorCb: function(cb: ConnectorProvider) {
+        connectorCb(cb: ConnectorProvider) {
           connectorCb = cb;
         },
-        connect: function(cb: ConnectorProvider) {
+        connect(cb: ConnectorProvider) {
           const connectorOffset = teamCon.height() / 4;
           const matchupOffset = matchCon.height() / 2;
           var shift;
@@ -1054,18 +1054,18 @@
           }
           teamCon.append(connector(height, shift, teamCon, align));
         },
-        winner: function() { return match.winner(); },
-        loser: function() { return match.loser(); },
-        first: function(): TeamBlock {
+        winner() { return match.winner(); },
+        loser() { return match.loser(); },
+        first(): TeamBlock {
           return match.a;
         },
-        second: function(): TeamBlock {
+        second(): TeamBlock {
           return match.b;
         },
-        setAlignCb: function(cb: (JQuery) => void) {
+        setAlignCb(cb: (JQuery) => void) {
           alignCb = cb;
         },
-        render: function() {
+        render() {
           matchCon.empty();
           teamCon.empty();
 
@@ -1108,7 +1108,7 @@
             this.connect(connectorCb);
           }
         },
-        results: function() {
+        results() {
           // Either team is bye -> reset (mutate) scores from that match
           const hasBye = match.a.name.isBye() || match.b.name.isBye();
           if (hasBye) {
@@ -1189,7 +1189,7 @@
     renderAll(false);
 
     return {
-      data: function() {
+      data() {
         return opts.init;
       }
     };
@@ -1239,7 +1239,7 @@
 
 
   const methods = {
-    init: function(originalOpts: Options) {
+    init(originalOpts: Options) {
       const opts = $.extend(true, {}, originalOpts); // Do not mutate inputs
       const that = this;
       opts.el = this;
@@ -1258,7 +1258,7 @@
       $(this).data('bracket', {target: that, obj: bracket});
       return bracket;
     },
-    data: function() {
+    data() {
       const bracket = $(this).data('bracket');
       return bracket.obj.data();
     }
