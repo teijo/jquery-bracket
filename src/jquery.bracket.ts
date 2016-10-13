@@ -163,11 +163,11 @@
 
     constructor(private _a: TeamBlock, private _b: TeamBlock) {}
 
-    matchWinner(): TeamBlock {
+    winner(): TeamBlock {
       return MatchResult.teamsInResultOrder(this)[0] || MatchResult.emptyTeam(this.a.source);
     }
 
-    matchLoser(): TeamBlock {
+    loser(): TeamBlock {
       return MatchResult.teamsInResultOrder(this)[1] || MatchResult.emptyTeam(this.a.source);
     }
   }
@@ -865,10 +865,10 @@
       if (team.name.isBye()) {
         tEl.addClass('na');
       }
-      else if (match.matchWinner().name === team.name) {
+      else if (match.winner().name === team.name) {
         tEl.addClass('win');
       }
-      else if (match.matchLoser().name === team.name) {
+      else if (match.loser().name === team.name) {
         tEl.addClass('lose');
       }
 
@@ -1054,8 +1054,8 @@
           }
           teamCon.append(connector(height, shift, teamCon, align));
         },
-        winner: function() { return match.matchWinner(); },
-        loser: function() { return match.matchLoser(); },
+        winner: function() { return match.winner(); },
+        loser: function() { return match.loser(); },
         first: function(): TeamBlock {
           return match.a;
         },
@@ -1079,7 +1079,7 @@
           if (isDoubleBye) {
             teamCon.addClass('np');
           }
-          else if (!match.matchWinner().name) {
+          else if (!match.winner().name) {
             teamCon.addClass('np');
           }
           else {
