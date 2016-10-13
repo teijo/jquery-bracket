@@ -72,18 +72,6 @@
     source: () => TeamBlock;
   }
 
-  interface Round {
-    el: JQuery;
-    id: number;
-    bracket: Bracket;
-    addMatch: (teamCb: () => Array<MatchSource>, renderCb: (match: Match) => boolean) =>  Match;
-    match: (id: number) => Match;
-    prev: () => Round;
-    size: () => number;
-    render: () => void;
-    results: () => Array<any>;
-  }
-
   interface BoolCallback {
     (): boolean;
   }
@@ -604,58 +592,70 @@
     });
   }
 
-  function mkRound(bracket: Bracket,  previousRound: Round,
-                   roundIdx: number, results: Array<Array<number>>, doRenderCb: BoolCallback,
-                   mkMatch, isFirstBracket: boolean): Round {
-    const matches: Array<Match> = [];
-    const roundCon = $('<div class="round"></div>');
+  class Round {
+    private roundCon: JQuery = $('<div class="round"></div>');
+    private matches: Array<Match> = [];
 
-    return {
-      el: roundCon,
-      bracket: bracket,
-      id: roundIdx,
-      addMatch(teamCb: () => Array<MatchSource>, renderCb: BoolCallback): Match {
-        const matchIdx = matches.length;
-        const teams = (teamCb !== null) ? teamCb() : [
-          {source: bracket.round(roundIdx - 1).match(matchIdx * 2).winner},
-          {source: bracket.round(roundIdx - 1).match(matchIdx * 2 + 1).winner}
-        ];
-        const teamA = teams[0].source;
-        const teamB = teams[1].source;
-        const matchResult: MatchResult = new MatchResult(
-            new TeamBlock(teamA, teamA().name, 0, teamA().idx, null),
-            new TeamBlock(teamB, teamB().name, 1, teamB().idx, null));
-        const match = mkMatch(this, matchResult, matchIdx, !results ? null : results[matchIdx], renderCb, isFirstBracket);
-        matches.push(match);
-        return match;
-      },
-      match(id: number): Match {
-        return matches[id];
-      },
-      prev(): Round {
-        return previousRound;
-      },
-      size(): number {
-        return matches.length;
-      },
-      render() {
-        roundCon.empty();
-        if (typeof(doRenderCb) === 'function' && !doRenderCb()) {
-          return;
-        }
-        roundCon.appendTo(bracket.el);
-        $.each(matches, function(i, ma) {
-          ma.render();
-        });
-      },
-      results() {
-        const results = [];
-        $.each(matches, function(i, ma) {
-          results.push(ma.results());
-        });
-        return results;
+    constructor(private _bracket: Bracket,
+                private previousRound: Round,
+                private roundIdx: number,
+                private _results: Array<Array<number>>,
+                private doRenderCb: BoolCallback,
+                private mkMatch,
+                private isFirstBracket: boolean) {}
+
+    get el(){
+      return this.roundCon;
+    }
+    get bracket() {
+      return this._bracket;
+    }
+    get id() {
+      return this.roundIdx;
+    }
+    addMatch(teamCb: () => Array<MatchSource>, renderCb: (match: Match) => boolean): Match {
+      const matchIdx = this.matches.length;
+      const teams = (teamCb !== null) ? teamCb() : [
+        {source: this.bracket.round(this.roundIdx - 1).match(matchIdx * 2).winner},
+        {source: this.bracket.round(this.roundIdx - 1).match(matchIdx * 2 + 1).winner}
+      ];
+      const teamA = teams[0].source;
+      const teamB = teams[1].source;
+      const matchResult: MatchResult = new MatchResult(
+          new TeamBlock(teamA, teamA().name, 0, teamA().idx, null),
+          new TeamBlock(teamB, teamB().name, 1, teamB().idx, null));
+      const match = this.mkMatch(this, matchResult, matchIdx,
+          !this._results ? null : this._results[matchIdx], renderCb,
+          this.isFirstBracket);
+      this.matches.push(match);
+      return match;
+    }
+    match(id: number): Match {
+      return this.matches[id];
+    }
+    prev(): Round {
+      return this.previousRound;
+    }
+    size(): number {
+      return this.matches.length;
+    }
+    render() {
+      this.roundCon.empty();
+      if (typeof(this.doRenderCb) === 'function' && !this.doRenderCb()) {
+        return;
       }
-    };
+      this.roundCon.appendTo(this.bracket.el);
+      $.each(this.matches, function(i, ma) {
+        ma.render();
+      });
+    }
+    results() {
+      const results = [];
+      $.each(this.matches, function(i, ma) {
+        results.push(ma.results());
+      });
+      return results;
+    }
   }
 
   function mkBracket(bracketCon: JQuery, results: Array<Array<Array<number>>>, mkMatch, isFirstBracket: boolean): Bracket {
@@ -666,7 +666,7 @@
       addRound(doRenderCb: BoolCallback): Round {
         const id = rounds.length;
         const previous = (id > 0) ? rounds[id - 1] : null;
-        const round = mkRound(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch, isFirstBracket);
+        const round = new Round(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch, isFirstBracket);
         rounds.push(round);
         return round;
       },
