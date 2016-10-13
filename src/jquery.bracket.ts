@@ -739,6 +739,18 @@
     return src;
   }
 
+  function roundCount(teamCount, isSingleElimination, skipGrandFinalComeback) {
+    if (isSingleElimination) {
+      return Math.log(teamCount * 2) / Math.log(2);
+    }
+    else if (skipGrandFinalComeback) {
+      return Math.max(2, (Math.log(teamCount * 2) / Math.log(2) - 1) * 2 - 1); // DE - grand finals
+    }
+    else {
+      return (Math.log(teamCount * 2) / Math.log(2) - 1) * 2 + 1; // DE + grand finals
+    }
+  }
+
   const JqueryBracket = function(opts: Options) {
     const align = opts.dir === 'lr' ? 'right' : 'left';
     var resultIdentifier;
@@ -1132,19 +1144,7 @@
       lEl.css('height', wEl.height() / 2);
     }
 
-    function roundCount(teamCount) {
-      if (isSingleElimination) {
-        return Math.log(teamCount * 2) / Math.log(2);
-      }
-      else if (opts.skipGrandFinalComeback) {
-        return Math.max(2, (Math.log(teamCount * 2) / Math.log(2) - 1) * 2 - 1); // DE - grand finals
-      }
-      else {
-        return (Math.log(teamCount * 2) / Math.log(2) - 1) * 2 + 1; // DE + grand finals
-      }
-    }
-
-    const rounds = roundCount(data.teams.length);
+    const rounds = roundCount(data.teams.length, isSingleElimination, opts.skipGrandFinalComeback);
 
     if (opts.save) {
       topCon.css('width', rounds * 140 + 40);
