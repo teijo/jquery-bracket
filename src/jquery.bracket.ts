@@ -101,9 +101,75 @@
     results: () => Array<Array<Array<number>>>;
   }
 
-  interface MatchResult {
-    a: TeamBlock;
-    b: TeamBlock;
+  // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
+  function isNumber(n: any): boolean {
+    return !isNaN(parseFloat(n)) && isFinite(n);
+  }
+
+  class MatchResult {
+    // Recursively check if branch ends into a BYE
+    private static emptyBranch(block: TeamBlock) {
+      const isBye = block.name.isBye();
+
+      if (block.source === undefined || block.source === null || !isBye) {
+        return isBye;
+      } else if (typeof(block.source) === 'function') {
+        return MatchResult.emptyBranch(block.source());
+      } else {
+        throw new Error('fail');
+      }
+    }
+
+    private static teamsInResultOrder(match: MatchResult) {
+      const aBye = match.a.name.isBye();
+      const bBye = match.b.name.isBye();
+
+      if (bBye && !aBye) {
+        if (MatchResult.emptyBranch(match.b)) {
+          return [match.a, match.b];
+        } else {
+          return [];
+        }
+      } else if (aBye && !bBye) {
+        if (MatchResult.emptyBranch(match.a)) {
+          return [match.b, match.a];
+        } else {
+          return [];
+        }
+      } else if (isNumber(match.a.score) && isNumber(match.b.score)) {
+        if (match.a.score > match.b.score) {
+          return [match.a, match.b];
+        }
+        else if (match.a.score < match.b.score) {
+          return [match.b, match.a];
+        }
+      }
+      return [];
+    }
+
+    // Arbitrary (either parent) source is required so that branch emptiness
+    // can be determined by traversing to the beginning.
+    private static emptyTeam(source: () => TeamBlock): TeamBlock {
+      return new TeamBlock(source, new Team(null), -1, -1, null);
+    }
+
+    get a() {
+      return this._a;
+    }
+
+    get b() {
+      return this._b;
+    }
+
+    constructor(private _a: TeamBlock, private _b: TeamBlock) {}
+
+    matchWinner(): TeamBlock {
+      return MatchResult.teamsInResultOrder(this)[0] || MatchResult.emptyTeam(this.a.source);
+    }
+
+    matchLoser(): TeamBlock {
+      return MatchResult.teamsInResultOrder(this)[1] || MatchResult.emptyTeam(this.a.source);
+    }
   }
 
   interface DoneCallback {
@@ -134,11 +200,6 @@
     onMatchHover: (data: any, hover: boolean) => void;
   }
 
-  // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
-  function isNumber(n: any): boolean {
-    return !isNaN(parseFloat(n)) && isFinite(n);
-  }
-
   function depth(a): number {
     function df(a, d: number): number {
       if (a instanceof Array) {
@@ -155,60 +216,6 @@
       a = wrap([a], d - 1);
     }
     return a;
-  }
-
-  // Arbitrary (either parent) source is required so that branch emptiness
-  // can be determined by traversing to the beginning.
-  function emptyTeam(source: () => TeamBlock): TeamBlock {
-     return new TeamBlock(source, new Team(null), -1, -1, null);
-  }
-
-  // Recursively check if branch ends into a BYE
-  function emptyBranch(block: TeamBlock) {
-    const isBye = block.name.isBye();
-
-    if (block.source === undefined || block.source === null || !isBye) {
-        return isBye;
-    } else if (typeof(block.source) === 'function') {
-      return emptyBranch(block.source());
-    } else {
-      throw new Error('fail');
-    }
-  }
-
-  function teamsInResultOrder(match: MatchResult) {
-    const aBye = match.a.name.isBye();
-    const bBye = match.b.name.isBye();
-
-    if (bBye && !aBye) {
-      if (emptyBranch(match.b)) {
-        return [match.a, match.b];
-      } else {
-        return [];
-      }
-    } else if (aBye && !bBye) {
-      if (emptyBranch(match.a)) {
-        return [match.b, match.a];
-      } else {
-        return [];
-      }
-    } else if (isNumber(match.a.score) && isNumber(match.b.score)) {
-      if (match.a.score > match.b.score) {
-        return [match.a, match.b];
-      }
-      else if (match.a.score < match.b.score) {
-        return [match.b, match.a];
-      }
-    }
-    return [];
-  }
-
-  function matchWinner(match: MatchResult): TeamBlock {
-    return teamsInResultOrder(match)[0] || emptyTeam(match.a.source);
-  }
-
-  function matchLoser(match: MatchResult): TeamBlock {
-    return teamsInResultOrder(match)[1] || emptyTeam(match.a.source);
   }
 
   function trackHighlighter(teamIndex: number, cssClass: string, container: JQuery) {
@@ -615,10 +622,9 @@
         ];
         const teamA = teams[0].source;
         const teamB = teams[1].source;
-        const matchResult: MatchResult = {
-          a: new TeamBlock(teamA, teamA().name, 0, teamA().idx, null),
-          b: new TeamBlock(teamB, teamB().name, 1, teamB().idx, null)
-        };
+        const matchResult: MatchResult = new MatchResult(
+            new TeamBlock(teamA, teamA().name, 0, teamA().idx, null),
+            new TeamBlock(teamB, teamB().name, 1, teamB().idx, null));
         const match = mkMatch(this, matchResult, matchIdx, !results ? null : results[matchIdx], renderCb, isFirstBracket);
         matches.push(match);
         return match;
@@ -859,10 +865,10 @@
       if (team.name.isBye()) {
         tEl.addClass('na');
       }
-      else if (matchWinner(match).name === team.name) {
+      else if (match.matchWinner().name === team.name) {
         tEl.addClass('win');
       }
-      else if (matchLoser(match).name === team.name) {
+      else if (match.matchLoser().name === team.name) {
         tEl.addClass('lose');
       }
 
@@ -1048,8 +1054,8 @@
           }
           teamCon.append(connector(height, shift, teamCon, align));
         },
-        winner: function() { return matchWinner(match); },
-        loser: function() { return matchLoser(match); },
+        winner: function() { return match.matchWinner(); },
+        loser: function() { return match.matchLoser(); },
         first: function(): TeamBlock {
           return match.a;
         },
@@ -1073,7 +1079,7 @@
           if (isDoubleBye) {
             teamCon.addClass('np');
           }
-          else if (!matchWinner(match).name) {
+          else if (!match.matchWinner().name) {
             teamCon.addClass('np');
           }
           else {
