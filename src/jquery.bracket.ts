@@ -65,7 +65,7 @@
     second: () => TeamBlock;
     setAlignCb: (cb: (JQuery) => void) => void;
     render: () => void;
-    results: () => Array<number>;
+    results: () => [number, number];
   }
 
   interface MatchSource {
@@ -86,7 +86,7 @@
     winner: () => TeamBlock;
     loser: () => TeamBlock;
     render: () => void;
-    results: () => Array<Array<Array<number>>>;
+    results: () => Array<Array<[number, number]>>;
   }
 
   // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
@@ -170,7 +170,7 @@
   }
 
   interface InitData {
-    teams: Array<Array<any>>;
+    teams: Array<[any, any]>;
     results: Array<Array<any>>;
   }
 
@@ -298,9 +298,9 @@
     return true;
   }
 
-  const winnerMatchSources = (teams, m: number) => () => [
-    {source: () => ({name: teams[m][0], idx: (m * 2)})},
-    {source: () => ({name: teams[m][1], idx: (m * 2 + 1)})}
+  const winnerMatchSources = (teams: [any, any], m: number) => (): [MatchSource, MatchSource] => [
+    {source: () => new TeamBlock(null, teams[m][0], 0, (m * 2), null)},
+    {source: () => new TeamBlock(null, teams[m][1], 1, (m * 2 + 1), null)}
   ];
 
   const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (tC: JQuery) => {
@@ -314,7 +314,7 @@
     }
   };
 
-  function prepareWinners(winners: Bracket, teams, isSingleElimination: boolean,
+  function prepareWinners(winners: Bracket, teams: [any, any], isSingleElimination: boolean,
                           skipConsolationRound: boolean, skipGrandFinalComeback: boolean) {
     const rounds = Math.log(teams.length * 2) / Math.log(2);
     var matches = teams.length;
@@ -370,7 +370,7 @@
     }
   }
 
-  const loserMatchSources = (winners, losers, matches, m, n, r) => () => {
+  const loserMatchSources = (winners, losers, matches, m, n, r) => (): [MatchSource, MatchSource] => {
     /* first round comes from winner bracket */
     if (n % 2 === 0 && r === 0) {
       return [
@@ -599,7 +599,7 @@
     constructor(private _bracket: Bracket,
                 private previousRound: Round,
                 private roundIdx: number,
-                private _results: Array<Array<number>>,
+                private _results: Array<[number, number, any]>,
                 private doRenderCb: BoolCallback,
                 private mkMatch,
                 private isFirstBracket: boolean) {}
@@ -613,7 +613,7 @@
     get id() {
       return this.roundIdx;
     }
-    addMatch(teamCb: () => Array<MatchSource>, renderCb: (match: Match) => boolean): Match {
+    addMatch(teamCb: () => [MatchSource, MatchSource], renderCb: (match: Match) => boolean): Match {
       const matchIdx = this.matches.length;
       const teams = (teamCb !== null) ? teamCb() : [
         {source: this.bracket.round(this.roundIdx - 1).match(matchIdx * 2).winner},
@@ -649,7 +649,7 @@
         ma.render();
       });
     }
-    results() {
+    results(): Array<[number, number]> {
       const results = [];
       $.each(this.matches, function(i, ma) {
         results.push(ma.results());
@@ -658,7 +658,7 @@
     }
   }
 
-  function mkBracket(bracketCon: JQuery, results: Array<Array<Array<number>>>, mkMatch, isFirstBracket: boolean): Bracket {
+  function mkBracket(bracketCon: JQuery, results: Array<Array<[number, number, any]>>, mkMatch, isFirstBracket: boolean): Bracket {
     const rounds: Array<Round> = [];
 
     return {
@@ -697,7 +697,7 @@
           rounds[i].render();
         }
       },
-      results() {
+      results(): Array<Array<[number, number]>> {
         const results = [];
         $.each(rounds, function(i, ro) {
           results.push(ro.results());
@@ -961,7 +961,7 @@
     }
 
     function mkMatch(round: Round, match: MatchResult, idx: number,
-                     results: Array<number>, renderCb: Function,
+                     results: [number, number, any], renderCb: Function,
                      isFirstBracket: boolean): Match {
       const matchCon = $('<div class="match"></div>');
       const teamCon: JQuery = $('<div class="teamContainer"></div>');
@@ -1108,7 +1108,7 @@
             this.connect(connectorCb);
           }
         },
-        results() {
+        results(): [number, number] {
           // Either team is bye -> reset (mutate) scores from that match
           const hasBye = match.a.name.isBye() || match.b.name.isBye();
           if (hasBye) {
