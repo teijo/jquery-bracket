@@ -645,16 +645,10 @@
         return;
       }
       this.roundCon.appendTo(this.bracket.el);
-      $.each(this.matches, function(i, ma) {
-        ma.render();
-      });
+      this.matches.forEach(m => m.render());
     }
     results(): Array<[number, number]> {
-      const results = [];
-      $.each(this.matches, function(i, ma) {
-        results.push(ma.results());
-      });
-      return results;
+      return this.matches.reduce((agg, m) => agg.concat([m.results()]), []);
     }
   }
 
@@ -698,11 +692,7 @@
         }
       },
       results(): Array<Array<[number, number]>> {
-        const results = [];
-        $.each(rounds, function(i, ro) {
-          results.push(ro.results());
-        });
-        return results;
+        return rounds.reduce((agg, r) => agg.concat([r.results()]), []);
       }
     };
   }
