@@ -22,12 +22,20 @@
       return this.val;
     }
 
+    orElse(defaultValue) {
+      return (this.val === null) ? defaultValue : this.val;
+    }
+
     map<U>(f: (T) => U): Option<U | T> {
       return (this.val === null) ? this : new Option(f(this.val));
     }
 
     toNull() {
       return (this.val === null) ? null : this.val;
+    }
+
+    isEmpty(): boolean {
+      return this.val === null;
     }
 
     private constructor(private val: T | null) {
@@ -46,29 +54,9 @@
     (tc: JQuery, match: Match): Connector | null;
   }
 
-  class Team<T> {
-    private team: T | null;
-
-    constructor(team: T | null) {
-      this.team = team;
-    }
-    get(): T {
-      if (this.team === null) {
-        throw new Error('Cannot get a BYE team');
-      }
-      return this.team;
-    }
-    getOr(team: T) {
-      return this.isBye() ? team : this.get();
-    }
-    isBye(): boolean {
-      return this.team === null;
-    }
-  }
-
   class TeamBlock {
     constructor(readonly source: (() => TeamBlock), // Where base of the information propagated from
-                public name: Team<any>,
+                public name: Option<any>,
                 readonly id: number, // Order in which team is in a match, 0 or 1
                 public idx: number,
                 public score: number | null) { }
@@ -123,7 +111,7 @@
   class MatchResult {
     // Recursively check if branch ends into a BYE
     private static emptyBranch(block: TeamBlock) {
-      if (!block.name.isBye()) {
+      if (!block.name.isEmpty()) {
         return false;
       } else {
         try {
@@ -140,8 +128,8 @@
     }
 
     private static teamsInResultOrder(match: MatchResult) {
-      const aBye = match.a.name.isBye();
-      const bBye = match.b.name.isBye();
+      const aBye = match.a.name.isEmpty();
+      const bBye = match.b.name.isEmpty();
 
       if (bBye && !aBye) {
         if (MatchResult.emptyBranch(match.b)) {
@@ -169,7 +157,7 @@
     // Arbitrary (either parent) source is required so that branch emptiness
     // can be determined by traversing to the beginning.
     private static emptyTeam(source: () => TeamBlock): TeamBlock {
-      return new TeamBlock(source, new Team(null), -1, -1, null);
+      return new TeamBlock(source, Option.of(null), -1, -1, null);
     }
 
     constructor(readonly a: TeamBlock, readonly b: TeamBlock) { return; }
@@ -259,10 +247,10 @@
     const loser = source.loser();
 
     if (winner && loser) {
-      if (!winner.name.isBye()) {
+      if (!winner.name.isEmpty()) {
         trackHighlighter(winner.idx, 'highlightWinner', container).highlight();
       }
-      if (!loser.name.isBye()) {
+      if (!loser.name.isEmpty()) {
         trackHighlighter(loser.idx, 'highlightLoser', container).highlight();
       }
     }
@@ -480,13 +468,13 @@
         /* Track if container has been resized for final rematch */
         var _isResized = false;
         /* LB winner won first final match, need a new one */
-        if (!skipSecondaryFinal && (!match.winner().name.isBye() && match.winner().name === losers.winner().name)) {
+        if (!skipSecondaryFinal && (!match.winner().name.isEmpty() && match.winner().name === losers.winner().name)) {
           if (finals.size() === 2) {
             return false;
           }
           /* This callback is ugly, would be nice to make more sensible solution */
           const round = finals.addRound(function() {
-            const rematch = ((!match.winner().name.isBye() && match.winner().name === losers.winner().name));
+            const rematch = ((!match.winner().name.isEmpty() && match.winner().name === losers.winner().name));
             if (_isResized === false) {
               if (rematch) {
                 _isResized = true;
@@ -814,7 +802,7 @@
     if (!opts.init) {
       opts.init = {
         teams: [
-          [new Team(null), new Team(null)]
+          [Option.of(null), Option.of(null)]
         ],
         results: []
       };
@@ -847,7 +835,7 @@
         }
         if (opts.save) {
           const output = $.extend(true, {}, data);
-          output.teams = output.teams.map(ts => ts.map(t => t.getOr(null)));
+          output.teams = output.teams.map(ts => ts.map(t => t.toNull()));
           opts.save(output, opts.userData);
         }
       }
@@ -858,14 +846,14 @@
                          isFirstBracket: boolean) {
       const rId = resultIdentifier;
       const sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
-      const score = (team.name.isBye() || opponent.name.isBye() || !isReady)
+      const score = (team.name.isEmpty() || opponent.name.isEmpty() || !isReady)
           ? '--'
           : (team.score === null || !isNumber(team.score) ? '--' : team.score);
       sEl.text(score);
 
       resultIdentifier += 1;
 
-      const name = team.name.getOr('BYE');
+      const name = team.name.orElse('BYE');
       const tEl = $('<div class="team"></div>');
       const nEl = $('<div class="label"></div>').appendTo(tEl);
 
@@ -879,7 +867,7 @@
         tEl.attr('data-teamid', team.idx);
       }
 
-      if (team.name.isBye()) {
+      if (team.name.isEmpty()) {
         tEl.addClass('na');
       }
       else if (match.winner().name === team.name) {
@@ -892,14 +880,14 @@
       tEl.append(sEl);
 
       // Only first round of BYEs can be edited
-      if ((!team.name.isBye() || (team.name.isBye() && round === 0 && isFirstBracket)) && typeof(opts.save) === 'function') {
+      if ((!team.name.isEmpty() || (team.name.isEmpty() && round === 0 && isFirstBracket)) && typeof(opts.save) === 'function') {
         nEl.addClass('editable');
         nEl.click(function() {
           const span = $(this);
 
           function editor() {
             function done_fn(val, next: boolean) {
-              opts.init.teams[~~(team.idx / 2)][team.idx % 2] = new Team(val ? val : null);
+              opts.init.teams[~~(team.idx / 2)][team.idx % 2] = Option.of(val || null);
 
               renderAll(true);
               span.click(editor);
@@ -910,12 +898,12 @@
             }
 
             span.unbind();
-            opts.decorator.edit(span, team.name.getOr(null), done_fn);
+            opts.decorator.edit(span, team.name.toNull(), done_fn);
           }
 
           editor();
         });
-        if (!team.name.isBye() && !opponent.name.isBye() && isReady) {
+        if (!team.name.isEmpty() && !opponent.name.isEmpty() && isReady) {
           sEl.addClass('editable');
           sEl.click(function() {
             const span = $(this);
@@ -1092,7 +1080,7 @@
           match.a.idx = match.a.source().idx;
           match.b.idx = match.b.source().idx;
 
-          const isDoubleBye = match.a.name.isBye() && match.b.name.isBye();
+          const isDoubleBye = match.a.name.isEmpty() && match.b.name.isEmpty();
           if (isDoubleBye) {
             teamCon.addClass('np');
           }
@@ -1104,7 +1092,7 @@
           }
 
           // Coerce truthy/falsy "isset()" for Typescript
-          const isReady = !match.a.name.isBye() && !match.b.name.isBye();
+          const isReady = !match.a.name.isEmpty() && !match.b.name.isEmpty();
 
           teamCon.append(teamElement(round.id, match, match.a, match.b, isReady, isFirstBracket));
           teamCon.append(teamElement(round.id, match, match.b, match.a, isReady, isFirstBracket));
@@ -1127,7 +1115,7 @@
         },
         results(): [number | null, number | null] {
           // Either team is bye -> reset (mutate) scores from that match
-          const hasBye = match.a.name.isBye() || match.b.name.isBye();
+          const hasBye = match.a.name.isEmpty() || match.b.name.isEmpty();
           if (hasBye) {
             match.a.score = match.b.score = null;
           }
@@ -1218,7 +1206,7 @@
     inc.click(function () {
       const len = data.teams.length;
       for (var i = 0; i < len; i += 1) {
-        data.teams.push([new Team(null), new Team(null)]);
+        data.teams.push([Option.of(null), Option.of(null)]);
       }
       return JqueryBracket(opts);
     });
@@ -1265,7 +1253,7 @@
       }
       opts.dir = opts.dir || 'lr';
       opts.init.teams = !opts.init.teams || opts.init.teams.length === 0 ? [[null, null]] : opts.init.teams;
-      opts.init.teams = opts.init.teams.map(ts => ts.map(t => new Team(t)));
+      opts.init.teams = opts.init.teams.map(ts => ts.map(t => Option.of(t)));
       opts.skipConsolationRound = opts.skipConsolationRound || false;
       opts.skipSecondaryFinal = opts.skipSecondaryFinal || false;
       if (opts.dir !== 'lr' && opts.dir !== 'rl') {
