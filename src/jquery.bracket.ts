@@ -692,7 +692,7 @@
   }
 
   function mkBracket(bracketCon: JQuery,
-                     results: Array<Array<[number | null, number | null, any]>>,
+                     results: Option<Array<Array<[number | null, number | null, any]>>>,
                      mkMatch, isFirstBracket: boolean): Bracket {
     const rounds: Array<Round> = [];
 
@@ -701,12 +701,11 @@
       addRound(doRenderCb: BoolCallback): Round {
         const id = rounds.length;
         const previous = (id > 0) ? rounds[id - 1] : null;
-        const roundResults = !results
-            ? null
-            : (results[id] !== undefined // May be undefined if init score array does not match number of teams
-                ? results[id]
-                : null);
-        const round = new Round(this, Option.of(previous), id, Option.of(roundResults), doRenderCb, mkMatch, isFirstBracket);
+
+        // Rounds may be undefined if init score array does not match number of teams
+        const roundResults = results.map(r => (r[id] === undefined) ? null : r[id]);
+
+        const round = new Round(this, Option.of(previous), id, roundResults, doRenderCb, mkMatch, isFirstBracket);
         rounds.push(round);
         return round;
       },
@@ -1204,12 +1203,12 @@
       topCon.css('width', roundCount * 140 + 10);
     }
 
-    w = mkBracket(wEl, !r || !r[0] ? null : r[0], mkMatch, true);
+    w = mkBracket(wEl, Option.of(r[0] || null), mkMatch, true);
 
     if (!isSingleElimination) {
-      l = mkBracket(lEl, !r || !r[1] ? null : r[1], mkMatch, false);
+      l = mkBracket(lEl, Option.of(r[1] || null), mkMatch, false);
       if (!opts.skipGrandFinalComeback) {
-        f = mkBracket(fEl, !r || !r[2] ? null : r[2], mkMatch, false);
+        f = mkBracket(fEl, Option.of(r[2] || null), mkMatch, false);
       }
     }
 
