@@ -40,15 +40,9 @@
   }
 
   class TeamBlock {
-    get id() {
-      return this._id;
-    }
-    get source() {
-      return this._source;
-    }
-    constructor(private _source: (() => TeamBlock), // Where base of the information propagated from
+    constructor(readonly source: (() => TeamBlock), // Where base of the information propagated from
                 public name: Team<any>,
-                private _id: number, // Order in which team is in a match, 0 or 1
+                readonly id: number, // Order in which team is in a match, 0 or 1
                 public idx: number,
                 public score: number | null) { }
   }
@@ -151,15 +145,7 @@
       return new TeamBlock(source, new Team(null), -1, -1, null);
     }
 
-    get a() {
-      return this._a;
-    }
-
-    get b() {
-      return this._b;
-    }
-
-    constructor(private _a: TeamBlock, private _b: TeamBlock) {}
+    constructor(readonly a: TeamBlock, readonly b: TeamBlock) { return; }
 
     winner(): TeamBlock {
       return MatchResult.teamsInResultOrder(this)[0] || MatchResult.emptyTeam(this.a.source);
@@ -610,7 +596,7 @@
     private roundCon: JQuery = $('<div class="round"></div>');
     private matches: Array<Match> = [];
 
-    constructor(private _bracket: Bracket,
+    constructor(readonly bracket: Bracket,
                 private previousRound: Round | null,
                 private roundIdx: number,
                 private _results: Array<[number | null, number | null, any]> | null,
@@ -620,9 +606,6 @@
 
     get el(){
       return this.roundCon;
-    }
-    get bracket() {
-      return this._bracket;
     }
     get id() {
       return this.roundIdx;
