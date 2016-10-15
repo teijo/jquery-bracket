@@ -10,6 +10,51 @@
 /// <reference path="../lib/jquery.d.ts" />
 
 (function($) {
+  class Option<T> {
+    static of<V>(value: V | null): Option<V> {
+      return new Option(value);
+    }
+
+    get() {
+      if (this.val === null) {
+        throw new Error('Trying to get() empty Option');
+      } else {
+        return this.val;
+      }
+    }
+
+    map<U>(f: (T) => U): Option<U | T> {
+      if (this.val === null) {
+        return this;
+      } else {
+        return new Option(f(this.val));
+      }
+    }
+
+    getOrElse(defaultValue: () => (T | null)): T | null {
+      if (this.val === null) {
+        return defaultValue();
+      } else {
+        return this.val;
+      }
+    }
+
+    toNull() {
+      if (this.val === null) {
+        return null;
+      } else {
+        return this.val;
+      }
+    }
+
+    private constructor(private val: T | null) {
+      if (this.val === undefined) {
+        throw new Error('Option cannot contain undefined');
+      }
+      return;
+    }
+  }
+
   interface Connector {
     height: number;
     shift: number;
@@ -341,8 +386,8 @@
 
       if (teams.length > 1 && !skipConsolationRound) {
         const prev = winners.final().round().prev();
-        const third = prev ? prev.match(0).loser : null;
-        const fourth = prev ? prev.match(1).loser : null;
+        const third = prev.map(p => p.match(0).loser).toNull();
+        const fourth = prev.map(p => p.match(1).loser).toNull();
         const consol = round.addMatch(function() {
             return [
               {source: third},
@@ -518,12 +563,9 @@
 
     if (!skipConsolationRound) {
       const prev = losers.final().round().prev();
-      if (prev == null) {
-        throw new Error('Could not resolve consolation round teams');
-      }
       const consol = round.addMatch(function() {
           return [
-            {source: prev.match(0).loser},
+            {source: prev.get().match(0).loser},
             {source: losers.loser}
           ];
         },
@@ -597,9 +639,9 @@
     private matches: Array<Match> = [];
 
     constructor(readonly bracket: Bracket,
-                private previousRound: Round | null,
+                private previousRound: Option<Round>,
                 private roundIdx: number,
-                private _results: Array<[number | null, number | null, any]> | null,
+                private _results: Option<Array<[number | null, number | null, any]>>,
                 private doRenderCb: BoolCallback,
                 private mkMatch,
                 private isFirstBracket: boolean) {}
@@ -622,7 +664,7 @@
           new TeamBlock(teamA, teamA().name, 0, teamA().idx, null),
           new TeamBlock(teamB, teamB().name, 1, teamB().idx, null));
       const match = this.mkMatch(this, matchResult, matchIdx,
-          this._results === null ? null : this._results[matchIdx], renderCb,
+          this._results.map(r => r[matchIdx] === undefined ? null : r[matchIdx]), renderCb,
           this.isFirstBracket);
       this.matches.push(match);
       return match;
@@ -630,7 +672,7 @@
     match(id: number): Match {
       return this.matches[id];
     }
-    prev(): Round | null {
+    prev(): Option<Round> {
       return this.previousRound;
     }
     size(): number {
@@ -664,7 +706,7 @@
             : (results[id] !== undefined // May be undefined if init score array does not match number of teams
                 ? results[id]
                 : null);
-        const round = new Round(this, previous, id, roundResults, doRenderCb, mkMatch, isFirstBracket);
+        const round = new Round(this, Option.of(previous), id, Option.of(roundResults), doRenderCb, mkMatch, isFirstBracket);
         rounds.push(round);
         return round;
       },
@@ -955,7 +997,7 @@
     }
 
     function mkMatch(round: Round, match: MatchResult, idx: number,
-                     results: [number, number, any], renderCb: Function,
+                     results: Option<[number, number, any]>, renderCb: Function,
                      isFirstBracket: boolean): Match {
       const matchCon = $('<div class="match"></div>');
       const teamCon: JQuery = $('<div class="teamContainer"></div>');
@@ -964,7 +1006,7 @@
       var alignCb: ((JQuery) => void) | null = null;
 
       if (!opts.save) {
-        const matchUserData = (results ? results[2] : null);
+        const matchUserData = results.map(r => r[2]).toNull();
 
         if (opts.onMatchHover) {
           teamCon.hover(function () {
@@ -982,8 +1024,8 @@
       match.a.name = match.a.source().name;
       match.b.name = match.b.source().name;
 
-      match.a.score = !results ? null : results[0];
-      match.b.score = !results ? null : results[1];
+      match.a.score = results.map(r => r[0]).toNull();
+      match.b.score = results.map(r => r[1]).toNull();
 
       /* match has score even though teams haven't yet been decided */
       /* todo: would be nice to have in preload check, maybe too much work */
