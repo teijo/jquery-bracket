@@ -16,13 +16,13 @@
   }
 
   interface ConnectorProvider {
-    (tc: JQuery, match: Match): Connector;
+    (tc: JQuery, match: Match): Connector | null;
   }
 
   class Team<T> {
-    private team: T;
+    private team: T | null;
 
-    constructor(team: T) {
+    constructor(team: T | null) {
       this.team = team;
     }
     get(): T {
@@ -46,18 +46,18 @@
     get source() {
       return this._source;
     }
-    constructor(private _source: () => TeamBlock, // Where base of the information propagated from
+    constructor(private _source: (() => TeamBlock), // Where base of the information propagated from
                 public name: Team<any>,
                 private _id: number, // Order in which team is in a match, 0 or 1
                 public idx: number,
-                public score: number) { }
+                public score: number | null) { }
   }
 
   interface Match {
     el: JQuery;
     id: number;
     round: () => Round;
-    connectorCb: (cb: ConnectorProvider) => void;
+    connectorCb: (cb: ConnectorProvider | null) => void;
     connect: (cb: ConnectorProvider) => void;
     winner: () => TeamBlock;
     loser: () => TeamBlock;
@@ -65,7 +65,7 @@
     second: () => TeamBlock;
     setAlignCb: (cb: (JQuery) => void) => void;
     render: () => void;
-    results: () => [number, number];
+    results: () => [number | null, number | null];
   }
 
   interface MatchSource {
@@ -86,7 +86,7 @@
     winner: () => TeamBlock;
     loser: () => TeamBlock;
     render: () => void;
-    results: () => Array<Array<[number, number]>>;
+    results: () => Array<Array<[number | null, number | null]>>;
   }
 
   // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
@@ -94,17 +94,27 @@
     return !isNaN(parseFloat(n)) && isFinite(n);
   }
 
+  function EndOfBranchException() {
+    this.message = 'Root of information for this team';
+    this.name = 'EndOfBranchException';
+  }
+
   class MatchResult {
     // Recursively check if branch ends into a BYE
     private static emptyBranch(block: TeamBlock) {
-      const isBye = block.name.isBye();
-
-      if (block.source === undefined || block.source === null || !isBye) {
-        return isBye;
-      } else if (typeof(block.source) === 'function') {
-        return MatchResult.emptyBranch(block.source());
+      if (!block.name.isBye()) {
+        return false;
       } else {
-        throw new Error('fail');
+        try {
+          const from = block.source();
+          return MatchResult.emptyBranch(from);
+        } catch (e) {
+          if (e instanceof EndOfBranchException) {
+            return true;
+          } else {
+            throw new Error('Unexpected exception type');
+          }
+        }
       }
     }
 
@@ -206,7 +216,7 @@
     return a;
   }
 
-  function trackHighlighter(teamIndex: number, cssClass: string, container: JQuery) {
+  function trackHighlighter(teamIndex: number, cssClass: string | null, container: JQuery) {
     const elements = container.find('.team[data-teamid=' + teamIndex + ']');
     const addedClass = !cssClass ? 'highlight' : cssClass;
 
@@ -299,8 +309,8 @@
   }
 
   const winnerMatchSources = (teams: [any, any], m: number) => (): [MatchSource, MatchSource] => [
-    {source: () => new TeamBlock(null, teams[m][0], 0, (m * 2), null)},
-    {source: () => new TeamBlock(null, teams[m][1], 1, (m * 2 + 1), null)}
+    {source: () => new TeamBlock(() => { throw new EndOfBranchException(); }, teams[m][0], 0, (m * 2), null)},
+    {source: () => new TeamBlock(() => { throw new EndOfBranchException(); }, teams[m][1], 1, (m * 2 + 1), null)}
   ];
 
   const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (tC: JQuery) => {
@@ -344,8 +354,9 @@
       });
 
       if (teams.length > 1 && !skipConsolationRound) {
-        const third = winners.final().round().prev().match(0).loser;
-        const fourth = winners.final().round().prev().match(1).loser;
+        const prev = winners.final().round().prev();
+        const third = prev ? prev.match(0).loser : null;
+        const fourth = prev ? prev.match(1).loser : null;
         const consol = round.addMatch(function() {
             return [
               {source: third},
@@ -458,7 +469,7 @@
         /* LB winner won first final match, need a new one */
         if (!skipSecondaryFinal && (!match.winner().name.isBye() && match.winner().name === losers.winner().name)) {
           if (finals.size() === 2) {
-            return;
+            return false;
           }
           /* This callback is ugly, would be nice to make more sensible solution */
           const round = finals.addRound(function() {
@@ -520,10 +531,13 @@
     });
 
     if (!skipConsolationRound) {
-      const fourth = losers.final().round().prev().match(0).loser;
+      const prev = losers.final().round().prev();
+      if (prev == null) {
+        throw new Error('Could not resolve consolation round teams');
+      }
       const consol = round.addMatch(function() {
           return [
-            {source: fourth},
+            {source: prev.match(0).loser},
             {source: losers.loser}
           ];
         },
@@ -537,15 +551,15 @@
         tC.css('top', (topShift) + 'px');
       });
 
-      match.connectorCb(function(): Connector {
+      match.connectorCb(function(): Connector | null {
         return null;
       });
-      consol.connectorCb(function(): Connector {
+      consol.connectorCb(function(): Connector | null {
         return null;
       });
     }
 
-    winners.final().connectorCb(function(tC): Connector {
+    winners.final().connectorCb(function(tC): Connector | null {
       var shift;
       var height;
 
@@ -597,9 +611,9 @@
     private matches: Array<Match> = [];
 
     constructor(private _bracket: Bracket,
-                private previousRound: Round,
+                private previousRound: Round | null,
                 private roundIdx: number,
-                private _results: Array<[number, number, any]>,
+                private _results: Array<[number | null, number | null, any]> | null,
                 private doRenderCb: BoolCallback,
                 private mkMatch,
                 private isFirstBracket: boolean) {}
@@ -613,7 +627,7 @@
     get id() {
       return this.roundIdx;
     }
-    addMatch(teamCb: () => [MatchSource, MatchSource], renderCb: (match: Match) => boolean): Match {
+    addMatch(teamCb: (() => [MatchSource, MatchSource]) | null, renderCb: ((match: Match) => boolean) | null): Match {
       const matchIdx = this.matches.length;
       const teams = (teamCb !== null) ? teamCb() : [
         {source: this.bracket.round(this.roundIdx - 1).match(matchIdx * 2).winner},
@@ -625,7 +639,7 @@
           new TeamBlock(teamA, teamA().name, 0, teamA().idx, null),
           new TeamBlock(teamB, teamB().name, 1, teamB().idx, null));
       const match = this.mkMatch(this, matchResult, matchIdx,
-          !this._results ? null : this._results[matchIdx], renderCb,
+          this._results === null ? null : this._results[matchIdx], renderCb,
           this.isFirstBracket);
       this.matches.push(match);
       return match;
@@ -633,7 +647,7 @@
     match(id: number): Match {
       return this.matches[id];
     }
-    prev(): Round {
+    prev(): Round | null {
       return this.previousRound;
     }
     size(): number {
@@ -647,12 +661,14 @@
       this.roundCon.appendTo(this.bracket.el);
       this.matches.forEach(m => m.render());
     }
-    results(): Array<[number, number]> {
-      return this.matches.reduce((agg, m) => agg.concat([m.results()]), []);
+    results(): Array<[number | null, number | null]> {
+      return this.matches.reduce((agg: Array<[number | null, number | null]>, m) => agg.concat([m.results()]), []);
     }
   }
 
-  function mkBracket(bracketCon: JQuery, results: Array<Array<[number, number, any]>>, mkMatch, isFirstBracket: boolean): Bracket {
+  function mkBracket(bracketCon: JQuery,
+                     results: Array<Array<[number | null, number | null, any]>>,
+                     mkMatch, isFirstBracket: boolean): Bracket {
     const rounds: Array<Round> = [];
 
     return {
@@ -660,7 +676,12 @@
       addRound(doRenderCb: BoolCallback): Round {
         const id = rounds.length;
         const previous = (id > 0) ? rounds[id - 1] : null;
-        const round = new Round(this, previous, id, !results ? null : results[id], doRenderCb, mkMatch, isFirstBracket);
+        const roundResults = !results
+            ? null
+            : (results[id] !== undefined // May be undefined if init score array does not match number of teams
+                ? results[id]
+                : null);
+        const round = new Round(this, previous, id, roundResults, doRenderCb, mkMatch, isFirstBracket);
         rounds.push(round);
         return round;
       },
@@ -691,8 +712,8 @@
           rounds[i].render();
         }
       },
-      results(): Array<Array<[number, number]>> {
-        return rounds.reduce((agg, r) => agg.concat([r.results()]), []);
+      results(): Array<Array<[number | null, number | null]>> {
+        return rounds.reduce((agg: Array<Array<[number | null, number | null]>>, r) => agg.concat([r.results()]), []);
       }
     };
   }
@@ -833,7 +854,7 @@
       const sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
       const score = (team.name.isBye() || opponent.name.isBye() || !isReady)
           ? '--'
-          : (!isNumber(team.score) ? '--' : team.score);
+          : (team.score === null || !isNumber(team.score) ? '--' : team.score);
       sEl.text(score);
 
       resultIdentifier += 1;
@@ -956,8 +977,8 @@
       const matchCon = $('<div class="match"></div>');
       const teamCon: JQuery = $('<div class="teamContainer"></div>');
 
-      var connectorCb: ConnectorProvider = null;
-      var alignCb: (JQuery) => void = null;
+      var connectorCb: ConnectorProvider | null = null;
+      var alignCb: ((JQuery) => void) | null = null;
 
       if (!opts.save) {
         const matchUserData = (results ? results[2] : null);
@@ -1098,7 +1119,7 @@
             this.connect(connectorCb);
           }
         },
-        results(): [number, number] {
+        results(): [number | null, number | null] {
           // Either team is bye -> reset (mutate) scores from that match
           const hasBye = match.a.name.isBye() || match.b.name.isBye();
           if (hasBye) {

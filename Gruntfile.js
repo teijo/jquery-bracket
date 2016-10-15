@@ -51,7 +51,8 @@ module.exports = function(grunt) {
       },
       options: {
         sourceMap: true,
-        target: 'es5'
+        target: 'es5',
+        additionalFlags: '--strictNullChecks'
       }
     }
   });
