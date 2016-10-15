@@ -18,40 +18,22 @@
     get() {
       if (this.val === null) {
         throw new Error('Trying to get() empty Option');
-      } else {
-        return this.val;
       }
+      return this.val;
     }
 
     map<U>(f: (T) => U): Option<U | T> {
-      if (this.val === null) {
-        return this;
-      } else {
-        return new Option(f(this.val));
-      }
-    }
-
-    getOrElse(defaultValue: () => (T | null)): T | null {
-      if (this.val === null) {
-        return defaultValue();
-      } else {
-        return this.val;
-      }
+      return (this.val === null) ? this : new Option(f(this.val));
     }
 
     toNull() {
-      if (this.val === null) {
-        return null;
-      } else {
-        return this.val;
-      }
+      return (this.val === null) ? null : this.val;
     }
 
     private constructor(private val: T | null) {
       if (this.val === undefined) {
         throw new Error('Option cannot contain undefined');
       }
-      return;
     }
   }
 
