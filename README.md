@@ -38,6 +38,12 @@ Minified files are compiled to `dist/` directory.
 
 ## Changes
 
+*   2016-10-16: **0.8.0** BYE matches.
+    *   Gives proper support for having any number of teams in a tournament
+        (instead of just 2^N, i.e. 2, 4, 8...).
+    *   Leaving teams empty (`null`) creates a BYE branch. Any team scheduled
+        against BYE will get a default win with no score, and advance
+        automatically to the next match.
 *   2015-12-11: **0.7.3** Do not mutate original initialization data.
 *   2015-11-26: **0.7.2** Fix #49, the score initialization bug.
 *   2015-11-07: **0.7.1** (hotfix) ~~0.7.0~~ including source cleanup and new feature flag:
