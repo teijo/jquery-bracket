@@ -783,6 +783,12 @@
     }
   }
 
+  function exportData(data) {
+    const output = $.extend(true, {}, data);
+    output.teams = output.teams.map(ts => ts.map(t => t.toNull()));
+    return output;
+  }
+
   const JqueryBracket = function(opts: Options) {
     const align = opts.dir === 'lr' ? 'right' : 'left';
     var resultIdentifier;
@@ -843,9 +849,7 @@
           data.results[2] = f.results();
         }
         if (opts.save) {
-          const output = $.extend(true, {}, data);
-          output.teams = output.teams.map(ts => ts.map(t => t.toNull()));
-          opts.save(output, opts.userData);
+          opts.save(exportData(data), opts.userData);
         }
       }
     }
@@ -1213,7 +1217,7 @@
 
     return {
       data() {
-        return opts.init;
+        return exportData(opts.init);
       }
     };
   };
