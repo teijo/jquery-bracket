@@ -997,7 +997,7 @@
       var alignCb: ((JQuery) => void) | null = null;
 
       if (!opts.save) {
-        const matchUserData = results.map(r => r[2]).toNull();
+        const matchUserData = results.map(r => r.length < 3 ? null : r[2]).toNull();
 
         if (opts.onMatchHover) {
           teamCon.hover(function () {
