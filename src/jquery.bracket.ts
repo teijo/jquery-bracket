@@ -26,6 +26,10 @@
       return (this.val === null) ? defaultValue : this.val;
     }
 
+    orElseGet(defaultProvider) {
+      return (this.val === null) ? defaultProvider() : this.val;
+    }
+
     map<U>(f: (T) => U): Option<U | T> {
       return (this.val === null) ? this : new Option(f(this.val));
     }
@@ -54,6 +58,11 @@
     (tc: JQuery, match: Match): Connector | null;
   }
 
+  enum BranchType {
+    TBD,
+    BYE
+  }
+
   class TeamBlock {
     constructor(readonly source: (() => TeamBlock), // Where base of the information propagated from
                 public name: Option<any>,
@@ -62,15 +71,15 @@
                 public score: number | null) { }
 
     // Recursively check if branch ends into a BYE
-    public emptyBranch() {
+    public emptyBranch(): BranchType {
       if (!this.name.isEmpty()) {
-        return false;
+        return BranchType.TBD;
       } else {
         try {
           return this.source().emptyBranch();
         } catch (e) {
           if (e instanceof EndOfBranchException) {
-            return true;
+            return BranchType.BYE;
           } else {
             throw new Error('Unexpected exception type');
           }
@@ -132,13 +141,13 @@
       const bBye = match.b.name.isEmpty();
 
       if (bBye && !aBye) {
-        if (match.b.emptyBranch()) {
+        if (match.b.emptyBranch() === BranchType.BYE) {
           return [match.a, match.b];
         } else {
           return [];
         }
       } else if (aBye && !bBye) {
-        if (match.a.emptyBranch()) {
+        if (match.a.emptyBranch() === BranchType.BYE) {
           return [match.b, match.a];
         } else {
           return [];
@@ -853,7 +862,16 @@
 
       resultIdentifier += 1;
 
-      const name = team.name.orElse('BYE');
+      const name = team.name.orElseGet(() => {
+        const type = team.emptyBranch();
+        if (type === BranchType.BYE) {
+          return 'BYE';
+        } else if (type === BranchType.TBD) {
+          return 'TBD';
+        } else {
+          throw new Error(`Unexpected branch type ${type}`);
+        }
+      });
       const tEl = $('<div class="team"></div>');
       const nEl = $('<div class="label"></div>').appendTo(tEl);
 
