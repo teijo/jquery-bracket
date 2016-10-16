@@ -620,6 +620,7 @@
     constructor(readonly bracket: Bracket,
                 private previousRound: Option<Round>,
                 private roundIdx: number,
+                // TODO: results should be enforced to be correct by now
                 private _results: Option<Array<[number | null, number | null, any]>>,
                 private doRenderCb: BoolCallback,
                 private mkMatch,
@@ -643,7 +644,11 @@
           new TeamBlock(teamA, teamA().name, 0, teamA().idx, null),
           new TeamBlock(teamB, teamB().name, 1, teamB().idx, null));
       const match = this.mkMatch(this, matchResult, matchIdx,
-          this._results.map(r => r[matchIdx] === undefined ? null : r[matchIdx]), renderCb,
+          this._results.map(r => r[matchIdx] === undefined
+              ? null
+              : (r[matchIdx].length >= 2 /*may be empty array, e.g. initialized with 'results: []'*/
+                  ? r[matchIdx]
+                  : [null, null])), renderCb,
           this.isFirstBracket);
       this.matches.push(match);
       return match;
