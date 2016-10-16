@@ -60,6 +60,24 @@
                 readonly id: number, // Order in which team is in a match, 0 or 1
                 public idx: number,
                 public score: number | null) { }
+
+    // Recursively check if branch ends into a BYE
+    public emptyBranch() {
+      if (!this.name.isEmpty()) {
+        return false;
+      } else {
+        try {
+          return this.source().emptyBranch();
+        } catch (e) {
+          if (e instanceof EndOfBranchException) {
+            return true;
+          } else {
+            throw new Error('Unexpected exception type');
+          }
+        }
+      }
+    }
+
   }
 
   interface Match {
@@ -109,36 +127,18 @@
   }
 
   class MatchResult {
-    // Recursively check if branch ends into a BYE
-    private static emptyBranch(block: TeamBlock) {
-      if (!block.name.isEmpty()) {
-        return false;
-      } else {
-        try {
-          const from = block.source();
-          return MatchResult.emptyBranch(from);
-        } catch (e) {
-          if (e instanceof EndOfBranchException) {
-            return true;
-          } else {
-            throw new Error('Unexpected exception type');
-          }
-        }
-      }
-    }
-
     private static teamsInResultOrder(match: MatchResult) {
       const aBye = match.a.name.isEmpty();
       const bBye = match.b.name.isEmpty();
 
       if (bBye && !aBye) {
-        if (MatchResult.emptyBranch(match.b)) {
+        if (match.b.emptyBranch()) {
           return [match.a, match.b];
         } else {
           return [];
         }
       } else if (aBye && !bBye) {
-        if (MatchResult.emptyBranch(match.a)) {
+        if (match.a.emptyBranch()) {
           return [match.b, match.a];
         } else {
           return [];
