@@ -206,6 +206,7 @@
     dir: string;
     onMatchClick: (data: any) => void;
     onMatchHover: (data: any, hover: boolean) => void;
+    disableResize: boolean;
   }
 
   function depth(a): number {
@@ -1161,7 +1162,7 @@
       $.error('skipSecondaryFinal setting is viable only in double elimination mode');
     }
 
-    if (opts.save) {
+    if (!opts.disableResize) {
       embedEditButtons(topCon, data, opts);
     }
 
@@ -1193,7 +1194,7 @@
 
     const roundCount = countRounds(data.teams.length, isSingleElimination, opts.skipGrandFinalComeback);
 
-    if (opts.save) {
+    if (!opts.disableResize) {
       topCon.css('width', roundCount * 140 + 40);
     }
     else {
@@ -1269,6 +1270,8 @@
     }
   }
 
+  // Math.log2() mot supported in IEE or old browsers
+  const log2 = (x) => Math.log(x) * Math.LOG2E;
 
   const methods = {
     init(originalOpts: Options) {
@@ -1278,8 +1281,19 @@
       if (opts.save && (opts.onMatchClick || opts.onMatchHover)) {
         $.error('Match callbacks may not be passed in edit mode (in conjunction with save callback)');
       }
-      const log2 = Math.log2(opts.init.teams.length);
-      if (log2 !== Math.floor(log2)) {
+      const disableResizeType = typeof(opts.disableResize);
+      const disableResizeGiven = opts.hasOwnProperty('disableResize');
+      if (disableResizeGiven && disableResizeType !== 'boolean') {
+        $.error(`disableResize must be a boolean, got ${disableResizeType}`);
+      }
+      if (!opts.save && disableResizeGiven) {
+        $.error('disableResize can be used only if the bracket is editable, i.e. "save" callback given');
+      }
+      if (!disableResizeGiven) {
+        opts.disableResize = false;
+      }
+      const log2Result = log2(opts.init.teams.length);
+      if (log2Result !== Math.floor(log2Result)) {
         $.error(`"teams" property must have 2^n number of team pairs, i.e. 1, 2, 4, etc. Got ${opts.init.teams.length} team pairs.`);
       }
       opts.dir = opts.dir || 'lr';
