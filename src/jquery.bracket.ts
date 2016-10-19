@@ -1278,6 +1278,10 @@
       if (opts.save && (opts.onMatchClick || opts.onMatchHover)) {
         $.error('Match callbacks may not be passed in edit mode (in conjunction with save callback)');
       }
+      const log2 = Math.log2(opts.init.teams.length);
+      if (log2 !== Math.floor(log2)) {
+        $.error(`"teams" property must have 2^n number of team pairs, i.e. 1, 2, 4, etc. Got ${opts.init.teams.length} team pairs.`);
+      }
       opts.dir = opts.dir || 'lr';
       opts.init.teams = !opts.init.teams || opts.init.teams.length === 0 ? [[null, null]] : opts.init.teams;
       opts.init.teams = opts.init.teams.map(ts => ts.map(t => Option.of(t)));
