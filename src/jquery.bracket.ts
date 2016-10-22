@@ -208,6 +208,10 @@
     onMatchHover: (data: any, hover: boolean) => void;
     disableResize: boolean;
     disableTeamEdit: boolean;
+    teamWidth: number;
+    scoreWidth: number;
+    roundMargin: number;
+    matchMargin: number;
   }
 
   function depth(a): number {
@@ -337,7 +341,7 @@
   };
 
   function prepareWinners(winners: Bracket, teams: [any, any], isSingleElimination: boolean,
-                          skipConsolationRound: boolean, skipGrandFinalComeback: boolean) {
+                          opts: Options, skipGrandFinalComeback: boolean) {
     const roundCount = Math.log(teams.length * 2) / Math.log(2);
     var matchCount = teams.length;
     var round;
@@ -353,7 +357,7 @@
         else {
           const match = round.addMatch(teamCb, winnerBubbles);
           if (!skipGrandFinalComeback) {
-            match.setAlignCb(winnerAlignment(match, skipConsolationRound));
+            match.setAlignCb(winnerAlignment(match, opts.skipConsolationRound));
           }
         }
       }
@@ -365,7 +369,7 @@
         return null;
       });
 
-      if (teams.length > 1 && !skipConsolationRound) {
+      if (teams.length > 1 && !opts.skipConsolationRound) {
         const prev = winners.final().round().prev();
         const third = prev.map(p => p.match(0).loser).toNull();
         const fourth = prev.map(p => p.match(1).loser).toNull();
@@ -381,7 +385,8 @@
           const height = (winners.el.height()) / 2;
           consol.el.css('height', (height) + 'px');
 
-          const topShift = tC.height();
+
+          const topShift = tC.height() / 2 + opts.matchMargin;
 
           tC.css('top', (topShift) + 'px');
         });
@@ -467,7 +472,7 @@
   }
 
   function prepareFinals(finals: Bracket, winners: Bracket, losers: Bracket,
-                         skipSecondaryFinal: boolean, skipConsolationRound: boolean, topCon: JQuery) {
+                         opts: Options, topCon: JQuery) {
     const round = finals.addRound();
     const match = round.addMatch(function() {
         return [
@@ -479,7 +484,7 @@
         /* Track if container has been resized for final rematch */
         var _isResized = false;
         /* LB winner won first final match, need a new one */
-        if (!skipSecondaryFinal && (!match.winner().name.isEmpty() && match.winner().name === losers.winner().name)) {
+        if (!opts.skipSecondaryFinal && (!match.winner().name.isEmpty() && match.winner().name === losers.winner().name)) {
           if (finals.size() === 2) {
             return false;
           }
@@ -489,13 +494,13 @@
             if (_isResized === false) {
               if (rematch) {
                 _isResized = true;
-                topCon.css('width', (parseInt(topCon.css('width'), 10) + 140) + 'px');
+                topCon.css('width', (parseInt(topCon.css('width'), 10) + (opts.teamWidth + opts.scoreWidth + opts.roundMargin)) + 'px');
               }
             }
             if (!rematch && _isResized) {
               _isResized = false;
               finals.dropRound();
-              topCon.css('width', (parseInt(topCon.css('width'), 10) - 140) + 'px');
+              topCon.css('width', (parseInt(topCon.css('width'), 10) - (opts.teamWidth + opts.scoreWidth + opts.roundMargin)) + 'px');
             }
             return rematch;
           });
@@ -532,7 +537,7 @@
 
     match.setAlignCb(function(tC) {
       var height = (winners.el.height() + losers.el.height());
-      if (!skipConsolationRound) {
+      if (!opts.skipConsolationRound) {
         height /= 2;
       }
       match.el.css('height', (height) + 'px');
@@ -542,7 +547,7 @@
       tC.css('top', (topShift) + 'px');
     });
 
-    if (!skipConsolationRound) {
+    if (!opts.skipConsolationRound) {
       const prev = losers.final().round().prev();
       const consol = round.addMatch(function() {
           return [
@@ -616,7 +621,8 @@
   }
 
   class Round {
-    private roundCon: JQuery = $('<div class="round"></div>');
+    private containerWidth = this.opts.teamWidth + this.opts.scoreWidth;
+    private roundCon: JQuery = $(`<div class="round" style="width: ${this.containerWidth}px; margin-right: ${this.opts.roundMargin}px"/>`);
     private matches: Array<Match> = [];
 
     constructor(readonly bracket: Bracket,
@@ -626,7 +632,8 @@
                 private _results: Option<Array<[number | null, number | null, any]>>,
                 private doRenderCb: BoolCallback,
                 private mkMatch,
-                private isFirstBracket: boolean) {}
+                private isFirstBracket: boolean,
+                private opts: Options) {}
 
     get el(){
       return this.roundCon;
@@ -651,7 +658,7 @@
               : (r[matchIdx].length >= 2 /*may be empty array, e.g. initialized with 'results: []'*/
                   ? r[matchIdx]
                   : [null, null])), renderCb,
-          this.isFirstBracket);
+          this.isFirstBracket, this.opts);
       this.matches.push(match);
       return match;
     }
@@ -679,7 +686,7 @@
 
   function mkBracket(bracketCon: JQuery,
                      results: Option<Array<Array<[number | null, number | null, any]>>>,
-                     mkMatch, isFirstBracket: boolean): Bracket {
+                     mkMatch, isFirstBracket: boolean, opts: Options): Bracket {
     const rounds: Array<Round> = [];
 
     return {
@@ -691,7 +698,7 @@
         // Rounds may be undefined if init score array does not match number of teams
         const roundResults = results.map(r => (r[id] === undefined) ? null : r[id]);
 
-        const round = new Round(this, Option.of(previous), id, roundResults, doRenderCb, mkMatch, isFirstBracket);
+        const round = new Round(this, Option.of(previous), id, roundResults, doRenderCb, mkMatch, isFirstBracket, opts);
         rounds.push(round);
         return round;
       },
@@ -863,9 +870,9 @@
 
     function teamElement(round: number, match: MatchResult, team: TeamBlock,
                          opponent: TeamBlock, isReady: boolean,
-                         isFirstBracket: boolean) {
+                         isFirstBracket: boolean, opts: Options) {
       const rId = resultIdentifier;
-      const sEl = $('<div class="score" data-resultid="result-' + rId + '"></div>');
+      const sEl = $(`<div class="score" style="width: ${opts.scoreWidth}px;" data-resultid="result-' + rId + '"></div>`);
       const score = (team.name.isEmpty() || opponent.name.isEmpty() || !isReady)
           ? '--'
           : (team.score === null || !isNumber(team.score) ? '--' : team.score);
@@ -883,7 +890,7 @@
           throw new Error(`Unexpected branch type ${type}`);
         }
       });
-      const tEl = $('<div class="team"></div>');
+      const tEl = $(`<div class="team" style="width: ${opts.teamWidth + opts.scoreWidth}px;"></div>`);
       const nEl = $('<div class="label"></div>').appendTo(tEl);
 
       if (round === 0) {
@@ -998,7 +1005,7 @@
 
     function mkMatch(round: Round, match: MatchResult, idx: number,
                      results: Option<[number, number, any]>, renderCb: Function,
-                     isFirstBracket: boolean): Match {
+                     isFirstBracket: boolean, opts: Options): Match {
       const matchCon = $('<div class="match"></div>');
       const teamCon: JQuery = $('<div class="teamContainer"></div>');
 
@@ -1125,8 +1132,8 @@
           // Coerce truthy/falsy "isset()" for Typescript
           const isReady = !match.a.name.isEmpty() && !match.b.name.isEmpty();
 
-          teamCon.append(teamElement(round.id, match, match.a, match.b, isReady, isFirstBracket));
-          teamCon.append(teamElement(round.id, match, match.b, match.a, isReady, isFirstBracket));
+          teamCon.append(teamElement(round.id, match, match.a, match.b, isReady, isFirstBracket, opts));
+          teamCon.append(teamElement(round.id, match, match.b, match.a, isReady, isFirstBracket, opts));
 
           matchCon.appendTo(round.el);
           matchCon.append(teamCon);
@@ -1182,7 +1189,9 @@
       lEl = $('<div class="loserBracket"></div>').appendTo(topCon);
     }
 
-    const height = data.teams.length * 64;
+    // 45 === team height x2 + 1px margin
+    const height = data.teams.length * 45 + data.teams.length * opts.matchMargin;
+
 
     wEl.css('height', height);
 
@@ -1198,27 +1207,27 @@
     const roundCount = countRounds(data.teams.length, isSingleElimination, opts.skipGrandFinalComeback);
 
     if (!opts.disableResize) {
-      topCon.css('width', roundCount * 140 + 40);
+      topCon.css('width', roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) + 40);
     }
     else {
-      topCon.css('width', roundCount * 140 + 10);
+      topCon.css('width', roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) + 10);
     }
 
-    w = mkBracket(wEl, Option.of(r[0] || null), mkMatch, true);
+    w = mkBracket(wEl, Option.of(r[0] || null), mkMatch, true, opts);
 
     if (!isSingleElimination) {
-      l = mkBracket(lEl, Option.of(r[1] || null), mkMatch, false);
+      l = mkBracket(lEl, Option.of(r[1] || null), mkMatch, false, opts);
       if (!opts.skipGrandFinalComeback) {
-        f = mkBracket(fEl, Option.of(r[2] || null), mkMatch, false);
+        f = mkBracket(fEl, Option.of(r[2] || null), mkMatch, false, opts);
       }
     }
 
-    prepareWinners(w, data.teams, isSingleElimination, opts.skipConsolationRound, opts.skipGrandFinalComeback && !isSingleElimination);
+    prepareWinners(w, data.teams, isSingleElimination, opts, opts.skipGrandFinalComeback && !isSingleElimination);
 
     if (!isSingleElimination) {
       prepareLosers(w, l, data.teams.length, opts.skipGrandFinalComeback);
       if (!opts.skipGrandFinalComeback) {
-        prepareFinals(f, w, l, opts.skipSecondaryFinal, opts.skipConsolationRound, topCon);
+        prepareFinals(f, w, l, opts, topCon);
       }
     }
 
@@ -1273,8 +1282,7 @@
     }
   }
 
-  // Math.log2() mot supported in IEE or old browsers
-  const log2 = (x) => Math.log(x) * Math.LOG2E;
+  const isPow2 = (x) => (x & (x - 1));
 
   const methods = {
     init(originalOpts: Options) {
@@ -1312,7 +1320,20 @@
         $.error('disableTeamEdit requires also resizing to be disabled, initialize with "disableResize: true"');
       }
 
-      const log2Result = log2(opts.init.teams.length);
+      if (!opts.hasOwnProperty('teamWidth')) {
+        opts.teamWidth = 70;
+      }
+      if (!opts.hasOwnProperty('scoreWidth')) {
+        opts.scoreWidth = 30;
+      }
+      if (!opts.hasOwnProperty('roundMargin')) {
+        opts.roundMargin = 40;
+      }
+      if (!opts.hasOwnProperty('matchMargin')) {
+        opts.matchMargin = 20;
+      }
+
+      const log2Result = isPow2(opts.init.teams.length);
       if (log2Result !== Math.floor(log2Result)) {
         $.error(`"teams" property must have 2^n number of team pairs, i.e. 1, 2, 4, etc. Got ${opts.init.teams.length} team pairs.`);
       }

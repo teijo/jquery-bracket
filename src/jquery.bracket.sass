@@ -56,8 +56,6 @@ div.jQBracket
 
   .round
     position: relative
-    width: 100px
-    margin-right: 40px
     float: left
 
   .match
@@ -71,7 +69,6 @@ div.jQBracket
     z-index: 1
     float: left
     background-color: #EEE
-    width: 100px
     cursor: default
 
     &:first-child
@@ -100,7 +97,7 @@ div.jQBracket
       padding: $boxPadding
       background-color: rgba(255,255,255,0.3)
       text-align: center
-      width: 20px
+      box-sizing: border-box
 
       &[disabled]
         color: #999
@@ -249,7 +246,6 @@ div.jQBracket.rl
 
   .round
     margin-right: 0
-    margin-left: 40px
     float: right
 
   .team
