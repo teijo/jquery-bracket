@@ -1302,7 +1302,7 @@
         $.error('disableResize can be used only if the bracket is editable, i.e. "save" callback given');
       }
       if (!disableResizeGiven) {
-        opts.disableResize = false;
+        opts.disableResize = (opts.save === undefined);
       }
 
       const disableTeamEditType = typeof(opts.disableTeamEdit);
