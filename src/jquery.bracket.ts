@@ -1282,6 +1282,17 @@
     }
   }
 
+  const assertNumber = (opts: Options, field: string) => {
+    if (opts.hasOwnProperty(field)) {
+      const expectedType = 'number';
+      const type = typeof(opts[field]);
+
+      if (type !== expectedType) {
+        throw new Error(`Option "${field}" is ${type} instead of ${expectedType}`);
+      }
+    }
+  };
+
   const isPow2 = (x) => (x & (x - 1));
 
   const methods = {
@@ -1319,6 +1330,11 @@
       if (!opts.disableResize && opts.disableTeamEdit) {
         $.error('disableTeamEdit requires also resizing to be disabled, initialize with "disableResize: true"');
       }
+
+      assertNumber(opts, 'teamWidth');
+      assertNumber(opts, 'scoreWidth');
+      assertNumber(opts, 'roundMargin');
+      assertNumber(opts, 'matchMargin');
 
       if (!opts.hasOwnProperty('teamWidth')) {
         opts.teamWidth = 70;
