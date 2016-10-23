@@ -735,8 +735,8 @@
     };
   }
 
-  function connector(height: number, shift: number, teamCon: JQuery, align: string) {
-    const width = parseInt($('.round:first').css('margin-right'), 10) / 2;
+  function connector(roundMargin: number, height: number, shift: number, teamCon: JQuery, align: string) {
+    const width = roundMargin / 2;
     var drop = true;
     // drop:
     // [team]'\
@@ -1095,7 +1095,7 @@
             shift = info.shift;
             height = info.height;
           }
-          teamCon.append(connector(height, shift, teamCon, align));
+          teamCon.append(connector(opts.roundMargin, height, shift, teamCon, align));
         },
         winner() { return match.winner(); },
         loser() { return match.loser(); },
