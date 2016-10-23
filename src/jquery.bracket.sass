@@ -77,17 +77,18 @@ div.jQBracket
     input
       font-size: 12px
       padding: 0
-      width: inherit
+      width: 100%
       border: none
       margin: 0
 
     div.label
       padding: $boxPadding
       position: absolute
-      width: 70px
       height: $boxHeight
       white-space: nowrap
       overflow: hidden
+      box-sizing: border-box
+
 
       &[disabled]
         cursor: default
