@@ -1293,6 +1293,13 @@
     }
   };
 
+  const assertGt = (expected: number, opts: Options, field: string) => {
+    const value = opts[field];
+    if (value < expected) {
+      throw new Error(`Value of ${field} must be greater than ${expected}, got ${value}`);
+    }
+  };
+
   const isPow2 = (x) => (x & (x - 1));
 
   const methods = {
@@ -1348,6 +1355,11 @@
       if (!opts.hasOwnProperty('matchMargin')) {
         opts.matchMargin = 20;
       }
+
+      assertGt(0, opts, 'teamWidth');
+      assertGt(0, opts, 'scoreWidth');
+      assertGt(0, opts, 'roundMargin');
+      assertGt(0, opts, 'matchMargin');
 
       const log2Result = isPow2(opts.init.teams.length);
       if (log2Result !== Math.floor(log2Result)) {
