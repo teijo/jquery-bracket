@@ -206,7 +206,7 @@
     dir: string;
     onMatchClick: (data: any) => void;
     onMatchHover: (data: any, hover: boolean) => void;
-    disableResize: boolean;
+    disableToolbar: boolean;
     disableTeamEdit: boolean;
     teamWidth: number;
     scoreWidth: number;
@@ -1172,7 +1172,7 @@
       $.error('skipSecondaryFinal setting is viable only in double elimination mode');
     }
 
-    if (!opts.disableResize) {
+    if (!opts.disableToolbar) {
       embedEditButtons(topCon, data, opts);
     }
 
@@ -1206,7 +1206,7 @@
 
     const roundCount = countRounds(data.teams.length, isSingleElimination, opts.skipGrandFinalComeback);
 
-    if (!opts.disableResize) {
+    if (!opts.disableToolbar) {
       topCon.css('width', roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) + 40);
     }
     else {
@@ -1311,16 +1311,16 @@
         $.error('Match callbacks may not be passed in edit mode (in conjunction with save callback)');
       }
 
-      const disableResizeType = typeof(opts.disableResize);
-      const disableResizeGiven = opts.hasOwnProperty('disableResize');
-      if (disableResizeGiven && disableResizeType !== 'boolean') {
-        $.error(`disableResize must be a boolean, got ${disableResizeType}`);
+      const disableToolbarType = typeof(opts.disableToolbar);
+      const disableToolbarGiven = opts.hasOwnProperty('disableToolbar');
+      if (disableToolbarGiven && disableToolbarType !== 'boolean') {
+        $.error(`disableToolbar must be a boolean, got ${disableToolbarType}`);
       }
-      if (!opts.save && disableResizeGiven) {
-        $.error('disableResize can be used only if the bracket is editable, i.e. "save" callback given');
+      if (!opts.save && disableToolbarGiven) {
+        $.error('disableToolbar can be used only if the bracket is editable, i.e. "save" callback given');
       }
-      if (!disableResizeGiven) {
-        opts.disableResize = (opts.save === undefined);
+      if (!disableToolbarGiven) {
+        opts.disableToolbar = (opts.save === undefined);
       }
 
       const disableTeamEditType = typeof(opts.disableTeamEdit);
@@ -1334,8 +1334,8 @@
       if (!disableTeamEditGiven) {
         opts.disableTeamEdit = false;
       }
-      if (!opts.disableResize && opts.disableTeamEdit) {
-        $.error('disableTeamEdit requires also resizing to be disabled, initialize with "disableResize: true"');
+      if (!opts.disableToolbar && opts.disableTeamEdit) {
+        $.error('disableTeamEdit requires also resizing to be disabled, initialize with "disableToolbar: true"');
       }
 
       assertNumber(opts, 'teamWidth');
