@@ -38,6 +38,13 @@ Minified files are compiled to `dist/` directory.
 
 ## Changes
 
+*   2016-10-25: **0.9.0** Resizing and partial editing support
+    *   Adjust bracket proportions with `teamWidth: number`,
+        `scoreWidth: number`, `matchMargin: number`, `roundMargin: number`.
+    *   `disableTeamEdit: boolean` prevents modifying the team when in edit
+        mode.
+    *   `disableToolbar: boolean` prevents modifying the bracket size and
+        format in edit mode.
 *   2016-10-16: **0.8.0** BYE matches.
     *   Gives proper support for having any number of teams in a tournament
         (instead of just 2^N, i.e. 2, 4, 8...).
