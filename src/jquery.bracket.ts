@@ -34,6 +34,13 @@
       return (this.val === null) ? this : new Option(f(this.val));
     }
 
+    forEach(f: (T) => void): Option<T> {
+      if (this.val !== null) {
+        f(this.val);
+      }
+      return this;
+    }
+
     toNull() {
       return (this.val === null) ? null : this.val;
     }
@@ -67,7 +74,7 @@
     constructor(readonly source: (() => TeamBlock), // Where base of the information propagated from
                 public name: Option<any>,
                 readonly id: number, // Order in which team is in a match, 0 or 1
-                public idx: number,
+                public idx: Option<number>,
                 public score: number | null) { }
 
     // Recursively check if branch ends into a BYE
@@ -166,7 +173,7 @@
     // Arbitrary (either parent) source is required so that branch emptiness
     // can be determined by traversing to the beginning.
     private static emptyTeam(source: () => TeamBlock): TeamBlock {
-      return new TeamBlock(source, Option.of(null), -1, -1, null);
+      return new TeamBlock(source, Option.of(null), -1, Option.of<number>(null), null);
     }
 
     constructor(readonly a: TeamBlock, readonly b: TeamBlock) { return; }
@@ -263,20 +270,20 @@
 
     if (winner && loser) {
       if (!winner.name.isEmpty()) {
-        trackHighlighter(winner.idx, 'highlightWinner', container).highlight();
+        trackHighlighter(winner.idx.get(), 'highlightWinner', container).highlight();
       }
       if (!loser.name.isEmpty()) {
-        trackHighlighter(loser.idx, 'highlightLoser', container).highlight();
+        trackHighlighter(loser.idx.get(), 'highlightLoser', container).highlight();
       }
     }
 
     container.find('.team').mouseover(function() {
-      const i = parseInt($(this).attr('data-teamid'), 10);
+      const teamId = $(this).attr('data-teamid');
       // Don't highlight BYEs
-      if (i === -1) {
+      if (teamId === undefined) {
         return;
       }
-      const track = trackHighlighter(i, null, container);
+      const track = trackHighlighter(parseInt(teamId, 10), null, container);
       track.highlight();
       $(this).mouseout(function() {
         track.deHighlight();
@@ -325,8 +332,8 @@
   }
 
   const winnerMatchSources = (teams: [any, any], m: number) => (): [MatchSource, MatchSource] => [
-    {source: () => new TeamBlock(() => { throw new EndOfBranchException(); }, teams[m][0], 0, (m * 2), null)},
-    {source: () => new TeamBlock(() => { throw new EndOfBranchException(); }, teams[m][1], 1, (m * 2 + 1), null)}
+    {source: () => new TeamBlock(() => { throw new EndOfBranchException(); }, teams[m][0], 0, Option.of<number>(m * 2), null)},
+    {source: () => new TeamBlock(() => { throw new EndOfBranchException(); }, teams[m][1], 1, Option.of<number>(m * 2 + 1), null)}
   ];
 
   const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (tC: JQuery) => {
@@ -871,14 +878,13 @@
     function teamElement(round: number, match: MatchResult, team: TeamBlock,
                          opponent: TeamBlock, isReady: boolean,
                          isFirstBracket: boolean, opts: Options) {
+      const resultIdAttribute = team.name.isEmpty() || opponent.name.isEmpty() ? '' : `data-resultid="result-${++resultIdentifier}"`;
       const rId = resultIdentifier;
-      const sEl = $(`<div class="score" style="width: ${opts.scoreWidth}px;" data-resultid="result-${rId}"></div>`);
+      const sEl = $(`<div class="score" style="width: ${opts.scoreWidth}px;" ${resultIdAttribute}></div>`);
       const score = (team.name.isEmpty() || opponent.name.isEmpty() || !isReady)
           ? '--'
           : (team.score === null || !isNumber(team.score) ? '--' : team.score);
       sEl.text(score);
-
-      resultIdentifier += 1;
 
       const name = team.name.orElseGet(() => {
         const type = team.emptyBranch();
@@ -895,9 +901,7 @@
 
       opts.decorator.render(nEl, name, score);
 
-      if (isNumber(team.idx)) {
-        tEl.attr('data-teamid', team.idx);
-      }
+      team.idx.forEach(idx => { tEl.attr('data-teamid', idx); });
 
       if (team.name.isEmpty()) {
         tEl.addClass('na');
@@ -920,11 +924,14 @@
 
             function editor() {
               function done_fn(val, next: boolean) {
-                opts.init.teams[~~(team.idx / 2)][team.idx % 2] = Option.of(val || null);
+                // Needs to be taken before possible null is assigned below
+                const teamId = team.idx.get();
+
+                opts.init.teams[~~(teamId / 2)][teamId % 2] = Option.of(val || null);
 
                 renderAll(true);
                 span.click(editor);
-                const labels = opts.el.find('.team[data-teamid=' + (team.idx + 1) + '] div.label:first');
+                const labels = opts.el.find('.team[data-teamid=' + (teamId + 1) + '] div.label:first');
                 if (labels.length && next === true && round === 0) {
                   $(labels).click();
                 }
