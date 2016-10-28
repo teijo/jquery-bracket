@@ -872,7 +872,7 @@
                          opponent: TeamBlock, isReady: boolean,
                          isFirstBracket: boolean, opts: Options) {
       const rId = resultIdentifier;
-      const sEl = $(`<div class="score" style="width: ${opts.scoreWidth}px;" data-resultid="result-' + rId + '"></div>`);
+      const sEl = $(`<div class="score" style="width: ${opts.scoreWidth}px;" data-resultid="result-${rId}"></div>`);
       const score = (team.name.isEmpty() || opponent.name.isEmpty() || !isReady)
           ? '--'
           : (team.score === null || !isNumber(team.score) ? '--' : team.score);
