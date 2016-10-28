@@ -74,7 +74,7 @@
     constructor(readonly source: (() => TeamBlock), // Where base of the information propagated from
                 public name: Option<any>,
                 readonly id: number, // Order in which team is in a match, 0 or 1
-                public idx: Option<number>,
+                public seed: Option<number>,
                 public score: number | null) { }
 
     // Recursively check if branch ends into a BYE
@@ -270,10 +270,10 @@
 
     if (winner && loser) {
       if (!winner.name.isEmpty()) {
-        trackHighlighter(winner.idx.get(), 'highlightWinner', container).highlight();
+        trackHighlighter(winner.seed.get(), 'highlightWinner', container).highlight();
       }
       if (!loser.name.isEmpty()) {
-        trackHighlighter(loser.idx.get(), 'highlightLoser', container).highlight();
+        trackHighlighter(loser.seed.get(), 'highlightLoser', container).highlight();
       }
     }
 
@@ -657,8 +657,8 @@
       const teamA = teams[0].source;
       const teamB = teams[1].source;
       const matchResult: MatchResult = new MatchResult(
-          new TeamBlock(teamA, teamA().name, 0, teamA().idx, null),
-          new TeamBlock(teamB, teamB().name, 1, teamB().idx, null));
+          new TeamBlock(teamA, teamA().name, 0, teamA().seed, null),
+          new TeamBlock(teamB, teamB().name, 1, teamB().seed, null));
       const match = this.mkMatch(this, matchResult, matchIdx,
           this._results.map(r => r[matchIdx] === undefined
               ? null
@@ -901,7 +901,7 @@
 
       opts.decorator.render(nEl, name, score);
 
-      team.idx.forEach(idx => { tEl.attr('data-teamid', idx); });
+      team.seed.forEach(seed => { tEl.attr('data-teamid', seed); });
 
       if (team.name.isEmpty()) {
         tEl.addClass('na');
@@ -925,7 +925,7 @@
             function editor() {
               function done_fn(val, next: boolean) {
                 // Needs to be taken before possible null is assigned below
-                const teamId = team.idx.get();
+                const teamId = team.seed.get();
 
                 opts.init.teams[~~(teamId / 2)][teamId % 2] = Option.of(val || null);
 
@@ -1006,7 +1006,7 @@
       return tEl;
     }
 
-    function mkMatch(round: Round, match: MatchResult, idx: number,
+    function mkMatch(round: Round, match: MatchResult, seed: number,
                      results: Option<[number, number, any]>, renderCb: Function,
                      isFirstBracket: boolean, opts: Options): Match {
       const matchCon = $('<div class="match"></div>');
@@ -1047,7 +1047,7 @@
 
       return {
         el: matchCon,
-        id: idx,
+        id: seed,
         round(): Round {
           return round;
         },
@@ -1061,7 +1061,7 @@
           var height;
 
           if (!cb || cb === null) {
-            if (idx % 2 === 0) { // dir == down
+            if (seed % 2 === 0) { // dir == down
               if (this.winner().id === 0) {
                 shift = connectorOffset;
                 height = matchupOffset;
@@ -1118,8 +1118,8 @@
           // This shouldn't be done at render-time
           match.a.name = match.a.source().name;
           match.b.name = match.b.source().name;
-          match.a.idx = match.a.source().idx;
-          match.b.idx = match.b.source().idx;
+          match.a.seed = match.a.source().seed;
+          match.b.seed = match.b.source().seed;
 
           const isDoubleBye = match.a.name.isEmpty() && match.b.name.isEmpty();
           if (isDoubleBye) {
