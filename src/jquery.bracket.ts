@@ -893,10 +893,6 @@
       const tEl = $(`<div class="team" style="width: ${opts.teamWidth + opts.scoreWidth}px;"></div>`);
       const nEl = $(`<div class="label" style="width: ${opts.teamWidth}px;"></div>`).appendTo(tEl);
 
-      if (round === 0) {
-        tEl.attr('data-resultid', 'team-' + rId);
-      }
-
       opts.decorator.render(nEl, name, score);
 
       if (isNumber(team.idx)) {
