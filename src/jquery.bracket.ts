@@ -703,9 +703,6 @@
       return this.rounds[this.rounds.length - 1].match(0);
     }
     winner(): TeamBlock {
-      if (this.rounds === undefined) {
-        throw new Error('foo');
-      }
       return this.rounds[this.rounds.length - 1].match(0).winner();
     }
     loser(): TeamBlock {
