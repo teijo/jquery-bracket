@@ -333,13 +333,13 @@
   function prepareWinners(winners: Bracket, teams: [any, any], isSingleElimination: boolean,
                           opts: Options, skipGrandFinalComeback: boolean) {
     const roundCount = Math.log(teams.length * 2) / Math.log(2);
-    var matchCount = teams.length;
-    var round;
+    let matchCount = teams.length;
+    let round;
 
-    for (var r = 0; r < roundCount; r += 1) {
+    for (let r = 0; r < roundCount; r += 1) {
       round = winners.addRound(Option.empty<BoolCallback>());
 
-      for (var m = 0; m < matchCount; m += 1) {
+      for (let m = 0; m < matchCount; m += 1) {
         const teamCb = (r === 0) ? winnerMatchSources(teams, m) : null;
         if (!(r === roundCount - 1 && isSingleElimination) && !(r === roundCount - 1 && skipGrandFinalComeback)) {
           round.addMatch(teamCb);
@@ -408,17 +408,17 @@
 
   function prepareLosers(winners: Bracket, losers: Bracket, teamCount: number, skipGrandFinalComeback: boolean) {
     const roundCount = Math.log(teamCount * 2) / Math.log(2) - 1;
-    var matchCount = teamCount / 2;
+    let matchCount = teamCount / 2;
 
-    for (var r = 0; r < roundCount; r += 1) {
+    for (let r = 0; r < roundCount; r += 1) {
       /* if player cannot rise back to grand final, last round of loser
        * bracket will be player between two LB players, eliminating match
        * between last WB loser and current LB winner */
       const subRounds = (skipGrandFinalComeback && r === (roundCount - 1) ? 1 : 2);
-      for (var n = 0; n < subRounds; n += 1) {
+      for (let n = 0; n < subRounds; n += 1) {
         const round = losers.addRound(Option.empty<BoolCallback>());
 
-        for (var m = 0; m < matchCount; m += 1) {
+        for (let m = 0; m < matchCount; m += 1) {
           const teamCb = (!(n % 2 === 0 && r !== 0)) ? loserMatchSources(winners, losers, matchCount, m, n, r) : null;
           const isLastMatch = r === roundCount - 1 && skipGrandFinalComeback;
           const match = round.addMatch(teamCb, isLastMatch ? consolationBubbles : null);
@@ -457,7 +457,7 @@
       },
       function(match) {
         /* Track if container has been resized for final rematch */
-        var _isResized = false;
+        let _isResized = false;
         /* LB winner won first final match, need a new one */
         if (!opts.skipSecondaryFinal && (!match.winner().name.isEmpty() && match.winner().name === losers.winner().name)) {
           if (finals.size() === 2) {
@@ -510,7 +510,7 @@
       });
 
     match.setAlignCb(function(tC) {
-      var height = (winners.el.height() + losers.el.height());
+      let height = (winners.el.height() + losers.el.height());
       if (!opts.skipConsolationRound) {
         height /= 2;
       }
@@ -683,7 +683,7 @@
       /* Length of 'rounds' can increase during render in special case when
        LB win in finals adds new final round in match render callback.
        Therefore length must be read on each iteration. */
-      for (var i = 0; i < this.rounds.length; i += 1) {
+      for (let i = 0; i < this.rounds.length; i += 1) {
         this.rounds[i].render();
       }
     }
@@ -695,7 +695,7 @@
   function connector(roundMargin: number, connector: Connector, teamCon: JQuery, align: string): JQuery {
     let {height, shift} = connector;
     const width = roundMargin / 2;
-    var drop = true;
+    let drop = true;
     // drop:
     // [team]'\
     //         \_[team]
@@ -890,7 +890,7 @@
               }
             });
             input.blur(function() {
-              var val = input.val();
+              let val = input.val();
               if ((!val || !isNumber(val)) && !isNumber(team.score)) {
                 val = '0';
               }
@@ -1087,7 +1087,7 @@
       opts.decorator = {edit: defaultEdit, render: defaultRender};
     }
 
-    var data;
+    let data;
     if (!opts.init) {
       opts.init = {
         teams: [
@@ -1101,7 +1101,7 @@
 
     const topCon = $('<div class="jQBracket ' + opts.dir + '"></div>').appendTo(opts.el.empty());
 
-    var w, l, f;
+    let w, l, f;
 
     function renderAll(save: boolean): void {
       resultId.reset();
@@ -1142,7 +1142,7 @@
       embedEditButtons(topCon, data, opts);
     }
 
-    var fEl, wEl, lEl;
+    let fEl, wEl, lEl;
 
     if (isSingleElimination) {
       wEl = $('<div class="bracket"></div>').appendTo(topCon);
@@ -1218,7 +1218,7 @@
     const inc = $('<span class="increment">+</span>').appendTo(tools);
     inc.click(function () {
       const len = data.teams.length;
-      for (var i = 0; i < len; i += 1) {
+      for (let i = 0; i < len; i += 1) {
         data.teams.push([Option.empty(), Option.empty()]);
       }
       return JqueryBracket(opts);
