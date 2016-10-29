@@ -66,7 +66,7 @@
   }
 
   interface ConnectorProvider {
-    (tc: JQuery, match: Match): Connector | null;
+    (tc: JQuery, match: Match): Connector;
   }
 
   enum BranchType {
@@ -355,9 +355,7 @@
     }
 
     if (isSingleElimination) {
-      winners.final().setConnectorCb(function() {
-        return null;
-      });
+      winners.final().setConnectorCb(Option.empty<ConnectorProvider>());
 
       if (teams.length > 1 && !opts.skipConsolationRound) {
         const prev = winners.final().getRound().prev();
@@ -381,9 +379,7 @@
           tC.css('top', (topShift) + 'px');
         });
 
-        consol.setConnectorCb(function() {
-          return null;
-        });
+        consol.setConnectorCb(Option.empty<ConnectorProvider>());
       }
     }
   }
@@ -430,9 +426,7 @@
 
           if (isLastMatch) {
             // Override default connector
-            match.setConnectorCb(function() {
-              return null;
-            });
+            match.setConnectorCb(Option.empty<ConnectorProvider>());
           }
           else if (r < roundCount - 1 || n < 1) {
             const cb = (n % 2 === 0) ? (tC, match: Match): Connector => {
@@ -444,7 +438,7 @@
                       : {height: -connectorOffset * 2, shift: connectorOffset})
                   .orElse({height: 0, shift: 0});
             } : null;
-            match.setConnectorCb(cb);
+            match.setConnectorCb(Option.of(cb));
           }
         }
       }
@@ -495,13 +489,11 @@
             },
             winnerBubbles);
 
-          match.setConnectorCb(function(tC): Connector {
+          match.setConnectorCb(Option.of(function(tC): Connector {
             return {height: 0, shift: tC.height() / 2};
-          });
+          }));
 
-          match2.setConnectorCb(function() {
-            return null;
-          });
+          match2.setConnectorCb(Option.empty<ConnectorProvider>());
           match2.setAlignCb(function(tC) {
             const height = (winners.el.height() + losers.el.height());
             match2.el.css('height', (height) + 'px');
@@ -547,15 +539,11 @@
         tC.css('top', (topShift) + 'px');
       });
 
-      match.setConnectorCb(function(): Connector | null {
-        return null;
-      });
-      consol.setConnectorCb(function(): Connector | null {
-        return null;
-      });
+      match.setConnectorCb(Option.empty<ConnectorProvider>());
+      consol.setConnectorCb(Option.empty<ConnectorProvider>());
     }
 
-    winners.final().setConnectorCb(function(tC): Connector | null {
+    winners.final().setConnectorCb(Option.of(function(tC): Connector {
       const connectorOffset = tC.height() / 4;
       const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
       const matchupOffset = topShift - winners.el.height() / 2;
@@ -569,9 +557,9 @@
       height -= tC.height() / 2;
 
       return {height: height, shift: shift};
-    });
+    }));
 
-    losers.final().setConnectorCb(function(tC): Connector {
+    losers.final().setConnectorCb(Option.of(function(tC): Connector {
       const connectorOffset = tC.height() / 4;
       const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
       const matchupOffset = topShift - winners.el.height() / 2;
@@ -585,7 +573,7 @@
       height += tC.height() / 2;
 
       return {height: -height, shift: -shift};
-    });
+    }));
   }
 
   class Round {
@@ -931,7 +919,7 @@
   class Match {
     private matchCon: JQuery;
     private teamCon: JQuery;
-    private connectorCb: ConnectorProvider | null;
+    private connectorCb: Option<ConnectorProvider> = Option.empty<ConnectorProvider>();
     private alignCb: ((JQuery) => void) | null;
 
     constructor(private round: Round, private match: MatchResult, private seed: number,
@@ -941,7 +929,6 @@
       this.matchCon = $('<div class="match"></div>');
       this.teamCon = $('<div class="teamContainer"></div>');
 
-      this.connectorCb = null;
       this.alignCb = null;
 
       if (!opts.save) {
@@ -986,37 +973,30 @@
     getRound(): Round {
       return this.round;
     }
-    setConnectorCb(cb: ConnectorProvider | null): void {
+    setConnectorCb(cb: Option<ConnectorProvider>): void {
       this.connectorCb = cb;
     }
-    connect(cb: ConnectorProvider | null) {
+    connect(cb: Option<ConnectorProvider>) {
       const connectorOffset = this.teamCon.height() / 4;
       const matchupOffset = this.matchCon.height() / 2;
-      const result = (() => {
-        if (!cb || cb === null) {
-          if (this.seed % 2 === 0) { // dir == down
-            return this.winner().order
-                .map(order => (order === Order.First)
-                    ? {shift: connectorOffset, height: matchupOffset}
-                    : {shift: connectorOffset * 3, height: matchupOffset - connectorOffset * 2})
-                .orElse({shift: connectorOffset * 2, height: matchupOffset - connectorOffset});
-          }
-          else { // dir == up
-            return this.winner().order
-                .map(order => (order === Order.First)
-                    ? {shift: -connectorOffset * 3, height: -matchupOffset + connectorOffset * 2}
-                    : {shift: -connectorOffset, height: -matchupOffset})
-                .orElse({shift: -connectorOffset * 2, height: -matchupOffset + connectorOffset});
-          }
-        }
-        else {
-          const info = cb(this.teamCon, this);
-          if (info === null) { /* no connector */
-            return null;
-          }
-          return info;
-        }
-      })();
+      const result = (() => cb
+          .map(connectorCb => connectorCb(this.teamCon, this))
+          .orElseGet(() => {
+            if (this.seed % 2 === 0) { // dir == down
+              return this.winner().order
+                  .map(order => (order === Order.First)
+                      ? {shift: connectorOffset, height: matchupOffset}
+                      : {shift: connectorOffset * 3, height: matchupOffset - connectorOffset * 2})
+                  .orElse({shift: connectorOffset * 2, height: matchupOffset - connectorOffset});
+            }
+            else { // dir == up
+              return this.winner().order
+                  .map(order => (order === Order.First)
+                      ? {shift: -connectorOffset * 3, height: -matchupOffset + connectorOffset * 2}
+                      : {shift: -connectorOffset, height: -matchupOffset})
+                  .orElse({shift: -connectorOffset * 2, height: -matchupOffset + connectorOffset});
+            }
+          }))();
 
       if (result === null) {
         return;
