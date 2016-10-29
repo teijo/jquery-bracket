@@ -692,7 +692,8 @@
     }
   }
 
-  function connector(roundMargin: number, height: number, shift: number, teamCon: JQuery, align: string) {
+  function connector(roundMargin: number, connector: Connector, teamCon: JQuery, align: string): JQuery {
+    let {height, shift} = connector;
     const width = roundMargin / 2;
     var drop = true;
     // drop:
@@ -973,10 +974,11 @@
     setConnectorCb(cb: Option<ConnectorProvider>): void {
       this.connectorCb = cb;
     }
-    connect(cb: Option<ConnectorProvider>) {
+    connect(cb: Option<ConnectorProvider>): void {
+      const align = this.opts.dir === 'lr' ? 'right' : 'left';
       const connectorOffset = this.teamCon.height() / 4;
       const matchupOffset = this.matchCon.height() / 2;
-      const result = (() => cb
+      const result = cb
           .map(connectorCb => connectorCb(this.teamCon, this))
           .orElseGet(() => {
             if (this.seed % 2 === 0) { // dir == down
@@ -993,14 +995,9 @@
                       : {shift: -connectorOffset, height: -matchupOffset})
                   .orElse({shift: -connectorOffset * 2, height: -matchupOffset + connectorOffset});
             }
-          }))();
+          });
 
-      if (result === null) {
-        return;
-      } else {
-        const align = this.opts.dir === 'lr' ? 'right' : 'left';
-        this.teamCon.append(connector(this.opts.roundMargin, result.height, result.shift, this.teamCon, align));
-      }
+      this.teamCon.append(connector(this.opts.roundMargin, result, this.teamCon, align));
     }
     winner() { return this.match.winner(); }
     loser() { return this.match.loser(); }
