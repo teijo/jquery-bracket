@@ -965,9 +965,6 @@
     get el() {
         return this.matchCon;
     }
-    id() {
-        return this.seed;
-    }
     getRound(): Round {
       return this.round;
     }
