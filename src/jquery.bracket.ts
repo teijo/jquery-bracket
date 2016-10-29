@@ -772,7 +772,11 @@
     return src;
   }
 
-  function countRounds(teamCount, isSingleElimination, skipGrandFinalComeback) {
+  function countRounds(teamCount: number,
+                       isSingleElimination: boolean,
+                       skipGrandFinalComeback: boolean,
+                       skipSecondaryFinal: boolean,
+                       results) {
     if (isSingleElimination) {
       return Math.log(teamCount * 2) / Math.log(2);
     }
@@ -780,7 +784,10 @@
       return Math.max(2, (Math.log(teamCount * 2) / Math.log(2) - 1) * 2 - 1); // DE - grand finals
     }
     else {
-      return (Math.log(teamCount * 2) / Math.log(2) - 1) * 2 + 1; // DE + grand finals
+      // Loser bracket winner has won first match in grand finals,
+      // this requires a new match unless explicitely skipped
+      const hasGrandFinalRematch = (!skipSecondaryFinal && (results.length === 3 && results[2].length === 2));
+      return (Math.log(teamCount * 2) / Math.log(2) - 1) * 2 + 1 + (hasGrandFinalRematch ? 1 : 0); // DE + grand finals
     }
   }
 
@@ -1191,7 +1198,8 @@
       lEl.css('height', wEl.height() / 2);
     }
 
-    const roundCount = countRounds(data.teams.length, isSingleElimination, opts.skipGrandFinalComeback);
+    const roundCount = countRounds(data.teams.length, isSingleElimination,
+        opts.skipGrandFinalComeback, opts.skipSecondaryFinal, data.results);
 
     if (!opts.disableToolbar) {
       topCon.css('width', roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) + 40);
