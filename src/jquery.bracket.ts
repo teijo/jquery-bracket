@@ -70,10 +70,15 @@
     BYE
   }
 
+  enum Order {
+    First,
+    Second
+  }
+
   class TeamBlock {
     constructor(readonly source: (() => TeamBlock), // Where base of the information propagated from
                 public name: Option<any>,
-                readonly id: number, // Order in which team is in a match, 0 or 1
+                readonly id: Option<Order>,
                 public seed: Option<number>,
                 public score: number | null) { }
 
@@ -173,7 +178,7 @@
     // Arbitrary (either parent) source is required so that branch emptiness
     // can be determined by traversing to the beginning.
     private static emptyTeam(source: () => TeamBlock): TeamBlock {
-      return new TeamBlock(source, Option.of(null), -1, Option.of<number>(null), null);
+      return new TeamBlock(source, Option.of(null), Option.of<Order>(null), Option.of<number>(null), null);
     }
 
     constructor(readonly a: TeamBlock, readonly b: TeamBlock) { return; }
@@ -332,8 +337,10 @@
   }
 
   const winnerMatchSources = (teams: [any, any], m: number) => (): [MatchSource, MatchSource] => [
-    {source: () => new TeamBlock(() => { throw new EndOfBranchException(); }, teams[m][0], 0, Option.of<number>(m * 2), null)},
-    {source: () => new TeamBlock(() => { throw new EndOfBranchException(); }, teams[m][1], 1, Option.of<number>(m * 2 + 1), null)}
+    {source: () => new TeamBlock(() => { throw new EndOfBranchException(); },
+        teams[m][0], Option.of(Order.First), Option.of<number>(m * 2), null)},
+    {source: () => new TeamBlock(() => { throw new EndOfBranchException(); },
+        teams[m][1], Option.of(Order.Second), Option.of<number>(m * 2 + 1), null)}
   ];
 
   const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (tC: JQuery) => {
@@ -452,23 +459,14 @@
             });
           }
           else if (r < roundCount - 1 || n < 1) {
-            const cb = (n % 2 === 0) ? (tC, match): Connector => {
+            const cb = (n % 2 === 0) ? (tC, match: Match): Connector => {
               // inside lower bracket
               const connectorOffset = tC.height() / 4;
-              var height = 0;
-              var shift = 0;
-
-              if (match.winner().id === 0) {
-                shift = connectorOffset;
-              }
-              else if (match.winner().id === 1) {
-                height = -connectorOffset * 2;
-                shift = connectorOffset;
-              }
-              else {
-                shift = connectorOffset * 2;
-              }
-              return {height: height, shift: shift};
+              return match.winner().id
+                  .map(id => (id === Order.First)
+                      ? {height: 0, shift: connectorOffset}
+                      : {height: -connectorOffset * 2, shift: connectorOffset})
+                  .orElse({height: 0, shift: 0});
             } : null;
             match.connectorCb(cb);
           }
@@ -581,48 +579,34 @@
     }
 
     winners.final().connectorCb(function(tC): Connector | null {
-      var shift;
-      var height;
-
       const connectorOffset = tC.height() / 4;
       const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
       const matchupOffset = topShift - winners.el.height() / 2;
-      if (winners.winner().id === 0) {
-        height = matchupOffset + connectorOffset * 2;
-        shift = connectorOffset;
-      }
-      else if (winners.winner().id === 1) {
-        height = matchupOffset;
-        shift = connectorOffset * 3;
-      }
-      else {
-        height = matchupOffset + connectorOffset;
-        shift = connectorOffset * 2;
-      }
+
+      let {height, shift} = winners.winner().id
+          .map(id => (id === Order.First)
+              ? {height: matchupOffset + connectorOffset * 2, shift: connectorOffset}
+              : {height: matchupOffset, shift: connectorOffset * 3})
+          .orElse({height: matchupOffset + connectorOffset, shift: connectorOffset * 2});
+
       height -= tC.height() / 2;
+
       return {height: height, shift: shift};
     });
 
     losers.final().connectorCb(function(tC): Connector {
-      var shift;
-      var height;
-
       const connectorOffset = tC.height() / 4;
       const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
       const matchupOffset = topShift - winners.el.height() / 2;
-      if (losers.winner().id === 0) {
-        height = matchupOffset;
-        shift = connectorOffset * 3;
-      }
-      else if (losers.winner().id === 1) {
-        height = matchupOffset + connectorOffset * 2;
-        shift = connectorOffset;
-      }
-      else {
-        height = matchupOffset + connectorOffset;
-        shift = connectorOffset * 2;
-      }
+
+      let {height, shift} = losers.winner().id
+          .map(id => (id === Order.First)
+              ? {height: matchupOffset, shift: connectorOffset * 3}
+              : {height: matchupOffset + connectorOffset * 2, shift: connectorOffset})
+          .orElse({height: matchupOffset + connectorOffset, shift: connectorOffset * 2});
+
       height += tC.height() / 2;
+
       return {height: -height, shift: -shift};
     });
   }
@@ -657,8 +641,8 @@
       const teamA = teams[0].source;
       const teamB = teams[1].source;
       const matchResult: MatchResult = new MatchResult(
-          new TeamBlock(teamA, teamA().name, 0, teamA().seed, null),
-          new TeamBlock(teamB, teamB().name, 1, teamB().seed, null));
+          new TeamBlock(teamA, teamA().name, Option.of(Order.First), teamA().seed, null),
+          new TeamBlock(teamB, teamB().name, Option.of(Order.Second), teamB().seed, null));
       const match = this.mkMatch(this, matchResult, matchIdx,
           this._results.map(r => r[matchIdx] === undefined
               ? null
@@ -1057,48 +1041,37 @@
         connect(cb: ConnectorProvider) {
           const connectorOffset = teamCon.height() / 4;
           const matchupOffset = matchCon.height() / 2;
-          var shift;
-          var height;
+          const result = (() => {
+            if (!cb || cb === null) {
+              if (seed % 2 === 0) { // dir == down
+                return this.winner().id
+                    .map(id => (id === Order.First)
+                        ? {shift: connectorOffset, height: matchupOffset}
+                        : {shift: connectorOffset * 3, height: matchupOffset - connectorOffset * 2})
+                    .orElse({shift: connectorOffset * 2, height: matchupOffset - connectorOffset});
+              }
+              else { // dir == up
+                return this.winner().id
+                    .map(id => (id === Order.First)
+                        ? {shift: -connectorOffset * 3, height: -matchupOffset + connectorOffset * 2}
+                        : {shift: -connectorOffset, height: -matchupOffset})
+                    .orElse({shift: -connectorOffset * 2, height: -matchupOffset + connectorOffset});
+              }
+            }
+            else {
+              const info = cb(teamCon, this);
+              if (info === null) { /* no connector */
+                return null;
+              }
+              return info;
+            }
+          })();
 
-          if (!cb || cb === null) {
-            if (seed % 2 === 0) { // dir == down
-              if (this.winner().id === 0) {
-                shift = connectorOffset;
-                height = matchupOffset;
-              }
-              else if (this.winner().id === 1) {
-                shift = connectorOffset * 3;
-                height = matchupOffset - connectorOffset * 2;
-              }
-              else {
-                shift = connectorOffset * 2;
-                height = matchupOffset - connectorOffset;
-              }
-            }
-            else { // dir == up
-              if (this.winner().id === 0) {
-                shift = -connectorOffset * 3;
-                height = -matchupOffset + connectorOffset * 2;
-              }
-              else if (this.winner().id === 1) {
-                shift = -connectorOffset;
-                height = -matchupOffset;
-              }
-              else {
-                shift = -connectorOffset * 2;
-                height = -matchupOffset + connectorOffset;
-              }
-            }
+          if (result === null) {
+            return;
+          } else {
+            teamCon.append(connector(opts.roundMargin, result.height, result.shift, teamCon, align));
           }
-          else {
-            const info = cb(teamCon, this);
-            if (info === null) { /* no connector */
-              return;
-            }
-            shift = info.shift;
-            height = info.height;
-          }
-          teamCon.append(connector(opts.roundMargin, height, shift, teamCon, align));
         },
         winner() { return match.winner(); },
         loser() { return match.loser(); },
