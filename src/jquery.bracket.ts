@@ -128,19 +128,6 @@
     (): boolean;
   }
 
-  interface Bracket {
-    el: JQuery;
-    addRound: (BoolCallback?) => Round;
-    dropRound: () => void;
-    round: (id: number) => Round;
-    size: () => number;
-    final: () => Match;
-    winner: () => TeamBlock;
-    loser: () => TeamBlock;
-    render: () => void;
-    results: () => Array<Array<[number | null, number | null]>>;
-  }
-
   // http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric
   function isNumber(n: any): boolean {
     return !isNaN(parseFloat(n)) && isFinite(n);
@@ -365,7 +352,7 @@
     var round;
 
     for (var r = 0; r < roundCount; r += 1) {
-      round = winners.addRound();
+      round = winners.addRound(Option.empty<BoolCallback>());
 
       for (var m = 0; m < matchCount; m += 1) {
         const teamCb = (r === 0) ? winnerMatchSources(teams, m) : null;
@@ -420,8 +407,8 @@
     /* first round comes from winner bracket */
     if (n % 2 === 0 && r === 0) {
       return [
-        {source: winners.round(0).match(m * 2).loser},
-        {source: winners.round(0).match(m * 2 + 1).loser}
+        {source: () => winners.round(0).match(m * 2).loser()},
+        {source: () => winners.round(0).match(m * 2 + 1).loser()}
       ];
     }
     else { /* match with dropped */
@@ -430,8 +417,8 @@
        * every second round of LB */
       const winnerMatch = (r % 2 === 0) ? (matchCount - m - 1) : m;
       return [
-        {source: losers.round(r * 2).match(m).winner},
-        {source: winners.round(r + 1).match(winnerMatch).loser}
+        {source: () => losers.round(r * 2).match(m).winner()},
+        {source: () => winners.round(r + 1).match(winnerMatch).loser()}
       ];
     }
   };
@@ -448,7 +435,7 @@
        * between last WB loser and current LB winner */
       const subRounds = (skipGrandFinalComeback && r === (roundCount - 1) ? 1 : 2);
       for (var n = 0; n < subRounds; n += 1) {
-        const round = losers.addRound();
+        const round = losers.addRound(Option.empty<BoolCallback>());
 
         for (var m = 0; m < matchCount; m += 1) {
           const teamCb = (!(n % 2 === 0 && r !== 0)) ? loserMatchSources(winners, losers, matchCount, m, n, r) : null;
@@ -482,11 +469,11 @@
 
   function prepareFinals(finals: Bracket, winners: Bracket, losers: Bracket,
                          opts: Options, topCon: JQuery) {
-    const round = finals.addRound();
+    const round = finals.addRound(Option.empty<BoolCallback>());
     const match = round.addMatch(function() {
         return [
-          {source: winners.winner},
-          {source: losers.winner}
+          {source: () => winners.winner()},
+          {source: () => losers.winner()}
         ];
       },
       function(match) {
@@ -498,7 +485,7 @@
             return false;
           }
           /* This callback is ugly, would be nice to make more sensible solution */
-          const round = finals.addRound(function() {
+          const doRenderCb = function(): boolean {
             const rematch = ((!match.winner().name.isEmpty() && match.winner().name === losers.winner().name));
             if (_isResized === false) {
               if (rematch) {
@@ -512,7 +499,8 @@
               topCon.css('width', (parseInt(topCon.css('width'), 10) - (opts.teamWidth + opts.scoreWidth + opts.roundMargin)) + 'px');
             }
             return rematch;
-          });
+          };
+          const round = finals.addRound(Option.of<BoolCallback>(doRenderCb));
           /* keep order the same, WB winner top, LB winner below */
           const match2 = round.addMatch(function() {
               return [
@@ -560,8 +548,8 @@
       const prev = losers.final().round().prev();
       const consol = round.addMatch(function() {
           return [
-            {source: prev.get().match(0).loser},
-            {source: losers.loser}
+            {source: () => prev.get().match(0).loser()},
+            {source: () => losers.loser()}
           ];
         },
         consolationBubbles);
@@ -625,7 +613,7 @@
                 private roundIdx: number,
                 // TODO: results should be enforced to be correct by now
                 private _results: Option<Array<[number | null, number | null, any]>>,
-                private doRenderCb: BoolCallback,
+                private doRenderCb: Option<BoolCallback>,
                 private mkMatch,
                 private isFirstBracket: boolean,
                 private opts: Options) {}
@@ -639,11 +627,11 @@
     addMatch(teamCb: (() => [MatchSource, MatchSource]) | null, renderCb: ((match: Match) => boolean) | null): Match {
       const matchIdx = this.matches.length;
       const teams = (teamCb !== null) ? teamCb() : [
-        {source: this.bracket.round(this.roundIdx - 1).match(matchIdx * 2).winner},
-        {source: this.bracket.round(this.roundIdx - 1).match(matchIdx * 2 + 1).winner}
+        {source: () => this.bracket.round(this.roundIdx - 1).match(matchIdx * 2).winner()},
+        {source: () => this.bracket.round(this.roundIdx - 1).match(matchIdx * 2 + 1).winner()}
       ];
-      const teamA = teams[0].source;
-      const teamB = teams[1].source;
+      const teamA = () => teams[0].source();
+      const teamB = () => teams[1].source();
       const matchResult: MatchResult = new MatchResult(
           new TeamBlock(teamA, teamA().name, Option.of(Order.First), teamA().seed, null),
           new TeamBlock(teamB, teamB().name, Option.of(Order.Second), teamB().seed, null));
@@ -679,55 +667,62 @@
     }
   }
 
-  function mkBracket(bracketCon: JQuery,
-                     results: Option<Array<Array<[number | null, number | null, any]>>>,
-                     mkMatch, isFirstBracket: boolean, opts: Options): Bracket {
-    const rounds: Array<Round> = [];
+  class Bracket {
+    private rounds: Array<Round> = [];
 
-    return {
-      el: bracketCon,
-      addRound(doRenderCb: BoolCallback): Round {
-        const id = rounds.length;
-        const previous = (id > 0) ? Option.of(rounds[id - 1]) : Option.empty<Round>();
+    constructor(private bracketCon: JQuery,
+                private initResults: Option<Array<Array<[number | null, number | null, any]>>>,
+                private mkMatch,
+                private isFirstBracket: boolean,
+                private opts: Options) { }
+    get el(): JQuery {
+      return this.bracketCon;
+    }
+    addRound(doRenderCb: Option<BoolCallback>): Round {
+      const id = this.rounds.length;
+      const previous = (id > 0) ? Option.of(this.rounds[id - 1]) : Option.empty<Round>();
 
-        // Rounds may be undefined if init score array does not match number of teams
-        const roundResults = results.map(r => (r[id] === undefined) ? null : r[id]);
+      // Rounds may be undefined if init score array does not match number of teams
+      const roundResults = this.initResults.map(r => (r[id] === undefined) ? null : r[id]);
 
-        const round = new Round(this, previous, id, roundResults, doRenderCb, mkMatch, isFirstBracket, opts);
-        rounds.push(round);
-        return round;
-      },
-      dropRound() {
-        rounds.pop();
-      },
-      round(id: number): Round {
-        return rounds[id];
-      },
-      size(): number {
-        return rounds.length;
-      },
-      final(): Match {
-        return rounds[rounds.length - 1].match(0);
-      },
-      winner(): TeamBlock {
-        return rounds[rounds.length - 1].match(0).winner();
-      },
-      loser(): TeamBlock {
-        return rounds[rounds.length - 1].match(0).loser();
-      },
-      render() {
-        bracketCon.empty();
-        /* Length of 'rounds' can increase during render in special case when
-         LB win in finals adds new final round in match render callback.
-         Therefore length must be read on each iteration. */
-        for (var i = 0; i < rounds.length; i += 1) {
-          rounds[i].render();
-        }
-      },
-      results(): Array<Array<[number | null, number | null]>> {
-        return rounds.reduce((agg: Array<Array<[number | null, number | null]>>, r) => agg.concat([r.results()]), []);
+      const round = new Round(this, previous, id, roundResults, doRenderCb,
+          this.mkMatch, this.isFirstBracket, this.opts);
+      this.rounds.push(round);
+      return round;
+    }
+    dropRound(): void {
+      this.rounds.pop();
+    }
+    round(id: number): Round {
+      return this.rounds[id];
+    }
+    size(): number {
+      return this.rounds.length;
+    }
+    final(): Match {
+      return this.rounds[this.rounds.length - 1].match(0);
+    }
+    winner(): TeamBlock {
+      if (this.rounds === undefined) {
+        throw new Error('foo');
       }
-    };
+      return this.rounds[this.rounds.length - 1].match(0).winner();
+    }
+    loser(): TeamBlock {
+      return this.rounds[this.rounds.length - 1].match(0).loser();
+    }
+    render(): void {
+      this.bracketCon.empty();
+      /* Length of 'rounds' can increase during render in special case when
+       LB win in finals adds new final round in match render callback.
+       Therefore length must be read on each iteration. */
+      for (var i = 0; i < this.rounds.length; i += 1) {
+        this.rounds[i].render();
+      }
+    }
+    results(): Array<Array<[number | null, number | null]>> {
+      return this.rounds.reduce((agg: Array<Array<[number | null, number | null]>>, r) => agg.concat([r.results()]), []);
+    }
   }
 
   function connector(roundMargin: number, height: number, shift: number, teamCon: JQuery, align: string) {
@@ -1193,12 +1188,12 @@
       topCon.css('width', roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) + 10);
     }
 
-    w = mkBracket(wEl, Option.of(r[0] || null), mkMatch, true, opts);
+    w = new Bracket(wEl, Option.of(r[0] || null), mkMatch, true, opts);
 
     if (!isSingleElimination) {
-      l = mkBracket(lEl, Option.of(r[1] || null), mkMatch, false, opts);
+      l = new Bracket(lEl, Option.of(r[1] || null), mkMatch, false, opts);
       if (!opts.skipGrandFinalComeback) {
-        f = mkBracket(fEl, Option.of(r[2] || null), mkMatch, false, opts);
+        f = new Bracket(fEl, Option.of(r[2] || null), mkMatch, false, opts);
       }
     }
 
