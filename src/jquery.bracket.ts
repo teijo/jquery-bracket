@@ -105,21 +105,6 @@
 
   }
 
-  interface Match {
-    el: JQuery;
-    id: number;
-    round: () => Round;
-    connectorCb: (cb: ConnectorProvider | null) => void;
-    connect: (cb: ConnectorProvider) => void;
-    winner: () => TeamBlock;
-    loser: () => TeamBlock;
-    first: () => TeamBlock;
-    second: () => TeamBlock;
-    setAlignCb: (cb: (JQuery) => void) => void;
-    render: () => void;
-    results: () => [number | null, number | null];
-  }
-
   interface MatchSource {
     source: () => TeamBlock;
   }
@@ -370,14 +355,14 @@
     }
 
     if (isSingleElimination) {
-      winners.final().connectorCb(function() {
+      winners.final().setConnectorCb(function() {
         return null;
       });
 
       if (teams.length > 1 && !opts.skipConsolationRound) {
-        const prev = winners.final().round().prev();
-        const third = prev.map(p => p.match(0).loser).toNull();
-        const fourth = prev.map(p => p.match(1).loser).toNull();
+        const prev = winners.final().getRound().prev();
+        const third = prev.map(p => () => p.match(0).loser()).toNull();
+        const fourth = prev.map(p => () => p.match(1).loser()).toNull();
         const consol = round.addMatch(function() {
             return [
               {source: third},
@@ -396,7 +381,7 @@
           tC.css('top', (topShift) + 'px');
         });
 
-        consol.connectorCb(function() {
+        consol.setConnectorCb(function() {
           return null;
         });
       }
@@ -445,7 +430,7 @@
 
           if (isLastMatch) {
             // Override default connector
-            match.connectorCb(function() {
+            match.setConnectorCb(function() {
               return null;
             });
           }
@@ -459,7 +444,7 @@
                       : {height: -connectorOffset * 2, shift: connectorOffset})
                   .orElse({height: 0, shift: 0});
             } : null;
-            match.connectorCb(cb);
+            match.setConnectorCb(cb);
           }
         }
       }
@@ -504,17 +489,17 @@
           /* keep order the same, WB winner top, LB winner below */
           const match2 = round.addMatch(function() {
               return [
-                {source: match.first},
-                {source: match.second}
+                {source: () => match.first()},
+                {source: () => match.second()}
               ];
             },
             winnerBubbles);
 
-          match.connectorCb(function(tC): Connector {
+          match.setConnectorCb(function(tC): Connector {
             return {height: 0, shift: tC.height() / 2};
           });
 
-          match2.connectorCb(function() {
+          match2.setConnectorCb(function() {
             return null;
           });
           match2.setAlignCb(function(tC) {
@@ -545,7 +530,7 @@
     });
 
     if (!opts.skipConsolationRound) {
-      const prev = losers.final().round().prev();
+      const prev = losers.final().getRound().prev();
       const consol = round.addMatch(function() {
           return [
             {source: () => prev.get().match(0).loser()},
@@ -562,15 +547,15 @@
         tC.css('top', (topShift) + 'px');
       });
 
-      match.connectorCb(function(): Connector | null {
+      match.setConnectorCb(function(): Connector | null {
         return null;
       });
-      consol.connectorCb(function(): Connector | null {
+      consol.setConnectorCb(function(): Connector | null {
         return null;
       });
     }
 
-    winners.final().connectorCb(function(tC): Connector | null {
+    winners.final().setConnectorCb(function(tC): Connector | null {
       const connectorOffset = tC.height() / 4;
       const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
       const matchupOffset = topShift - winners.el.height() / 2;
@@ -586,7 +571,7 @@
       return {height: height, shift: shift};
     });
 
-    losers.final().connectorCb(function(tC): Connector {
+    losers.final().setConnectorCb(function(tC): Connector {
       const connectorOffset = tC.height() / 4;
       const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
       const matchupOffset = topShift - winners.el.height() / 2;
@@ -943,8 +928,172 @@
     return tEl;
   }
 
+  class Match {
+    private matchCon: JQuery;
+    private teamCon: JQuery;
+    private connectorCb: ConnectorProvider | null;
+    private alignCb: ((JQuery) => void) | null;
+
+    constructor(private round: Round, private match: MatchResult, private seed: number,
+                results: Option<[number, number, any]>, private renderCb: Function,
+                private isFirstBracket: boolean, private opts: Options, private resultId: ResultId,
+                private topCon: JQuery, private renderAll: (boolean) => void) {
+      this.matchCon = $('<div class="match"></div>');
+      this.teamCon = $('<div class="teamContainer"></div>');
+
+      this.connectorCb = null;
+      this.alignCb = null;
+
+      if (!opts.save) {
+        const matchUserData = results.map(r => r.length < 3 ? null : r[2]).toNull();
+
+        if (opts.onMatchHover) {
+          this.teamCon.hover(function () {
+            opts.onMatchHover(matchUserData, true);
+          }, function () {
+            opts.onMatchHover(matchUserData, false);
+          });
+        }
+
+        if (opts.onMatchClick) {
+          this.teamCon.click(function () {
+            opts.onMatchClick(matchUserData);
+          });
+        }
+      }
+
+      match.a.name = match.a.source().name;
+      match.b.name = match.b.source().name;
+
+      match.a.score = results.map(r => r[0]).toNull();
+      match.b.score = results.map(r => r[1]).toNull();
+
+      /* match has score even though teams haven't yet been decided */
+      /* todo: would be nice to have in preload check, maybe too much work */
+      if ((!match.a.name || !match.b.name) && (isNumber(match.a.score) || isNumber(match.b.score))) {
+        console.log('ERROR IN SCORE DATA: ' + match.a.source().name + ': ' +
+            match.a.score + ', ' + match.b.source().name + ': ' + match.b.score);
+        match.a.score = match.b.score = null;
+      }
+    }
+
+    get el() {
+        return this.matchCon;
+    }
+    id() {
+        return this.seed;
+    }
+    getRound(): Round {
+      return this.round;
+    }
+    setConnectorCb(cb: ConnectorProvider | null): void {
+      this.connectorCb = cb;
+    }
+    connect(cb: ConnectorProvider | null) {
+      const connectorOffset = this.teamCon.height() / 4;
+      const matchupOffset = this.matchCon.height() / 2;
+      const result = (() => {
+        if (!cb || cb === null) {
+          if (this.seed % 2 === 0) { // dir == down
+            return this.winner().order
+                .map(order => (order === Order.First)
+                    ? {shift: connectorOffset, height: matchupOffset}
+                    : {shift: connectorOffset * 3, height: matchupOffset - connectorOffset * 2})
+                .orElse({shift: connectorOffset * 2, height: matchupOffset - connectorOffset});
+          }
+          else { // dir == up
+            return this.winner().order
+                .map(order => (order === Order.First)
+                    ? {shift: -connectorOffset * 3, height: -matchupOffset + connectorOffset * 2}
+                    : {shift: -connectorOffset, height: -matchupOffset})
+                .orElse({shift: -connectorOffset * 2, height: -matchupOffset + connectorOffset});
+          }
+        }
+        else {
+          const info = cb(this.teamCon, this);
+          if (info === null) { /* no connector */
+            return null;
+          }
+          return info;
+        }
+      })();
+
+      if (result === null) {
+        return;
+      } else {
+        const align = this.opts.dir === 'lr' ? 'right' : 'left';
+        this.teamCon.append(connector(this.opts.roundMargin, result.height, result.shift, this.teamCon, align));
+      }
+    }
+    winner() { return this.match.winner(); }
+    loser() { return this.match.loser(); }
+    first(): TeamBlock {
+      return this.match.a;
+    }
+    second(): TeamBlock {
+      return this.match.b;
+    }
+    setAlignCb(cb: (JQuery) => void) {
+      this.alignCb = cb;
+    }
+    render() {
+      this.matchCon.empty();
+      this.teamCon.empty();
+
+      // This shouldn't be done at render-time
+      this.match.a.name = this.match.a.source().name;
+      this.match.b.name = this.match.b.source().name;
+      this.match.a.seed = this.match.a.source().seed;
+      this.match.b.seed = this.match.b.source().seed;
+
+      const isDoubleBye = this.match.a.name.isEmpty() && this.match.b.name.isEmpty();
+      if (isDoubleBye) {
+        this.teamCon.addClass('np');
+      }
+      else if (!this.match.winner().name) {
+        this.teamCon.addClass('np');
+      }
+      else {
+        this.teamCon.removeClass('np');
+      }
+
+      // Coerce truthy/falsy "isset()" for Typescript
+      const isReady = !this.match.a.name.isEmpty() && !this.match.b.name.isEmpty();
+
+      this.teamCon.append(teamElement(this.round.id, this.match, this.match.a,
+          this.match.b, isReady, this.isFirstBracket, this.opts, this.resultId,
+          this.topCon, this.renderAll));
+      this.teamCon.append(teamElement(this.round.id, this.match, this.match.b,
+          this.match.a, isReady, this.isFirstBracket, this.opts, this.resultId,
+          this.topCon, this.renderAll));
+
+      this.matchCon.appendTo(this.round.el);
+      this.matchCon.append(this.teamCon);
+
+      this.el.css('height', (this.round.bracket.el.height() / this.round.size()) + 'px');
+      this.teamCon.css('top', (this.el.height() / 2 - this.teamCon.height() / 2) + 'px');
+
+      /* todo: move to class */
+      if (this.alignCb !== null) {
+        this.alignCb(this.teamCon);
+      }
+
+      const isLast = (typeof(this.renderCb) === 'function') ? this.renderCb(this) : false;
+      if (!isLast) {
+        this.connect(this.connectorCb);
+      }
+    }
+    results(): [number | null, number | null] {
+      // Either team is bye -> reset (mutate) scores from that match
+      const hasBye = this.match.a.name.isEmpty() || this.match.b.name.isEmpty();
+      if (hasBye) {
+        this.match.a.score = this.match.b.score = null;
+      }
+      return [this.match.a.score, this.match.b.score];
+    }
+  }
+
   const JqueryBracket = function(opts: Options) {
-    const align = opts.dir === 'lr' ? 'right' : 'left';
     const resultId = new ResultId();
 
     if (!opts) {
@@ -1008,154 +1157,6 @@
       }
     }
 
-    function mkMatch(round: Round, match: MatchResult, seed: number,
-                     results: Option<[number, number, any]>, renderCb: Function,
-                     isFirstBracket: boolean, opts: Options): Match {
-      const matchCon = $('<div class="match"></div>');
-      const teamCon: JQuery = $('<div class="teamContainer"></div>');
-
-      var connectorCb: ConnectorProvider | null = null;
-      var alignCb: ((JQuery) => void) | null = null;
-
-      if (!opts.save) {
-        const matchUserData = results.map(r => r.length < 3 ? null : r[2]).toNull();
-
-        if (opts.onMatchHover) {
-          teamCon.hover(function () {
-            opts.onMatchHover(matchUserData, true);
-          }, function () {
-            opts.onMatchHover(matchUserData, false);
-          });
-        }
-
-        if (opts.onMatchClick) {
-          teamCon.click(function () { opts.onMatchClick(matchUserData); });
-        }
-      }
-
-      match.a.name = match.a.source().name;
-      match.b.name = match.b.source().name;
-
-      match.a.score = results.map(r => r[0]).toNull();
-      match.b.score = results.map(r => r[1]).toNull();
-
-      /* match has score even though teams haven't yet been decided */
-      /* todo: would be nice to have in preload check, maybe too much work */
-      if ((!match.a.name || !match.b.name) && (isNumber(match.a.score) || isNumber(match.b.score))) {
-        console.log('ERROR IN SCORE DATA: ' + match.a.source().name + ': ' +
-          match.a.score + ', ' + match.b.source().name + ': ' + match.b.score);
-        match.a.score = match.b.score = null;
-      }
-
-      return {
-        el: matchCon,
-        id: seed,
-        round(): Round {
-          return round;
-        },
-        connectorCb(cb: ConnectorProvider) {
-          connectorCb = cb;
-        },
-        connect(cb: ConnectorProvider) {
-          const connectorOffset = teamCon.height() / 4;
-          const matchupOffset = matchCon.height() / 2;
-          const result = (() => {
-            if (!cb || cb === null) {
-              if (seed % 2 === 0) { // dir == down
-                return this.winner().order
-                    .map(order => (order === Order.First)
-                        ? {shift: connectorOffset, height: matchupOffset}
-                        : {shift: connectorOffset * 3, height: matchupOffset - connectorOffset * 2})
-                    .orElse({shift: connectorOffset * 2, height: matchupOffset - connectorOffset});
-              }
-              else { // dir == up
-                return this.winner().order
-                    .map(order => (order === Order.First)
-                        ? {shift: -connectorOffset * 3, height: -matchupOffset + connectorOffset * 2}
-                        : {shift: -connectorOffset, height: -matchupOffset})
-                    .orElse({shift: -connectorOffset * 2, height: -matchupOffset + connectorOffset});
-              }
-            }
-            else {
-              const info = cb(teamCon, this);
-              if (info === null) { /* no connector */
-                return null;
-              }
-              return info;
-            }
-          })();
-
-          if (result === null) {
-            return;
-          } else {
-            teamCon.append(connector(opts.roundMargin, result.height, result.shift, teamCon, align));
-          }
-        },
-        winner() { return match.winner(); },
-        loser() { return match.loser(); },
-        first(): TeamBlock {
-          return match.a;
-        },
-        second(): TeamBlock {
-          return match.b;
-        },
-        setAlignCb(cb: (JQuery) => void) {
-          alignCb = cb;
-        },
-        render() {
-          matchCon.empty();
-          teamCon.empty();
-
-          // This shouldn't be done at render-time
-          match.a.name = match.a.source().name;
-          match.b.name = match.b.source().name;
-          match.a.seed = match.a.source().seed;
-          match.b.seed = match.b.source().seed;
-
-          const isDoubleBye = match.a.name.isEmpty() && match.b.name.isEmpty();
-          if (isDoubleBye) {
-            teamCon.addClass('np');
-          }
-          else if (!match.winner().name) {
-            teamCon.addClass('np');
-          }
-          else {
-            teamCon.removeClass('np');
-          }
-
-          // Coerce truthy/falsy "isset()" for Typescript
-          const isReady = !match.a.name.isEmpty() && !match.b.name.isEmpty();
-
-          teamCon.append(teamElement(round.id, match, match.a, match.b, isReady, isFirstBracket, opts, resultId, topCon, renderAll));
-          teamCon.append(teamElement(round.id, match, match.b, match.a, isReady, isFirstBracket, opts, resultId, topCon, renderAll));
-
-          matchCon.appendTo(round.el);
-          matchCon.append(teamCon);
-
-          this.el.css('height', (round.bracket.el.height() / round.size()) + 'px');
-          teamCon.css('top', (this.el.height() / 2 - teamCon.height() / 2) + 'px');
-
-          /* todo: move to class */
-          if (alignCb !== null) {
-            alignCb(teamCon);
-          }
-
-          const isLast = (typeof(renderCb) === 'function') ? renderCb(this) : false;
-          if (!isLast) {
-            this.connect(connectorCb);
-          }
-        },
-        results(): [number | null, number | null] {
-          // Either team is bye -> reset (mutate) scores from that match
-          const hasBye = match.a.name.isEmpty() || match.b.name.isEmpty();
-          if (hasBye) {
-            match.a.score = match.b.score = null;
-          }
-          return [match.a.score, match.b.score];
-        }
-      };
-    }
-
     /* wrap data to into necessary arrays */
     const r = wrap(data.results, 4 - depth(data.results));
     data.results = r;
@@ -1207,6 +1208,12 @@
     else {
       topCon.css('width', roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) + 10);
     }
+
+    const mkMatch = (round: Round, match: MatchResult, seed: number,
+                 results: Option<[number, number, any]>, renderCb: Function,
+                 isFirstBracket: boolean, opts: Options) => {
+      return new Match(round, match, seed, results, renderCb, isFirstBracket, opts, resultId, topCon, renderAll);
+    };
 
     w = new Bracket(wEl, Option.of(r[0] || null), mkMatch, true, opts);
 
