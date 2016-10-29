@@ -793,9 +793,155 @@
     return output;
   }
 
+  class ResultId {
+    private counter = 0;
+    get() {
+      return this.counter;
+    }
+    getNext(): number {
+      return ++this.counter;
+    }
+    reset(): void {
+      this.counter = 0;
+    }
+  }
+
+  function teamElement(round: number, match: MatchResult, team: TeamBlock,
+                       opponent: TeamBlock, isReady: boolean,
+                       isFirstBracket: boolean, opts: Options, resultId: ResultId,
+                       topCon: JQuery, renderAll: (boolean) => void) {
+    const resultIdAttribute = team.name.isEmpty() || opponent.name.isEmpty() ? '' : `data-resultid="result-${resultId.getNext()}"`;
+    const sEl = $(`<div class="score" style="width: ${opts.scoreWidth}px;" ${resultIdAttribute}></div>`);
+    const score = (team.name.isEmpty() || opponent.name.isEmpty() || !isReady)
+        ? '--'
+        : (team.score === null || !isNumber(team.score) ? '--' : team.score);
+    sEl.text(score);
+
+    const name = team.name.orElseGet(() => {
+      const type = team.emptyBranch();
+      if (type === BranchType.BYE) {
+        return 'BYE';
+      } else if (type === BranchType.TBD) {
+        return 'TBD';
+      } else {
+        throw new Error(`Unexpected branch type ${type}`);
+      }
+    });
+    const tEl = $(`<div class="team" style="width: ${opts.teamWidth + opts.scoreWidth}px;"></div>`);
+    const nEl = $(`<div class="label" style="width: ${opts.teamWidth}px;"></div>`).appendTo(tEl);
+
+    opts.decorator.render(nEl, name, score);
+
+    team.seed.forEach(seed => { tEl.attr('data-teamid', seed); });
+
+    if (team.name.isEmpty()) {
+      tEl.addClass('na');
+    }
+    else if (match.winner().name === team.name) {
+      tEl.addClass('win');
+    }
+    else if (match.loser().name === team.name) {
+      tEl.addClass('lose');
+    }
+
+    tEl.append(sEl);
+
+    // Only first round of BYEs can be edited
+    if ((!team.name.isEmpty() || (team.name.isEmpty() && round === 0 && isFirstBracket)) && typeof(opts.save) === 'function') {
+      if (!opts.disableTeamEdit) {
+        nEl.addClass('editable');
+        nEl.click(function () {
+          const span = $(this);
+
+          function editor() {
+            function done_fn(val, next: boolean) {
+              // Needs to be taken before possible null is assigned below
+              const teamId = team.seed.get();
+
+              opts.init.teams[~~(teamId / 2)][teamId % 2] = Option.of(val || null);
+
+              renderAll(true);
+              span.click(editor);
+              const labels = opts.el.find('.team[data-teamid=' + (teamId + 1) + '] div.label:first');
+              if (labels.length && next === true && round === 0) {
+                $(labels).click();
+              }
+            }
+
+            span.unbind();
+            opts.decorator.edit(span, team.name.toNull(), done_fn);
+          }
+
+          editor();
+        });
+      }
+      if (!team.name.isEmpty() && !opponent.name.isEmpty() && isReady) {
+        const rId = resultId.get();
+
+        sEl.addClass('editable');
+        sEl.click(function() {
+          const span = $(this);
+
+          function editor() {
+            span.unbind();
+
+            const score = !isNumber(team.score) ? '0' : span.text();
+            const input = $('<input type="text">');
+
+            input.val(score);
+            span.empty().append(input);
+
+            input.focus().select();
+            input.keydown(function(e) {
+              if (!isNumber($(this).val())) {
+                $(this).addClass('error');
+              }
+              else {
+                $(this).removeClass('error');
+              }
+
+              const key = (e.keyCode || e.which);
+              if (key === 9 || key === 13 || key === 27) {
+                e.preventDefault();
+                $(this).blur();
+                if (key === 27) {
+                  return;
+                }
+
+                const next = topCon.find('div.score[data-resultid=result-' + (rId + 1) + ']');
+                if (next) {
+                  next.click();
+                }
+              }
+            });
+            input.blur(function() {
+              var val = input.val();
+              if ((!val || !isNumber(val)) && !isNumber(team.score)) {
+                val = '0';
+              }
+              else if ((!val || !isNumber(val)) && isNumber(team.score)) {
+                val = team.score;
+              }
+
+              span.html(val);
+              if (isNumber(val)) {
+                team.score = parseInt(val, 10);
+                renderAll(true);
+              }
+              span.click(editor);
+            });
+          }
+
+          editor();
+        });
+      }
+    }
+    return tEl;
+  }
+
   const JqueryBracket = function(opts: Options) {
     const align = opts.dir === 'lr' ? 'right' : 'left';
-    var resultIdentifier;
+    const resultId = new ResultId();
 
     if (!opts) {
       throw Error('Options not set');
@@ -834,7 +980,7 @@
     var w, l, f;
 
     function renderAll(save: boolean): void {
-      resultIdentifier = 0;
+      resultId.reset();
       w.render();
       if (l) {
         l.render();
@@ -856,137 +1002,6 @@
           opts.save(exportData(data), opts.userData);
         }
       }
-    }
-
-    function teamElement(round: number, match: MatchResult, team: TeamBlock,
-                         opponent: TeamBlock, isReady: boolean,
-                         isFirstBracket: boolean, opts: Options) {
-      const resultIdAttribute = team.name.isEmpty() || opponent.name.isEmpty() ? '' : `data-resultid="result-${++resultIdentifier}"`;
-      const rId = resultIdentifier;
-      const sEl = $(`<div class="score" style="width: ${opts.scoreWidth}px;" ${resultIdAttribute}></div>`);
-      const score = (team.name.isEmpty() || opponent.name.isEmpty() || !isReady)
-          ? '--'
-          : (team.score === null || !isNumber(team.score) ? '--' : team.score);
-      sEl.text(score);
-
-      const name = team.name.orElseGet(() => {
-        const type = team.emptyBranch();
-        if (type === BranchType.BYE) {
-          return 'BYE';
-        } else if (type === BranchType.TBD) {
-          return 'TBD';
-        } else {
-          throw new Error(`Unexpected branch type ${type}`);
-        }
-      });
-      const tEl = $(`<div class="team" style="width: ${opts.teamWidth + opts.scoreWidth}px;"></div>`);
-      const nEl = $(`<div class="label" style="width: ${opts.teamWidth}px;"></div>`).appendTo(tEl);
-
-      opts.decorator.render(nEl, name, score);
-
-      team.seed.forEach(seed => { tEl.attr('data-teamid', seed); });
-
-      if (team.name.isEmpty()) {
-        tEl.addClass('na');
-      }
-      else if (match.winner().name === team.name) {
-        tEl.addClass('win');
-      }
-      else if (match.loser().name === team.name) {
-        tEl.addClass('lose');
-      }
-
-      tEl.append(sEl);
-
-      // Only first round of BYEs can be edited
-      if ((!team.name.isEmpty() || (team.name.isEmpty() && round === 0 && isFirstBracket)) && typeof(opts.save) === 'function') {
-        if (!opts.disableTeamEdit) {
-          nEl.addClass('editable');
-          nEl.click(function () {
-            const span = $(this);
-
-            function editor() {
-              function done_fn(val, next: boolean) {
-                // Needs to be taken before possible null is assigned below
-                const teamId = team.seed.get();
-
-                opts.init.teams[~~(teamId / 2)][teamId % 2] = Option.of(val || null);
-
-                renderAll(true);
-                span.click(editor);
-                const labels = opts.el.find('.team[data-teamid=' + (teamId + 1) + '] div.label:first');
-                if (labels.length && next === true && round === 0) {
-                  $(labels).click();
-                }
-              }
-
-              span.unbind();
-              opts.decorator.edit(span, team.name.toNull(), done_fn);
-            }
-
-            editor();
-          });
-        }
-        if (!team.name.isEmpty() && !opponent.name.isEmpty() && isReady) {
-          sEl.addClass('editable');
-          sEl.click(function() {
-            const span = $(this);
-
-            function editor() {
-              span.unbind();
-
-              const score = !isNumber(team.score) ? '0' : span.text();
-              const input = $('<input type="text">');
-
-              input.val(score);
-              span.empty().append(input);
-
-              input.focus().select();
-              input.keydown(function(e) {
-                if (!isNumber($(this).val())) {
-                  $(this).addClass('error');
-                }
-                else {
-                  $(this).removeClass('error');
-                }
-
-                const key = (e.keyCode || e.which);
-                if (key === 9 || key === 13 || key === 27) {
-                  e.preventDefault();
-                  $(this).blur();
-                  if (key === 27) {
-                    return;
-                  }
-
-                  const next = topCon.find('div.score[data-resultid=result-' + (rId + 1) + ']');
-                  if (next) {
-                    next.click();
-                  }
-                }
-              });
-              input.blur(function() {
-                var val = input.val();
-                if ((!val || !isNumber(val)) && !isNumber(team.score)) {
-                  val = '0';
-                }
-                else if ((!val || !isNumber(val)) && isNumber(team.score)) {
-                  val = team.score;
-                }
-
-                span.html(val);
-                if (isNumber(val)) {
-                  team.score = parseInt(val, 10);
-                  renderAll(true);
-                }
-                span.click(editor);
-              });
-            }
-
-            editor();
-          });
-        }
-      }
-      return tEl;
     }
 
     function mkMatch(round: Round, match: MatchResult, seed: number,
@@ -1107,8 +1122,8 @@
           // Coerce truthy/falsy "isset()" for Typescript
           const isReady = !match.a.name.isEmpty() && !match.b.name.isEmpty();
 
-          teamCon.append(teamElement(round.id, match, match.a, match.b, isReady, isFirstBracket, opts));
-          teamCon.append(teamElement(round.id, match, match.b, match.a, isReady, isFirstBracket, opts));
+          teamCon.append(teamElement(round.id, match, match.a, match.b, isReady, isFirstBracket, opts, resultId, topCon, renderAll));
+          teamCon.append(teamElement(round.id, match, match.b, match.a, isReady, isFirstBracket, opts, resultId, topCon, renderAll));
 
           matchCon.appendTo(round.el);
           matchCon.append(teamCon);
