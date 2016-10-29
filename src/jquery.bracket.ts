@@ -583,7 +583,7 @@
 
     constructor(readonly bracket: Bracket,
                 private previousRound: Option<Round>,
-                private roundIdx: number,
+                readonly roundNumber: number,
                 // TODO: results should be enforced to be correct by now
                 private _results: Option<Array<[number | null, number | null, any]>>,
                 private doRenderCb: Option<BoolCallback>,
@@ -594,14 +594,11 @@
     get el(){
       return this.roundCon;
     }
-    get id() {
-      return this.roundIdx;
-    }
     addMatch(teamCb: (() => [MatchSource, MatchSource]) | null, renderCb: ((match: Match) => boolean) | null): Match {
       const matchIdx = this.matches.length;
       const teams = (teamCb !== null) ? teamCb() : [
-        {source: () => this.bracket.round(this.roundIdx - 1).match(matchIdx * 2).winner()},
-        {source: () => this.bracket.round(this.roundIdx - 1).match(matchIdx * 2 + 1).winner()}
+        {source: () => this.bracket.round(this.roundNumber - 1).match(matchIdx * 2).winner()},
+        {source: () => this.bracket.round(this.roundNumber - 1).match(matchIdx * 2 + 1).winner()}
       ];
       const teamA = () => teams[0].source();
       const teamB = () => teams[1].source();
@@ -783,7 +780,7 @@
     }
   }
 
-  function teamElement(round: number, match: MatchResult, team: TeamBlock,
+  function teamElement(roundNumber: number, match: MatchResult, team: TeamBlock,
                        opponent: TeamBlock, isReady: boolean,
                        isFirstBracket: boolean, opts: Options, resultId: ResultId,
                        topCon: JQuery, renderAll: (boolean) => void) {
@@ -824,7 +821,7 @@
     tEl.append(sEl);
 
     // Only first round of BYEs can be edited
-    if ((!team.name.isEmpty() || (team.name.isEmpty() && round === 0 && isFirstBracket)) && typeof(opts.save) === 'function') {
+    if ((!team.name.isEmpty() || (team.name.isEmpty() && roundNumber === 0 && isFirstBracket)) && typeof(opts.save) === 'function') {
       if (!opts.disableTeamEdit) {
         nEl.addClass('editable');
         nEl.click(function () {
@@ -840,7 +837,7 @@
               renderAll(true);
               span.click(editor);
               const labels = opts.el.find('.team[data-teamid=' + (teamId + 1) + '] div.label:first');
-              if (labels.length && next === true && round === 0) {
+              if (labels.length && next === true && roundNumber === 0) {
                 $(labels).click();
               }
             }
@@ -1040,10 +1037,10 @@
       // Coerce truthy/falsy "isset()" for Typescript
       const isReady = !this.match.a.name.isEmpty() && !this.match.b.name.isEmpty();
 
-      this.teamCon.append(teamElement(this.round.id, this.match, this.match.a,
+      this.teamCon.append(teamElement(this.round.roundNumber, this.match, this.match.a,
           this.match.b, isReady, this.isFirstBracket, this.opts, this.resultId,
           this.topCon, this.renderAll));
-      this.teamCon.append(teamElement(this.round.id, this.match, this.match.b,
+      this.teamCon.append(teamElement(this.round.roundNumber, this.match, this.match.b,
           this.match.a, isReady, this.isFirstBracket, this.opts, this.resultId,
           this.topCon, this.renderAll));
 
