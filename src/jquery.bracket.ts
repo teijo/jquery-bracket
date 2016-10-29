@@ -78,7 +78,7 @@
   class TeamBlock {
     constructor(readonly source: (() => TeamBlock), // Where base of the information propagated from
                 public name: Option<any>,
-                readonly id: Option<Order>,
+                readonly order: Option<Order>,
                 public seed: Option<number>,
                 public score: number | null) { }
 
@@ -462,8 +462,8 @@
             const cb = (n % 2 === 0) ? (tC, match: Match): Connector => {
               // inside lower bracket
               const connectorOffset = tC.height() / 4;
-              return match.winner().id
-                  .map(id => (id === Order.First)
+              return match.winner().order
+                  .map(order => (order === Order.First)
                       ? {height: 0, shift: connectorOffset}
                       : {height: -connectorOffset * 2, shift: connectorOffset})
                   .orElse({height: 0, shift: 0});
@@ -583,8 +583,8 @@
       const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
       const matchupOffset = topShift - winners.el.height() / 2;
 
-      let {height, shift} = winners.winner().id
-          .map(id => (id === Order.First)
+      let {height, shift} = winners.winner().order
+          .map(order => (order === Order.First)
               ? {height: matchupOffset + connectorOffset * 2, shift: connectorOffset}
               : {height: matchupOffset, shift: connectorOffset * 3})
           .orElse({height: matchupOffset + connectorOffset, shift: connectorOffset * 2});
@@ -599,8 +599,8 @@
       const topShift = (winners.el.height() / 2 + winners.el.height() + losers.el.height() / 2) / 2 - tC.height() / 2;
       const matchupOffset = topShift - winners.el.height() / 2;
 
-      let {height, shift} = losers.winner().id
-          .map(id => (id === Order.First)
+      let {height, shift} = losers.winner().order
+          .map(order => (order === Order.First)
               ? {height: matchupOffset, shift: connectorOffset * 3}
               : {height: matchupOffset + connectorOffset * 2, shift: connectorOffset})
           .orElse({height: matchupOffset + connectorOffset, shift: connectorOffset * 2});
@@ -1044,15 +1044,15 @@
           const result = (() => {
             if (!cb || cb === null) {
               if (seed % 2 === 0) { // dir == down
-                return this.winner().id
-                    .map(id => (id === Order.First)
+                return this.winner().order
+                    .map(order => (order === Order.First)
                         ? {shift: connectorOffset, height: matchupOffset}
                         : {shift: connectorOffset * 3, height: matchupOffset - connectorOffset * 2})
                     .orElse({shift: connectorOffset * 2, height: matchupOffset - connectorOffset});
               }
               else { // dir == up
-                return this.winner().id
-                    .map(id => (id === Order.First)
+                return this.winner().order
+                    .map(order => (order === Order.First)
                         ? {shift: -connectorOffset * 3, height: -matchupOffset + connectorOffset * 2}
                         : {shift: -connectorOffset, height: -matchupOffset})
                     .orElse({shift: -connectorOffset * 2, height: -matchupOffset + connectorOffset});
