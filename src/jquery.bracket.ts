@@ -15,6 +15,10 @@
       return new Option(value);
     }
 
+    static empty<V>(): Option<V> {
+      return new Option<V>(null);
+    }
+
     get() {
       if (this.val === null) {
         throw new Error('Trying to get() empty Option');
@@ -77,7 +81,7 @@
 
   class TeamBlock {
     constructor(readonly source: (() => TeamBlock), // Where base of the information propagated from
-                public name: Option<any>,
+                public name: Option<Object>,
                 readonly order: Option<Order>,
                 public seed: Option<number>,
                 public score: number | null) { }
@@ -178,7 +182,7 @@
     // Arbitrary (either parent) source is required so that branch emptiness
     // can be determined by traversing to the beginning.
     private static emptyTeam(source: () => TeamBlock): TeamBlock {
-      return new TeamBlock(source, Option.of(null), Option.of<Order>(null), Option.of<number>(null), null);
+      return new TeamBlock(source, Option.empty(), Option.empty<Order>(), Option.empty<number>(), null);
     }
 
     constructor(readonly a: TeamBlock, readonly b: TeamBlock) { return; }
@@ -197,7 +201,7 @@
   }
 
   interface Decorator {
-    edit: (span: JQuery, name: string, done_fn: DoneCallback) => void;
+    edit: (span: JQuery, name: any, done_fn: DoneCallback) => void;
     render: (container: JQuery, team: string, score: any) => void;
   }
 
@@ -684,12 +688,12 @@
       el: bracketCon,
       addRound(doRenderCb: BoolCallback): Round {
         const id = rounds.length;
-        const previous = (id > 0) ? rounds[id - 1] : null;
+        const previous = (id > 0) ? Option.of(rounds[id - 1]) : Option.empty<Round>();
 
         // Rounds may be undefined if init score array does not match number of teams
         const roundResults = results.map(r => (r[id] === undefined) ? null : r[id]);
 
-        const round = new Round(this, Option.of(previous), id, roundResults, doRenderCb, mkMatch, isFirstBracket, opts);
+        const round = new Round(this, previous, id, roundResults, doRenderCb, mkMatch, isFirstBracket, opts);
         rounds.push(round);
         return round;
       },
@@ -822,7 +826,7 @@
     if (!opts.init) {
       opts.init = {
         teams: [
-          [Option.of(null), Option.of(null)]
+          [Option.empty(), Option.empty()]
         ],
         results: []
       };
@@ -1222,7 +1226,7 @@
     inc.click(function () {
       const len = data.teams.length;
       for (var i = 0; i < len; i += 1) {
-        data.teams.push([Option.of(null), Option.of(null)]);
+        data.teams.push([Option.empty(), Option.empty()]);
       }
       return JqueryBracket(opts);
     });
@@ -1343,7 +1347,7 @@
       }
       opts.dir = opts.dir || 'lr';
       opts.init.teams = !opts.init.teams || opts.init.teams.length === 0 ? [[null, null]] : opts.init.teams;
-      opts.init.teams = opts.init.teams.map(ts => ts.map(t => Option.of(t)));
+      opts.init.teams = opts.init.teams.map(ts => ts.map(t => t === null ? Option.empty() : Option.of(t)));
       opts.skipConsolationRound = opts.skipConsolationRound || false;
       opts.skipSecondaryFinal = opts.skipSecondaryFinal || false;
       if (opts.dir !== 'lr' && opts.dir !== 'rl') {
