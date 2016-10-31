@@ -115,9 +115,20 @@
     BYE
   }
 
-  enum Order {
-    First,
-    Second
+  class Order {
+    static first(): Order {
+      return new Order(true);
+    }
+
+    static second(): Order {
+      return new Order(false);
+    }
+
+    public map<A>(first: A, second: A): A {
+      return this.isFirst ? first : second;
+    }
+
+    private constructor(private isFirst: boolean) { }
   }
 
   class TeamBlock {
@@ -355,9 +366,9 @@
 
   const winnerMatchSources = (teams: [any, any][], m: number) => (): [MatchSource, MatchSource] => [
     {source: () => new TeamBlock(() => { throw new EndOfBranchException(); },
-        teams[m][0], Option.of(Order.First), Option.of<number>(m * 2), Score.empty())},
+        teams[m][0], Option.of(Order.first()), Option.of<number>(m * 2), Score.empty())},
     {source: () => new TeamBlock(() => { throw new EndOfBranchException(); },
-        teams[m][1], Option.of(Order.Second), Option.of<number>(m * 2 + 1), Score.empty())}
+        teams[m][1], Option.of(Order.second()), Option.of<number>(m * 2 + 1), Score.empty())}
   ];
 
   const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (tC: JQuery) => {
@@ -474,9 +485,9 @@
               // inside lower bracket
               const connectorOffset = tC.height() / 4;
               return match.winner().order
-                  .map(order => (order === Order.First)
-                      ? {height: 0, shift: connectorOffset}
-                      : {height: -connectorOffset * 2, shift: connectorOffset})
+                  .map(order => order.map(
+                      {height: 0, shift: connectorOffset},
+                      {height: -connectorOffset * 2, shift: connectorOffset}))
                   .orElse({height: 0, shift: 0});
             } : null;
             match.setConnectorCb(Option.of(cb));
@@ -590,9 +601,9 @@
       const matchupOffset = topShift - winners.el.height() / 2;
 
       let {height, shift} = winners.winner().order
-          .map(order => (order === Order.First)
-              ? {height: matchupOffset + connectorOffset * 2, shift: connectorOffset}
-              : {height: matchupOffset, shift: connectorOffset * 3})
+          .map(order => order.map(
+              {height: matchupOffset + connectorOffset * 2, shift: connectorOffset},
+              {height: matchupOffset, shift: connectorOffset * 3}))
           .orElse({height: matchupOffset + connectorOffset, shift: connectorOffset * 2});
 
       height -= tC.height() / 2;
@@ -606,9 +617,9 @@
       const matchupOffset = topShift - winners.el.height() / 2;
 
       let {height, shift} = losers.winner().order
-          .map(order => (order === Order.First)
-              ? {height: matchupOffset, shift: connectorOffset * 3}
-              : {height: matchupOffset + connectorOffset * 2, shift: connectorOffset})
+          .map(order => order.map(
+              {height: matchupOffset, shift: connectorOffset * 3},
+              {height: matchupOffset + connectorOffset * 2, shift: connectorOffset}))
           .orElse({height: matchupOffset + connectorOffset, shift: connectorOffset * 2});
 
       height += tC.height() / 2;
@@ -644,8 +655,8 @@
       const teamA = () => teams[0].source();
       const teamB = () => teams[1].source();
       const matchResult: MatchResult = new MatchResult(
-          new TeamBlock(teamA, teamA().name, Option.of(Order.First), teamA().seed, Score.empty()),
-          new TeamBlock(teamB, teamB().name, Option.of(Order.Second), teamB().seed, Score.empty()));
+          new TeamBlock(teamA, teamA().name, Option.of(Order.first()), teamA().seed, Score.empty()),
+          new TeamBlock(teamB, teamB().name, Option.of(Order.second()), teamB().seed, Score.empty()));
       const match = this.mkMatch(this, matchResult, matchIdx,
           this._results.map((r) => {
             return r[matchIdx] === undefined ? null : r[matchIdx];
@@ -1036,16 +1047,16 @@
           .orElseGet(() => {
             if (this.seed % 2 === 0) { // dir == down
               return this.winner().order
-                  .map(order => (order === Order.First)
-                      ? {shift: connectorOffset, height: matchupOffset}
-                      : {shift: connectorOffset * 3, height: matchupOffset - connectorOffset * 2})
+                  .map(order => order.map(
+                      {shift: connectorOffset, height: matchupOffset},
+                      {shift: connectorOffset * 3, height: matchupOffset - connectorOffset * 2}))
                   .orElse({shift: connectorOffset * 2, height: matchupOffset - connectorOffset});
             }
             else { // dir == up
               return this.winner().order
-                  .map(order => (order === Order.First)
-                      ? {shift: -connectorOffset * 3, height: -matchupOffset + connectorOffset * 2}
-                      : {shift: -connectorOffset, height: -matchupOffset})
+                  .map(order => order.map(
+                      {shift: -connectorOffset * 3, height: -matchupOffset + connectorOffset * 2},
+                      {shift: -connectorOffset, height: -matchupOffset}))
                   .orElse({shift: -connectorOffset * 2, height: -matchupOffset + connectorOffset});
             }
           });
