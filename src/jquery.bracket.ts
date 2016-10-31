@@ -72,6 +72,10 @@
       }
       return Option.of(val);
     }
+
+    static empty(): Option<number> {
+      return Option.empty<number>();
+    }
   }
 
   interface Connector {
@@ -191,7 +195,7 @@
     // Arbitrary (either parent) source is required so that branch emptiness
     // can be determined by traversing to the beginning.
     private static emptyTeam(source: () => TeamBlock): TeamBlock {
-      return new TeamBlock(source, Option.empty(), Option.empty<Order>(), Option.empty<number>(), Score.empty<number>());
+      return new TeamBlock(source, Option.empty(), Option.empty<Order>(), Option.empty<number>(), Score.empty());
     }
 
     constructor(readonly a: TeamBlock, readonly b: TeamBlock) { return; }
@@ -351,9 +355,9 @@
 
   const winnerMatchSources = (teams: [any, any][], m: number) => (): [MatchSource, MatchSource] => [
     {source: () => new TeamBlock(() => { throw new EndOfBranchException(); },
-        teams[m][0], Option.of(Order.First), Option.of<number>(m * 2), Score.empty<number>())},
+        teams[m][0], Option.of(Order.First), Option.of<number>(m * 2), Score.empty())},
     {source: () => new TeamBlock(() => { throw new EndOfBranchException(); },
-        teams[m][1], Option.of(Order.Second), Option.of<number>(m * 2 + 1), Score.empty<number>())}
+        teams[m][1], Option.of(Order.Second), Option.of<number>(m * 2 + 1), Score.empty())}
   ];
 
   const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (tC: JQuery) => {
@@ -640,8 +644,8 @@
       const teamA = () => teams[0].source();
       const teamB = () => teams[1].source();
       const matchResult: MatchResult = new MatchResult(
-          new TeamBlock(teamA, teamA().name, Option.of(Order.First), teamA().seed, Score.empty<number>()),
-          new TeamBlock(teamB, teamB().name, Option.of(Order.Second), teamB().seed, Score.empty<number>()));
+          new TeamBlock(teamA, teamA().name, Option.of(Order.First), teamA().seed, Score.empty()),
+          new TeamBlock(teamB, teamB().name, Option.of(Order.Second), teamB().seed, Score.empty()));
       const match = this.mkMatch(this, matchResult, matchIdx,
           this._results.map((r) => {
             return r[matchIdx] === undefined ? null : r[matchIdx];
@@ -690,7 +694,7 @@
       // Rounds may be undefined if init score array does not match number of teams
       const roundResults = this.initResults
           .map<Array<ResultObject>>(r => (r[id] === undefined)
-              ? new ResultObject(Score.empty<number>(), Score.empty<number>(), undefined)
+              ? new ResultObject(Score.empty(), Score.empty(), undefined)
               : r[id]);
 
       const round = new Round(this, previous, id, roundResults, doRenderCb,
@@ -1010,7 +1014,7 @@
       if ((!match.a.name || !match.b.name) && (isNumber(match.a.score) || isNumber(match.b.score))) {
         console.log('ERROR IN SCORE DATA: ' + match.a.source().name + ': ' +
             match.a.score + ', ' + match.b.source().name + ': ' + match.b.score);
-        match.a.score = match.b.score = Score.empty<number>();
+        match.a.score = match.b.score = Score.empty();
       }
     }
 
@@ -1110,7 +1114,7 @@
       // Either team is bye -> reset (mutate) scores from that match
       const hasBye = this.match.a.name.isEmpty() || this.match.b.name.isEmpty();
       if (hasBye) {
-        this.match.a.score = this.match.b.score = Score.empty<number>();
+        this.match.a.score = this.match.b.score = Score.empty();
       }
       return new ResultObject(this.match.a.score, this.match.b.score, this.matchUserData);
     }
