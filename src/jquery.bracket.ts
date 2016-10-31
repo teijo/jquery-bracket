@@ -34,8 +34,8 @@
       return (this.val === null) ? defaultProvider() : this.val;
     }
 
-    map<U>(f: (T) => U): Option<U | T> {
-      return (this.val === null) ? this : new Option(f(this.val));
+    map<U>(f: (T) => U): Option<U> {
+      return (this.val === null) ? Option.empty<U>() : new Option(f(this.val));
     }
 
     forEach(f: (T) => void): Option<T> {
@@ -53,10 +53,24 @@
       return this.val === null;
     }
 
-    private constructor(private val: T | null) {
+    protected constructor(private val: T | null) {
+      if (val instanceof Option) {
+        throw new Error('Trying to wrap Option into an Option');
+      }
       if (this.val === undefined) {
         throw new Error('Option cannot contain undefined');
       }
+    }
+  }
+
+  class Score extends Option<number> {
+    static of(val: number) {
+      const type = typeof(val);
+      const expected = 'number';
+      if (val !== null && type !== expected) {
+        throw new Error(`Invalid score format, expected ${expected}, got ${type}`);
+      }
+      return Option.of(val);
     }
   }
 
@@ -67,6 +81,20 @@
 
   interface ConnectorProvider {
     (tc: JQuery, match: Match): Connector;
+  }
+
+  interface MatchCallback {
+    (round: Round,
+     match: MatchResult,
+     seed: number,
+     results: Option<[Score, Score, any]>,
+     renderCb: Option<RenderCallback>,
+     isFirstBracket: boolean,
+     opts: Options): Match;
+  }
+
+  interface RenderCallback {
+    (match: Match): boolean;
   }
 
   enum BranchType {
@@ -84,7 +112,7 @@
                 public name: Option<Object>,
                 readonly order: Option<Order>,
                 public seed: Option<number>,
-                public score: number | null) { }
+                public score: Score) { }
 
     // Recursively check if branch ends into a BYE
     public emptyBranch(): BranchType {
@@ -140,11 +168,11 @@
         } else {
           return [];
         }
-      } else if (isNumber(match.a.score) && isNumber(match.b.score)) {
-        if (match.a.score > match.b.score) {
+      } else if (!match.a.score.isEmpty() && !match.b.score.isEmpty()) {
+        if (match.a.score.get() > match.b.score.get()) {
           return [match.a, match.b];
         }
-        else if (match.a.score < match.b.score) {
+        else if (match.a.score.get() < match.b.score.get()) {
           return [match.b, match.a];
         }
       }
@@ -154,7 +182,7 @@
     // Arbitrary (either parent) source is required so that branch emptiness
     // can be determined by traversing to the beginning.
     private static emptyTeam(source: () => TeamBlock): TeamBlock {
-      return new TeamBlock(source, Option.empty(), Option.empty<Order>(), Option.empty<number>(), null);
+      return new TeamBlock(source, Option.empty(), Option.empty<Order>(), Option.empty<number>(), Score.empty<number>());
     }
 
     constructor(readonly a: TeamBlock, readonly b: TeamBlock) { return; }
@@ -312,11 +340,11 @@
     return true;
   }
 
-  const winnerMatchSources = (teams: [any, any], m: number) => (): [MatchSource, MatchSource] => [
+  const winnerMatchSources = (teams: [any, any][], m: number) => (): [MatchSource, MatchSource] => [
     {source: () => new TeamBlock(() => { throw new EndOfBranchException(); },
-        teams[m][0], Option.of(Order.First), Option.of<number>(m * 2), null)},
+        teams[m][0], Option.of(Order.First), Option.of<number>(m * 2), Score.empty<number>())},
     {source: () => new TeamBlock(() => { throw new EndOfBranchException(); },
-        teams[m][1], Option.of(Order.Second), Option.of<number>(m * 2 + 1), null)}
+        teams[m][1], Option.of(Order.Second), Option.of<number>(m * 2 + 1), Score.empty<number>())}
   ];
 
   const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (tC: JQuery) => {
@@ -330,7 +358,7 @@
     }
   };
 
-  function prepareWinners(winners: Bracket, teams: [any, any], isSingleElimination: boolean,
+  function prepareWinners(winners: Bracket, teams: [any, any][], isSingleElimination: boolean,
                           opts: Options, skipGrandFinalComeback: boolean) {
     const roundCount = Math.log(teams.length * 2) / Math.log(2);
     let matchCount = teams.length;
@@ -342,10 +370,10 @@
       for (let m = 0; m < matchCount; m += 1) {
         const teamCb = (r === 0) ? winnerMatchSources(teams, m) : null;
         if (!(r === roundCount - 1 && isSingleElimination) && !(r === roundCount - 1 && skipGrandFinalComeback)) {
-          round.addMatch(teamCb);
+          round.addMatch(teamCb, Option.empty());
         }
         else {
-          const match = round.addMatch(teamCb, winnerBubbles);
+          const match = round.addMatch(teamCb, Option.of(winnerBubbles));
           if (!skipGrandFinalComeback) {
             match.setAlignCb(winnerAlignment(match, opts.skipConsolationRound));
           }
@@ -367,7 +395,7 @@
               {source: fourth}
             ];
           },
-          consolationBubbles);
+          Option.of(consolationBubbles));
 
         consol.setAlignCb(function(tC: JQuery) {
           const height = (winners.el.height()) / 2;
@@ -421,7 +449,7 @@
         for (let m = 0; m < matchCount; m += 1) {
           const teamCb = (!(n % 2 === 0 && r !== 0)) ? loserMatchSources(winners, losers, matchCount, m, n, r) : null;
           const isLastMatch = r === roundCount - 1 && skipGrandFinalComeback;
-          const match = round.addMatch(teamCb, isLastMatch ? consolationBubbles : null);
+          const match = round.addMatch(teamCb, Option.of(isLastMatch ? consolationBubbles : null));
           match.setAlignCb(loserAlignment(match.el.find('.teamContainer'), match));
 
           if (isLastMatch) {
@@ -455,7 +483,7 @@
           {source: () => losers.winner()}
         ];
       },
-      function(match) {
+      Option.of(function(match: Match): boolean {
         /* Track if container has been resized for final rematch */
         let _isResized = false;
         /* LB winner won first final match, need a new one */
@@ -487,7 +515,7 @@
                 {source: () => match.second()}
               ];
             },
-            winnerBubbles);
+            Option.of(winnerBubbles));
 
           match.setConnectorCb(Option.of(function(tC): Connector {
             return {height: 0, shift: tC.height() / 2};
@@ -507,7 +535,7 @@
         else {
           return winnerBubbles(match);
         }
-      });
+      }));
 
     match.setAlignCb(function(tC) {
       let height = (winners.el.height() + losers.el.height());
@@ -529,7 +557,7 @@
             {source: () => losers.loser()}
           ];
         },
-        consolationBubbles);
+        Option.of(consolationBubbles));
       consol.setAlignCb(function(tC) {
         const height = (winners.el.height() + losers.el.height()) / 2;
         consol.el.css('height', (height) + 'px');
@@ -585,16 +613,16 @@
                 private previousRound: Option<Round>,
                 readonly roundNumber: number,
                 // TODO: results should be enforced to be correct by now
-                private _results: Option<Array<[number | null, number | null, any]>>,
+                private _results: Option<Array<[Score, Score, any]>>,
                 private doRenderCb: Option<BoolCallback>,
-                private mkMatch,
+                private mkMatch: MatchCallback,
                 private isFirstBracket: boolean,
                 private opts: Options) {}
 
     get el(){
       return this.roundCon;
     }
-    addMatch(teamCb: (() => [MatchSource, MatchSource]) | null, renderCb: ((match: Match) => boolean) | null): Match {
+    addMatch(teamCb: (() => [MatchSource, MatchSource]) | null, renderCb: Option<RenderCallback>): Match {
       const matchIdx = this.matches.length;
       const teams = (teamCb !== null) ? teamCb() : [
         {source: () => this.bracket.round(this.roundNumber - 1).match(matchIdx * 2).winner()},
@@ -603,14 +631,14 @@
       const teamA = () => teams[0].source();
       const teamB = () => teams[1].source();
       const matchResult: MatchResult = new MatchResult(
-          new TeamBlock(teamA, teamA().name, Option.of(Order.First), teamA().seed, null),
-          new TeamBlock(teamB, teamB().name, Option.of(Order.Second), teamB().seed, null));
+          new TeamBlock(teamA, teamA().name, Option.of(Order.First), teamA().seed, Score.empty<number>()),
+          new TeamBlock(teamB, teamB().name, Option.of(Order.Second), teamB().seed, Score.empty<number>()));
       const match = this.mkMatch(this, matchResult, matchIdx,
-          this._results.map(r => r[matchIdx] === undefined
+          this._results.map((r) => r[matchIdx] === undefined
               ? null
-              : (r[matchIdx].length >= 2 /*may be empty array, e.g. initialized with 'results: []'*/
+              : r[matchIdx].length >= 2 /*may be empty array, e.g. initialized with 'results: []'*/
                   ? r[matchIdx]
-                  : [null, null])), renderCb,
+                  : [Score.empty<number>(), Score.empty<number>()]), renderCb,
           this.isFirstBracket, this.opts);
       this.matches.push(match);
       return match;
@@ -632,8 +660,8 @@
       this.roundCon.appendTo(this.bracket.el);
       this.matches.forEach(m => m.render());
     }
-    results(): Array<[number | null, number | null]> {
-      return this.matches.reduce((agg: Array<[number | null, number | null]>, m) => agg.concat([m.results()]), []);
+    results(): Array<[Score, Score, any]> {
+      return this.matches.reduce((agg: Array<[Score, Score, any]>, m) => agg.concat([m.results()]), []);
     }
   }
 
@@ -641,8 +669,8 @@
     private rounds: Array<Round> = [];
 
     constructor(private bracketCon: JQuery,
-                private initResults: Option<Array<Array<[number | null, number | null, any]>>>,
-                private mkMatch,
+                private initResults: Option<Array<Array<[Score, Score, any]>>>,
+                private mkMatch: MatchCallback,
                 private isFirstBracket: boolean,
                 private opts: Options) { }
     get el(): JQuery {
@@ -653,7 +681,10 @@
       const previous = (id > 0) ? Option.of(this.rounds[id - 1]) : Option.empty<Round>();
 
       // Rounds may be undefined if init score array does not match number of teams
-      const roundResults = this.initResults.map(r => (r[id] === undefined) ? null : r[id]);
+      const roundResults = this.initResults
+          .map<Array<[Score, Score, any]>>(r => (r[id] === undefined)
+              ? [Score.empty(), Score.empty()]
+              : r[id]);
 
       const round = new Round(this, previous, id, roundResults, doRenderCb,
           this.mkMatch, this.isFirstBracket, this.opts);
@@ -687,8 +718,8 @@
         this.rounds[i].render();
       }
     }
-    results(): Array<Array<[number | null, number | null]>> {
-      return this.rounds.reduce((agg: Array<Array<[number | null, number | null]>>, r) => agg.concat([r.results()]), []);
+    results(): Array<Array<[Score, Score, any]>> {
+      return this.rounds.reduce((agg: Array<Array<[Score, Score, any]>>, r) => agg.concat([r.results()]), []);
     }
   }
 
@@ -765,6 +796,16 @@
   function exportData(data) {
     const output = $.extend(true, {}, data);
     output.teams = output.teams.map(ts => ts.map(t => t.toNull()));
+    output.results = output.results
+        .map(brackets => brackets
+            .map(rounds => rounds
+                .map((matches: [Score, Score, any]) => {
+                  const matchData = [matches[0].toNull(), matches[1].toNull()];
+                  if (matches[2] !== undefined) {
+                    matchData.push(matches[2]);
+                  }
+                  return matchData;
+                })));
     return output;
   }
 
@@ -789,7 +830,7 @@
     const sEl = $(`<div class="score" style="width: ${opts.scoreWidth}px;" ${resultIdAttribute}></div>`);
     const score = (team.name.isEmpty() || opponent.name.isEmpty() || !isReady)
         ? '--'
-        : (team.score === null || !isNumber(team.score) ? '--' : team.score);
+        : team.score.map(s => `${s}`).orElse('--');
     sEl.text(score);
 
     const name = team.name.orElseGet(() => {
@@ -900,7 +941,7 @@
 
               span.html(val);
               if (isNumber(val)) {
-                team.score = parseInt(val, 10);
+                team.score = Score.of(parseInt(val, 10));
                 renderAll(true);
               }
               span.click(editor);
@@ -919,9 +960,13 @@
     private teamCon: JQuery;
     private connectorCb: Option<ConnectorProvider> = Option.empty<ConnectorProvider>();
     private alignCb: ((JQuery) => void) | null;
+    private matchUserData: any;
 
-    constructor(private round: Round, private match: MatchResult, private seed: number,
-                results: Option<[number, number, any]>, private renderCb: Function,
+    constructor(private round: Round,
+                private match: MatchResult,
+                private seed: number,
+                results: Option<[Score, Score, any]>,
+                private renderCb: Option<RenderCallback>,
                 private isFirstBracket: boolean, private opts: Options, private resultId: ResultId,
                 private topCon: JQuery, private renderAll: (boolean) => void) {
       this.matchCon = $('<div class="match"></div>');
@@ -929,20 +974,20 @@
 
       this.alignCb = null;
 
-      if (!opts.save) {
-        const matchUserData = results.map(r => r.length < 3 ? null : r[2]).toNull();
+      this.matchUserData = !results.isEmpty() ? results.get()[2] : undefined;
 
+      if (!opts.save) {
         if (opts.onMatchHover) {
           this.teamCon.hover(function () {
-            opts.onMatchHover(matchUserData, true);
+            opts.onMatchHover(this.matchUserData, true);
           }, function () {
-            opts.onMatchHover(matchUserData, false);
+            opts.onMatchHover(this.matchUserData, false);
           });
         }
 
         if (opts.onMatchClick) {
           this.teamCon.click(function () {
-            opts.onMatchClick(matchUserData);
+            opts.onMatchClick(this.matchUserData);
           });
         }
       }
@@ -950,15 +995,15 @@
       match.a.name = match.a.source().name;
       match.b.name = match.b.source().name;
 
-      match.a.score = results.map(r => r[0]).toNull();
-      match.b.score = results.map(r => r[1]).toNull();
+      match.a.score = results.map(r => r[0].toNull());
+      match.b.score = results.map(r => r[1].toNull());
 
       /* match has score even though teams haven't yet been decided */
       /* todo: would be nice to have in preload check, maybe too much work */
       if ((!match.a.name || !match.b.name) && (isNumber(match.a.score) || isNumber(match.b.score))) {
         console.log('ERROR IN SCORE DATA: ' + match.a.source().name + ': ' +
             match.a.score + ', ' + match.b.source().name + ': ' + match.b.score);
-        match.a.score = match.b.score = null;
+        match.a.score = match.b.score = Score.empty<number>();
       }
     }
 
@@ -1049,55 +1094,34 @@
         this.alignCb(this.teamCon);
       }
 
-      const isLast = (typeof(this.renderCb) === 'function') ? this.renderCb(this) : false;
+      const isLast = this.renderCb.map(cb => cb(this)).orElse(false);
       if (!isLast) {
         this.connect(this.connectorCb);
       }
     }
-    results(): [number | null, number | null] {
+    results(): [Score, Score, any] {
       // Either team is bye -> reset (mutate) scores from that match
       const hasBye = this.match.a.name.isEmpty() || this.match.b.name.isEmpty();
       if (hasBye) {
-        this.match.a.score = this.match.b.score = null;
+        this.match.a.score = this.match.b.score = Score.empty<number>();
       }
-      return [this.match.a.score, this.match.b.score];
+      return [this.match.a.score, this.match.b.score, this.matchUserData];
     }
   }
+
+  const undefinedToNull = (value) => value === undefined ? null : value;
+
+  const wrapResults = (initResults) => initResults
+      .map(brackets => brackets
+          .map(rounds => rounds
+              .map((matches: [number, number, any]) => {
+                return [Score.of(undefinedToNull(matches[0])), Score.of(undefinedToNull(matches[1])), matches[2]];
+              })));
 
   const JqueryBracket = function(opts: Options) {
     const resultId = new ResultId();
 
-    if (!opts) {
-      throw Error('Options not set');
-    }
-    if (!opts.el) {
-      throw Error('Invalid jQuery object as container');
-    }
-    if (!opts.init && !opts.save) {
-      throw Error('No bracket data or save callback given');
-    }
-    if (opts.userData === undefined) {
-      opts.userData = null;
-    }
-
-    if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render)) {
-      throw Error('Invalid decorator input');
-    }
-    else if (!opts.decorator) {
-      opts.decorator = {edit: defaultEdit, render: defaultRender};
-    }
-
-    let data;
-    if (!opts.init) {
-      opts.init = {
-        teams: [
-          [Option.empty(), Option.empty()]
-        ],
-        results: []
-      };
-    }
-
-    data = opts.init;
+    let data = opts.init;
 
     const topCon = $('<div class="jQBracket ' + opts.dir + '"></div>').appendTo(opts.el.empty());
 
@@ -1128,11 +1152,7 @@
       }
     }
 
-    /* wrap data to into necessary arrays */
-    const r = wrap(data.results, 4 - depth(data.results));
-    data.results = r;
-
-    const isSingleElimination = (r.length <= 1);
+    const isSingleElimination = (data.results.length <= 1);
 
     if (opts.skipSecondaryFinal && isSingleElimination) {
       $.error('skipSecondaryFinal setting is viable only in double elimination mode');
@@ -1181,17 +1201,17 @@
     }
 
     const mkMatch = (round: Round, match: MatchResult, seed: number,
-                 results: Option<[number, number, any]>, renderCb: Function,
-                 isFirstBracket: boolean, opts: Options) => {
+                 results: Option<[Score, Score, any]>, renderCb: Option<RenderCallback>,
+                 isFirstBracket: boolean, opts: Options): Match => {
       return new Match(round, match, seed, results, renderCb, isFirstBracket, opts, resultId, topCon, renderAll);
     };
 
-    w = new Bracket(wEl, Option.of(r[0] || null), mkMatch, true, opts);
+    w = new Bracket(wEl, Option.of(data.results[0] || null), mkMatch, true, opts);
 
     if (!isSingleElimination) {
-      l = new Bracket(lEl, Option.of(r[1] || null), mkMatch, false, opts);
+      l = new Bracket(lEl, Option.of(data.results[1] || null), mkMatch, false, opts);
       if (!opts.skipGrandFinalComeback) {
-        f = new Bracket(fEl, Option.of(r[2] || null), mkMatch, false, opts);
+        f = new Bracket(fEl, Option.of(data.results[2] || null), mkMatch, false, opts);
       }
     }
 
@@ -1278,6 +1298,33 @@
   const methods = {
     init(originalOpts: Options) {
       const opts = $.extend(true, {}, originalOpts); // Do not mutate inputs
+
+      if (!opts) {
+        throw Error('Options not set');
+      }
+      if (!opts.init && !opts.save) {
+        throw Error('No bracket data or save callback given');
+      }
+      if (opts.userData === undefined) {
+        opts.userData = null;
+      }
+
+      if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render)) {
+        throw Error('Invalid decorator input');
+      }
+      else if (!opts.decorator) {
+        opts.decorator = {edit: defaultEdit, render: defaultRender};
+      }
+
+      if (!opts.init) {
+        opts.init = {
+          teams: [
+            [Option.empty(), Option.empty()]
+          ],
+          results: []
+        };
+      }
+
       const that = this;
       opts.el = this;
       if (opts.save && (opts.onMatchClick || opts.onMatchHover)) {
@@ -1310,6 +1357,10 @@
       if (!opts.disableToolbar && opts.disableTeamEdit) {
         $.error('disableTeamEdit requires also resizing to be disabled, initialize with "disableToolbar: true"');
       }
+
+      /* wrap data to into necessary arrays */
+      const r = wrap(opts.init.results, 4 - depth(opts.init.results));
+      opts.init.results = wrapResults(r);
 
       assertNumber(opts, 'teamWidth');
       assertNumber(opts, 'scoreWidth');
@@ -1346,6 +1397,7 @@
       if (opts.dir !== 'lr' && opts.dir !== 'rl') {
         $.error('Direction must be either: "lr" or "rl"');
       }
+
       const bracket = JqueryBracket(opts);
       $(this).data('bracket', {target: that, obj: bracket});
       return bracket;
