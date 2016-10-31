@@ -15,8 +15,8 @@
       return new Option(value);
     }
 
-    static empty<V>(): Option<V> {
-      return new Option<V>(null);
+    static empty(): Option<any> {
+      return new Option(null);
     }
 
     get() {
@@ -35,7 +35,7 @@
     }
 
     map<U>(f: (T) => U): Option<U> {
-      return (this.val === null) ? Option.empty<U>() : new Option(f(this.val));
+      return (this.val === null) ? Option.empty() : new Option(f(this.val));
     }
 
     forEach(f: (T) => void): Option<T> {
@@ -74,7 +74,7 @@
     }
 
     static empty(): Option<number> {
-      return Option.empty<number>();
+      return Option.empty();
     }
   }
 
@@ -195,7 +195,7 @@
     // Arbitrary (either parent) source is required so that branch emptiness
     // can be determined by traversing to the beginning.
     private static emptyTeam(source: () => TeamBlock): TeamBlock {
-      return new TeamBlock(source, Option.empty(), Option.empty<Order>(), Option.empty<number>(), Score.empty());
+      return new TeamBlock(source, Option.empty(), Option.empty(), Option.empty(), Score.empty());
     }
 
     constructor(readonly a: TeamBlock, readonly b: TeamBlock) { return; }
@@ -378,7 +378,7 @@
     let round;
 
     for (let r = 0; r < roundCount; r += 1) {
-      round = winners.addRound(Option.empty<BoolCallback>());
+      round = winners.addRound(Option.empty());
 
       for (let m = 0; m < matchCount; m += 1) {
         const teamCb = (r === 0) ? winnerMatchSources(teams, m) : null;
@@ -396,7 +396,7 @@
     }
 
     if (isSingleElimination) {
-      winners.final().setConnectorCb(Option.empty<ConnectorProvider>());
+      winners.final().setConnectorCb(Option.empty());
 
       if (teams.length > 1 && !opts.skipConsolationRound) {
         const prev = winners.final().getRound().prev();
@@ -420,7 +420,7 @@
           tC.css('top', (topShift) + 'px');
         });
 
-        consol.setConnectorCb(Option.empty<ConnectorProvider>());
+        consol.setConnectorCb(Option.empty());
       }
     }
   }
@@ -457,7 +457,7 @@
        * between last WB loser and current LB winner */
       const subRounds = (skipGrandFinalComeback && r === (roundCount - 1) ? 1 : 2);
       for (let n = 0; n < subRounds; n += 1) {
-        const round = losers.addRound(Option.empty<BoolCallback>());
+        const round = losers.addRound(Option.empty());
 
         for (let m = 0; m < matchCount; m += 1) {
           const teamCb = (!(n % 2 === 0 && r !== 0)) ? loserMatchSources(winners, losers, matchCount, m, n, r) : null;
@@ -467,7 +467,7 @@
 
           if (isLastMatch) {
             // Override default connector
-            match.setConnectorCb(Option.empty<ConnectorProvider>());
+            match.setConnectorCb(Option.empty());
           }
           else if (r < roundCount - 1 || n < 1) {
             const cb = (n % 2 === 0) ? (tC, match: Match): Connector => {
@@ -489,7 +489,7 @@
 
   function prepareFinals(finals: Bracket, winners: Bracket, losers: Bracket,
                          opts: Options, topCon: JQuery) {
-    const round = finals.addRound(Option.empty<BoolCallback>());
+    const round = finals.addRound(Option.empty());
     const match = round.addMatch(function() {
         return [
           {source: () => winners.winner()},
@@ -534,7 +534,7 @@
             return {height: 0, shift: tC.height() / 2};
           }));
 
-          match2.setConnectorCb(Option.empty<ConnectorProvider>());
+          match2.setConnectorCb(Option.empty());
           match2.setAlignCb(function(tC) {
             const height = (winners.el.height() + losers.el.height());
             match2.el.css('height', (height) + 'px');
@@ -580,8 +580,8 @@
         tC.css('top', (topShift) + 'px');
       });
 
-      match.setConnectorCb(Option.empty<ConnectorProvider>());
-      consol.setConnectorCb(Option.empty<ConnectorProvider>());
+      match.setConnectorCb(Option.empty());
+      consol.setConnectorCb(Option.empty());
     }
 
     winners.final().setConnectorCb(Option.of(function(tC): Connector {
@@ -689,7 +689,7 @@
     }
     addRound(doRenderCb: Option<BoolCallback>): Round {
       const id = this.rounds.length;
-      const previous = (id > 0) ? Option.of(this.rounds[id - 1]) : Option.empty<Round>();
+      const previous = (id > 0) ? Option.of(this.rounds[id - 1]) : Option.empty();
 
       // Rounds may be undefined if init score array does not match number of teams
       const roundResults = this.initResults
@@ -969,7 +969,7 @@
   class Match {
     private matchCon: JQuery;
     private teamCon: JQuery;
-    private connectorCb: Option<ConnectorProvider> = Option.empty<ConnectorProvider>();
+    private connectorCb: Option<ConnectorProvider> = Option.empty();
     private alignCb: ((JQuery) => void) | null;
     private matchUserData: any;
 
