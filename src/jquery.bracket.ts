@@ -83,11 +83,20 @@
     (tc: JQuery, match: Match): Connector;
   }
 
+  class ResultObject {
+    constructor(readonly first: Score, readonly second: Score, readonly userData: any) {
+      if (!first || !second) {
+        throw new Error('Cannot create ResultObject with undefined scores');
+      }
+      return;
+    }
+  }
+
   interface MatchCallback {
     (round: Round,
      match: MatchResult,
      seed: number,
-     results: Option<[Score, Score, any]>,
+     results: Option<ResultObject>,
      renderCb: Option<RenderCallback>,
      isFirstBracket: boolean,
      opts: Options): Match;
@@ -613,7 +622,7 @@
                 private previousRound: Option<Round>,
                 readonly roundNumber: number,
                 // TODO: results should be enforced to be correct by now
-                private _results: Option<Array<[Score, Score, any]>>,
+                private _results: Option<Array<ResultObject>>,
                 private doRenderCb: Option<BoolCallback>,
                 private mkMatch: MatchCallback,
                 private isFirstBracket: boolean,
@@ -634,11 +643,9 @@
           new TeamBlock(teamA, teamA().name, Option.of(Order.First), teamA().seed, Score.empty<number>()),
           new TeamBlock(teamB, teamB().name, Option.of(Order.Second), teamB().seed, Score.empty<number>()));
       const match = this.mkMatch(this, matchResult, matchIdx,
-          this._results.map((r) => r[matchIdx] === undefined
-              ? null
-              : r[matchIdx].length >= 2 /*may be empty array, e.g. initialized with 'results: []'*/
-                  ? r[matchIdx]
-                  : [Score.empty<number>(), Score.empty<number>()]), renderCb,
+          this._results.map((r) => {
+            return r[matchIdx] === undefined ? null : r[matchIdx];
+          }), renderCb,
           this.isFirstBracket, this.opts);
       this.matches.push(match);
       return match;
@@ -660,8 +667,8 @@
       this.roundCon.appendTo(this.bracket.el);
       this.matches.forEach(m => m.render());
     }
-    results(): Array<[Score, Score, any]> {
-      return this.matches.reduce((agg: Array<[Score, Score, any]>, m) => agg.concat([m.results()]), []);
+    results(): Array<ResultObject> {
+      return this.matches.reduce((agg: Array<ResultObject>, m) => agg.concat([m.results()]), []);
     }
   }
 
@@ -669,7 +676,7 @@
     private rounds: Array<Round> = [];
 
     constructor(private bracketCon: JQuery,
-                private initResults: Option<Array<Array<[Score, Score, any]>>>,
+                private initResults: Option<Array<Array<ResultObject>>>,
                 private mkMatch: MatchCallback,
                 private isFirstBracket: boolean,
                 private opts: Options) { }
@@ -682,8 +689,8 @@
 
       // Rounds may be undefined if init score array does not match number of teams
       const roundResults = this.initResults
-          .map<Array<[Score, Score, any]>>(r => (r[id] === undefined)
-              ? [Score.empty(), Score.empty()]
+          .map<Array<ResultObject>>(r => (r[id] === undefined)
+              ? new ResultObject(Score.empty<number>(), Score.empty<number>(), undefined)
               : r[id]);
 
       const round = new Round(this, previous, id, roundResults, doRenderCb,
@@ -718,8 +725,8 @@
         this.rounds[i].render();
       }
     }
-    results(): Array<Array<[Score, Score, any]>> {
-      return this.rounds.reduce((agg: Array<Array<[Score, Score, any]>>, r) => agg.concat([r.results()]), []);
+    results(): Array<Array<ResultObject>> {
+      return this.rounds.reduce((agg: Array<Array<ResultObject>>, r) => agg.concat([r.results()]), []);
     }
   }
 
@@ -799,10 +806,10 @@
     output.results = output.results
         .map(brackets => brackets
             .map(rounds => rounds
-                .map((matches: [Score, Score, any]) => {
-                  const matchData = [matches[0].toNull(), matches[1].toNull()];
-                  if (matches[2] !== undefined) {
-                    matchData.push(matches[2]);
+                .map((matches: ResultObject) => {
+                  const matchData = [matches.first.toNull(), matches.second.toNull()];
+                  if (matches.userData !== undefined) {
+                    matchData.push(matches.userData);
                   }
                   return matchData;
                 })));
@@ -965,7 +972,7 @@
     constructor(private round: Round,
                 private match: MatchResult,
                 private seed: number,
-                results: Option<[Score, Score, any]>,
+                results: Option<ResultObject>,
                 private renderCb: Option<RenderCallback>,
                 private isFirstBracket: boolean, private opts: Options, private resultId: ResultId,
                 private topCon: JQuery, private renderAll: (boolean) => void) {
@@ -995,8 +1002,8 @@
       match.a.name = match.a.source().name;
       match.b.name = match.b.source().name;
 
-      match.a.score = results.map(r => r[0].toNull());
-      match.b.score = results.map(r => r[1].toNull());
+      match.a.score = results.map(r => r.first.toNull());
+      match.b.score = results.map(r => r.second.toNull());
 
       /* match has score even though teams haven't yet been decided */
       /* todo: would be nice to have in preload check, maybe too much work */
@@ -1099,13 +1106,13 @@
         this.connect(this.connectorCb);
       }
     }
-    results(): [Score, Score, any] {
+    results(): ResultObject {
       // Either team is bye -> reset (mutate) scores from that match
       const hasBye = this.match.a.name.isEmpty() || this.match.b.name.isEmpty();
       if (hasBye) {
         this.match.a.score = this.match.b.score = Score.empty<number>();
       }
-      return [this.match.a.score, this.match.b.score, this.matchUserData];
+      return new ResultObject(this.match.a.score, this.match.b.score, this.matchUserData);
     }
   }
 
@@ -1114,9 +1121,10 @@
   const wrapResults = (initResults) => initResults
       .map(brackets => brackets
           .map(rounds => rounds
-              .map((matches: [number, number, any]) => {
-                return [Score.of(undefinedToNull(matches[0])), Score.of(undefinedToNull(matches[1])), matches[2]];
-              })));
+              .map((matches: [number, number, any]) => new ResultObject(
+                  Score.of(undefinedToNull(matches[0])),
+                  Score.of(undefinedToNull(matches[1])),
+                  matches[2]))));
 
   const JqueryBracket = function(opts: Options) {
     const resultId = new ResultId();
@@ -1201,7 +1209,7 @@
     }
 
     const mkMatch = (round: Round, match: MatchResult, seed: number,
-                 results: Option<[Score, Score, any]>, renderCb: Option<RenderCallback>,
+                 results: Option<ResultObject>, renderCb: Option<RenderCallback>,
                  isFirstBracket: boolean, opts: Options): Match => {
       return new Match(round, match, seed, results, renderCb, isFirstBracket, opts, resultId, topCon, renderAll);
     };
