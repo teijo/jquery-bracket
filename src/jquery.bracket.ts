@@ -252,6 +252,8 @@
     scoreWidth: number;
     roundMargin: number;
     matchMargin: number;
+    byeText: string;
+    tbdText: string;
   }
 
   function depth(a): number {
@@ -858,9 +860,9 @@
     const name = team.name.orElseGet(() => {
       const type = team.emptyBranch();
       if (type === BranchType.BYE) {
-        return 'BYE';
+        return opts.byeText;
       } else if (type === BranchType.TBD) {
-        return 'TBD';
+        return opts.tbdText;
       } else {
         throw new Error(`Unexpected branch type ${type}`);
       }
