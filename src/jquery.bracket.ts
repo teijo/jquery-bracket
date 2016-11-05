@@ -503,7 +503,7 @@
                   .map(order => order.map(
                       {height: 0, shift: connectorOffset},
                       {height: -connectorOffset * 2, shift: connectorOffset}))
-                  .orElse({height: 0, shift: 0});
+                  .orElse({height: 0, shift: connectorOffset * 2});
             } : null;
             match.setConnectorCb(Option.of(cb));
           }
