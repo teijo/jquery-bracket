@@ -10,8 +10,8 @@
 /// <reference path="../lib/jquery.d.ts" />
 
 (function($) {
-  class Option<T> {
-    static of<V>(value: V | null): Option<V> {
+  class Option<A> {
+    static of<A>(value: A | null): Option<A> {
       return new Option(value);
     }
 
@@ -19,26 +19,26 @@
       return new Option(null);
     }
 
-    get() {
+    get(): A {
       if (this.val === null) {
         throw new Error('Trying to get() empty Option');
       }
       return this.val;
     }
 
-    orElse<U>(defaultValue: U): U | T {
+    orElse(defaultValue: A): A {
       return (this.val === null) ? defaultValue : this.val;
     }
 
-    orElseGet<U>(defaultProvider: () => U): U | T {
+    orElseGet(defaultProvider: () => A): A {
       return (this.val === null) ? defaultProvider() : this.val;
     }
 
-    map<U>(f: (T) => U): Option<U> {
+    map<B>(f: (A) => B): Option<B> {
       return (this.val === null) ? Option.empty() : new Option(f(this.val));
     }
 
-    forEach(f: (T) => void): Option<T> {
+    forEach(f: (A) => void): Option<A> {
       if (this.val !== null) {
         f(this.val);
       }
@@ -53,7 +53,7 @@
       return this.val === null;
     }
 
-    protected constructor(private val: T | null) {
+    protected constructor(private val: A | null) {
       if (val instanceof Option) {
         throw new Error('Trying to wrap Option into an Option');
       }
@@ -875,10 +875,10 @@
     const entryState = team.name
         .map(() => score
             .map<EntryState>(() => 'entry-complete')
-            .orElseGet((): EntryState => (opponent.emptyBranch() === BranchType.BYE)
+            .orElseGet(() => (opponent.emptyBranch() === BranchType.BYE)
                 ? 'entry-default-win'
                 : 'entry-no-score'))
-        .orElseGet((): EntryState => {
+        .orElseGet(() => {
           const type = team.emptyBranch();
           switch (type) {
             case BranchType.BYE:
