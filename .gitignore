@@ -2,6 +2,7 @@
 *.iml
 *.map
 .sass-cache
+.tscache
 node_modules
 bower_components
 dist/jquery.bracket.css
