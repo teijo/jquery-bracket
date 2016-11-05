@@ -26,11 +26,11 @@
       return this.val;
     }
 
-    orElse(defaultValue) {
+    orElse<U>(defaultValue: U): U | T {
       return (this.val === null) ? defaultValue : this.val;
     }
 
-    orElseGet(defaultProvider) {
+    orElseGet<U>(defaultProvider: () => U): U | T {
       return (this.val === null) ? defaultProvider() : this.val;
     }
 
@@ -224,9 +224,11 @@
     (val: string, next?: boolean): void;
   }
 
+  type EntryState = 'empty-bye' | 'empty-tbd' | 'entry-no-score' | 'entry-default-win' | 'entry-complete';
+
   interface Decorator {
     edit: (span: JQuery, name: any, done_fn: DoneCallback) => void;
-    render: (container: JQuery, team: string, score: any) => void;
+    render: (container: JQuery, team: Object | null, score: any, entryState: EntryState) => void;
   }
 
   interface InitData {
@@ -342,8 +344,21 @@
     });
   }
 
-  function defaultRender(container: JQuery, team: string, score: any): void {
-    container.append(team);
+  function defaultRender(container: JQuery, team: string, score: any, state: EntryState): void {
+    switch (state) {
+      case 'empty-bye':
+        container.append('BYE');
+        return;
+      case 'empty-tbd':
+        container.append('TBD');
+        return;
+
+      case 'entry-no-score':
+      case 'entry-default-win':
+      case 'entry-complete':
+        container.append(team);
+        return;
+    }
   }
 
   function winnerBubbles(match: Match): boolean {
@@ -851,24 +866,34 @@
     const resultIdAttribute = team.name.isEmpty() || opponent.name.isEmpty() ? '' : `data-resultid="result-${resultId.getNext()}"`;
     const sEl = $(`<div class="score" style="width: ${opts.scoreWidth}px;" ${resultIdAttribute}></div>`);
     const score = (team.name.isEmpty() || opponent.name.isEmpty() || !isReady)
-        ? '--'
-        : team.score.map(s => `${s}`).orElse('--');
-    sEl.text(score);
+        ? Option.empty()
+        : team.score.map(s => `${s}`);
+    const scoreString = score.orElse('--');
 
-    const name = team.name.orElseGet(() => {
-      const type = team.emptyBranch();
-      if (type === BranchType.BYE) {
-        return 'BYE';
-      } else if (type === BranchType.TBD) {
-        return 'TBD';
-      } else {
-        throw new Error(`Unexpected branch type ${type}`);
-      }
-    });
+    sEl.text(scoreString);
+
+    const entryState = team.name
+        .map(() => score
+            .map<EntryState>(() => 'entry-complete')
+            .orElseGet((): EntryState => (opponent.emptyBranch() === BranchType.BYE)
+                ? 'entry-default-win'
+                : 'entry-no-score'))
+        .orElseGet((): EntryState => {
+          const type = team.emptyBranch();
+          switch (type) {
+            case BranchType.BYE:
+              return 'empty-bye';
+            case BranchType.TBD:
+              return 'empty-tbd';
+            default:
+              throw new Error(`Unexpected branch type ${type}`);
+          }
+        });
+
     const tEl = $(`<div class="team" style="width: ${opts.teamWidth + opts.scoreWidth}px;"></div>`);
     const nEl = $(`<div class="label" style="width: ${opts.teamWidth}px;"></div>`).appendTo(tEl);
 
-    opts.decorator.render(nEl, name, score);
+    opts.decorator.render(nEl, team.name.toNull(), scoreString, entryState);
 
     team.seed.forEach(seed => { tEl.attr('data-teamid', seed); });
 
