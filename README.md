@@ -38,6 +38,8 @@ Minified files are compiled to `dist/` directory.
 
 ## Changes
 
+*   2016-11-05: **0.10.0** Pass entry state to `render` decorator to allow
+    custom visualization for TBD, BYE, no-score, and default win scenarios.
 *   2016-10-25: **0.9.0** Resizing and partial editing support
     *   Adjust bracket proportions with `teamWidth: number`,
         `scoreWidth: number`, `matchMargin: number`, `roundMargin: number`.
