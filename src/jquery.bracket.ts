@@ -254,6 +254,7 @@
     scoreWidth: number;
     roundMargin: number;
     matchMargin: number;
+    centerConnectors: boolean;
   }
 
   function depth(a): number {
@@ -473,7 +474,7 @@
 
   const loserAlignment = (teamCon: JQuery, match: Match) => () => teamCon.css('top', (match.el.height() / 2 - teamCon.height() / 2) + 'px');
 
-  function prepareLosers(winners: Bracket, losers: Bracket, teamCount: number, skipGrandFinalComeback: boolean) {
+  function prepareLosers(winners: Bracket, losers: Bracket, teamCount: number, skipGrandFinalComeback: boolean, centerConnectors: boolean) {
     const roundCount = Math.log(teamCount * 2) / Math.log(2) - 1;
     let matchCount = teamCount / 2;
 
@@ -499,11 +500,12 @@
             const cb = (n % 2 === 0) ? (tC, match: Match): Connector => {
               // inside lower bracket
               const connectorOffset = tC.height() / 4;
+              const center = {height: 0, shift: connectorOffset * 2};
               return match.winner().order
                   .map(order => order.map(
-                      {height: 0, shift: connectorOffset},
-                      {height: -connectorOffset * 2, shift: connectorOffset}))
-                  .orElse({height: 0, shift: connectorOffset * 2});
+                      centerConnectors ? center : {height: 0, shift: connectorOffset},
+                      centerConnectors ? center : {height: -connectorOffset * 2, shift: connectorOffset}))
+                  .orElse(center);
             } : null;
             match.setConnectorCb(Option.of(cb));
           }
@@ -616,10 +618,17 @@
       const matchupOffset = topShift - winners.el.height() / 2;
 
       let {height, shift} = winners.winner().order
-          .map(order => order.map(
-              {height: matchupOffset + connectorOffset * 2, shift: connectorOffset},
-              {height: matchupOffset, shift: connectorOffset * 3}))
-          .orElse({height: matchupOffset + connectorOffset, shift: connectorOffset * 2});
+          .map(order => order.map({
+            height: matchupOffset + connectorOffset * (opts.centerConnectors ? 2 : 1),
+            shift: connectorOffset * (opts.centerConnectors ? 2 : 1)
+          }, {
+            height: matchupOffset + connectorOffset * (opts.centerConnectors ? 2 : 0),
+            shift: connectorOffset * (opts.centerConnectors ? 2 : 3)
+          }))
+          .orElse({
+            height: matchupOffset + connectorOffset * (opts.centerConnectors ? 2 : 1),
+            shift: connectorOffset * 2
+          });
 
       height -= tC.height() / 2;
 
@@ -632,10 +641,17 @@
       const matchupOffset = topShift - winners.el.height() / 2;
 
       let {height, shift} = losers.winner().order
-          .map(order => order.map(
-              {height: matchupOffset, shift: connectorOffset * 3},
-              {height: matchupOffset + connectorOffset * 2, shift: connectorOffset}))
-          .orElse({height: matchupOffset + connectorOffset, shift: connectorOffset * 2});
+          .map(order => order.map({
+            height: matchupOffset + connectorOffset * (opts.centerConnectors ? 2 : 0),
+            shift: connectorOffset * (opts.centerConnectors ? 2 : 3)
+          }, {
+            height: matchupOffset + connectorOffset * 2,
+            shift: connectorOffset * (opts.centerConnectors ? 2 : 1)
+          }))
+          .orElse({
+            height: matchupOffset + connectorOffset * (opts.centerConnectors ? 2 : 1),
+            shift: connectorOffset * 2
+          });
 
       height += tC.height() / 2;
 
@@ -784,11 +800,13 @@
     src.css('width', width + 'px');
     src.css(align, (-width - 2) + 'px');
 
+    // Subtract 1 due to line thickness and alignment mismatch caused by
+    // combining top and bottom alignment
     if (shift >= 0) {
-      src.css('top', shift + 'px');
+      src.css('top', (shift - 1) + 'px');
     }
     else {
-      src.css('bottom', (-shift) + 'px');
+      src.css('bottom', (-shift - 1) + 'px');
     }
 
     if (drop) {
@@ -1072,17 +1090,31 @@
           .orElseGet(() => {
             if (this.seed % 2 === 0) { // dir == down
               return this.winner().order
-                  .map(order => order.map(
-                      {shift: connectorOffset, height: matchupOffset},
-                      {shift: connectorOffset * 3, height: matchupOffset - connectorOffset * 2}))
-                  .orElse({shift: connectorOffset * 2, height: matchupOffset - connectorOffset});
+                  .map(order => order.map({
+                    shift: connectorOffset * (this.opts.centerConnectors ? 2 : 1),
+                    height: matchupOffset
+                  }, {
+                    shift: connectorOffset * (this.opts.centerConnectors ? 2 : 3),
+                    height: matchupOffset - connectorOffset * (this.opts.centerConnectors ? 0 : 2)
+                  }))
+                  .orElse({
+                    shift: connectorOffset * 2,
+                    height: matchupOffset - connectorOffset * (this.opts.centerConnectors ? 0 : 1)
+                  });
             }
             else { // dir == up
               return this.winner().order
-                  .map(order => order.map(
-                      {shift: -connectorOffset * 3, height: -matchupOffset + connectorOffset * 2},
-                      {shift: -connectorOffset, height: -matchupOffset}))
-                  .orElse({shift: -connectorOffset * 2, height: -matchupOffset + connectorOffset});
+                  .map(order => order.map({
+                    shift: -connectorOffset * (this.opts.centerConnectors ? 2 : 3),
+                    height: -matchupOffset + connectorOffset * (this.opts.centerConnectors ? 0 : 2)
+                  }, {
+                    shift: -connectorOffset * (this.opts.centerConnectors ? 2 : 1),
+                    height: -matchupOffset
+                  }))
+                  .orElse({
+                    shift: -connectorOffset * 2,
+                    height: -matchupOffset + connectorOffset * (this.opts.centerConnectors ? 0 : 1)
+                  });
             }
           });
 
@@ -1266,7 +1298,7 @@
     prepareWinners(w, data.teams, isSingleElimination, opts, opts.skipGrandFinalComeback && !isSingleElimination);
 
     if (!isSingleElimination) {
-      prepareLosers(w, l, data.teams.length, opts.skipGrandFinalComeback);
+      prepareLosers(w, l, data.teams.length, opts.skipGrandFinalComeback, opts.centerConnectors);
       if (!opts.skipGrandFinalComeback) {
         prepareFinals(f, w, l, opts, topCon);
       }
@@ -1331,6 +1363,15 @@
       if (type !== expectedType) {
         throw new Error(`Option "${field}" is ${type} instead of ${expectedType}`);
       }
+    }
+  };
+
+  const assertBoolean = (opts: Options, field: string) => {
+    const value = opts[field];
+    const expectedType = 'boolean';
+    const type = typeof(value);
+    if (type !== expectedType) {
+      throw new Error(`Value of ${field} must be boolean, got ${expectedType}, got ${type}`);
     }
   };
 
@@ -1432,6 +1473,12 @@
       assertGt(0, opts, 'scoreWidth');
       assertGt(0, opts, 'roundMargin');
       assertGt(0, opts, 'matchMargin');
+
+      if (!opts.hasOwnProperty('centerConnectors')) {
+        opts.centerConnectors = false;
+      }
+
+      assertBoolean(opts, 'centerConnectors');
 
       const log2Result = isPow2(opts.init.teams.length);
       if (log2Result !== Math.floor(log2Result)) {
