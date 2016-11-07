@@ -250,6 +250,7 @@
     onMatchHover: (data: any, hover: boolean) => void;
     disableToolbar: boolean;
     disableTeamEdit: boolean;
+    disableHighlight: boolean;
     teamWidth: number;
     scoreWidth: number;
     roundMargin: number;
@@ -1216,7 +1217,10 @@
       if (f && !opts.skipGrandFinalComeback) {
         f.render();
       }
-      postProcess(topCon, w, f);
+
+      if (!opts.disableHighlight) {
+        postProcess(topCon, w, f);
+      }
 
       if (save) {
         data.results[0] = w.results();
@@ -1479,6 +1483,12 @@
       }
 
       assertBoolean(opts, 'centerConnectors');
+
+      if (!opts.hasOwnProperty('disableHighlight')) {
+        opts.disableHighlight = false;
+      }
+
+      assertBoolean(opts, 'disableHighlight');
 
       const log2Result = isPow2(opts.init.teams.length);
       if (log2Result !== Math.floor(log2Result)) {

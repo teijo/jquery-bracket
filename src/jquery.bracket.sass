@@ -194,14 +194,6 @@ div.jQBracket
     text-align: center
     font-size: 11px
 
-    &.third
-      background-color: $thirdColor
-      color: #D95
-
-    &.fourth
-      background-color: $fourthColor
-      color: #CCD
-
     &:after
       content: ''
       position: absolute
@@ -216,24 +208,32 @@ div.jQBracket
     &:after
       left: -5px
       border-left: 0
-    &.third:after
-      border-right: 6px solid $thirdColor
-    &.fourth:after
-      border-right: 6px solid $fourthColor
 
-  .highlightWinner
+  .win
     .bubble
       background-color: $winColor
       color: #960
       &:after
         border-right-color: $winColor
 
-  .highlightLoser
+      &.third
+        background-color: $thirdColor
+        color: #D95
+        &:after
+          border-right: 6px solid $thirdColor
+
+  .lose
     .bubble
       background-color: $loseColor
       color: #333
       &:after
         border-right-color: $loseColor
+
+      &.fourth
+        background-color: $fourthColor
+        color: #CCD
+        &:after
+          border-right: 6px solid $fourthColor
 
 div.jQBracket.rl
   .finals
