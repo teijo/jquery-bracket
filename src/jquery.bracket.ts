@@ -1204,7 +1204,29 @@
 
     let data = opts.init;
 
+    const isSingleElimination = (data.results.length <= 1);
+
+    // 45 === team height x2 + 1px margin
+    const height = data.teams.length * 45 + data.teams.length * opts.matchMargin;
+
     const topCon = $('<div class="jQBracket ' + opts.dir + '"></div>').appendTo(opts.el.empty());
+
+    function resizeContainer() {
+      const roundCount = countRounds(data.teams.length, isSingleElimination,
+          opts.skipGrandFinalComeback, opts.skipSecondaryFinal, data.results);
+
+      if (!opts.disableToolbar) {
+        topCon.css('width', roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) + 40);
+      }
+      else {
+        topCon.css('width', roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) + 10);
+      }
+
+      // reserve space for consolation round
+      if (isSingleElimination && data.teams.length <= 2 && !opts.skipConsolationRound) {
+        topCon.css('height', height + 40);
+      }
+    }
 
     let w, l, f;
 
@@ -1230,13 +1252,15 @@
         if (f && !opts.skipGrandFinalComeback) {
           data.results[2] = f.results();
         }
+
+        // Loser bracket comeback in finals might require a new round
+        resizeContainer();
+
         if (opts.save) {
           opts.save(exportData(data), opts.userData);
         }
       }
     }
-
-    const isSingleElimination = (data.results.length <= 1);
 
     if (opts.skipSecondaryFinal && isSingleElimination) {
       $.error('skipSecondaryFinal setting is viable only in double elimination mode');
@@ -1259,30 +1283,13 @@
       lEl = $('<div class="loserBracket"></div>').appendTo(topCon);
     }
 
-    // 45 === team height x2 + 1px margin
-    const height = data.teams.length * 45 + data.teams.length * opts.matchMargin;
-
-
     wEl.css('height', height);
-
-    // reserve space for consolation round
-    if (isSingleElimination && data.teams.length <= 2 && !opts.skipConsolationRound) {
-      topCon.css('height', height + 40);
-    }
 
     if (lEl) {
       lEl.css('height', wEl.height() / 2);
     }
 
-    const roundCount = countRounds(data.teams.length, isSingleElimination,
-        opts.skipGrandFinalComeback, opts.skipSecondaryFinal, data.results);
-
-    if (!opts.disableToolbar) {
-      topCon.css('width', roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) + 40);
-    }
-    else {
-      topCon.css('width', roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) + 10);
-    }
+    resizeContainer();
 
     const mkMatch = (round: Round, match: MatchResult, seed: number,
                  results: Option<ResultObject>, renderCb: Option<RenderCallback>,
