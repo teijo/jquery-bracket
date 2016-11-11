@@ -1040,20 +1040,22 @@
 
       this.alignCb = null;
 
-      this.matchUserData = !results.isEmpty() ? results.get()[2] : undefined;
+      this.matchUserData = !results.isEmpty() ? results.get().userData : undefined;
 
       if (!opts.save) {
+        // The hover and click callbacks are bound by jQuery to the element
+        const userData = this.matchUserData;
         if (opts.onMatchHover) {
           this.teamCon.hover(function () {
-            opts.onMatchHover(this.matchUserData, true);
+            opts.onMatchHover(userData, true);
           }, function () {
-            opts.onMatchHover(this.matchUserData, false);
+            opts.onMatchHover(userData, false);
           });
         }
 
         if (opts.onMatchClick) {
           this.teamCon.click(function () {
-            opts.onMatchClick(this.matchUserData);
+            opts.onMatchClick(userData);
           });
         }
       }
