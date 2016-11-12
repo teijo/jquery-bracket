@@ -575,6 +575,11 @@
           return false;
         }
         else {
+          if (finals.size() === 2) {
+            finals.dropRound();
+          } else if (finals.size() > 2) {
+            throw new Error('Unexpected number of final rounds');
+          }
           return winnerBubbles(match);
         }
       }));
@@ -706,9 +711,9 @@
     size(): number {
       return this.matches.length;
     }
-    render() {
+    render(): void {
       this.roundCon.empty();
-      if (typeof(this.doRenderCb) === 'function' && !this.doRenderCb()) {
+      if (!this.doRenderCb.isEmpty() && !this.doRenderCb.get()()) {
         return;
       }
       this.roundCon.appendTo(this.bracket.el);
