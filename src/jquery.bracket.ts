@@ -517,7 +517,7 @@
   }
 
   function prepareFinals(finals: Bracket, winners: Bracket, losers: Bracket,
-                         opts: Options, topCon: JQuery) {
+                         opts: Options, topCon: JQuery, resizeContainer: () => void) {
     const round = finals.addRound(Option.empty());
     const match = round.addMatch(function() {
         return [
@@ -539,13 +539,13 @@
             if (_isResized === false) {
               if (rematch) {
                 _isResized = true;
-                topCon.css('width', (parseInt(topCon.css('width'), 10) + (opts.teamWidth + opts.scoreWidth + opts.roundMargin)) + 'px');
+                resizeContainer();
               }
             }
             if (!rematch && _isResized) {
               _isResized = false;
               finals.dropRound();
-              topCon.css('width', (parseInt(topCon.css('width'), 10) - (opts.teamWidth + opts.scoreWidth + opts.roundMargin)) + 'px');
+              resizeContainer();
             }
             return rematch;
           };
@@ -1318,7 +1318,7 @@
     if (!isSingleElimination) {
       prepareLosers(w, l, data.teams.length, opts.skipGrandFinalComeback, opts.centerConnectors);
       if (!opts.skipGrandFinalComeback) {
-        prepareFinals(f, w, l, opts, topCon);
+        prepareFinals(f, w, l, opts, topCon, resizeContainer);
       }
     }
 
