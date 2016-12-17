@@ -229,6 +229,7 @@
   interface Decorator {
     edit: (span: JQuery, name: any, done_fn: DoneCallback) => void;
     render: (container: JQuery, team: Object | null, score: any, entryState: EntryState) => void;
+    renderMatch: (container: JQuery, match: string) => void;
   }
 
   interface InitData {
@@ -361,6 +362,10 @@
         container.append(team);
         return;
     }
+  }
+
+  function defaultRenderMatch(container: JQuery, data: string): void {
+    return;
   }
 
   function winnerBubbles(match: Match): boolean {
@@ -1185,6 +1190,8 @@
       if (!isLast) {
         this.connect(this.connectorCb);
       }
+
+      this.opts.decorator.renderMatch(this.teamCon, this.matchUserData);
     }
     results(): ResultObject {
       // Either team is bye -> reset (mutate) scores from that match
@@ -1416,11 +1423,18 @@
         opts.userData = null;
       }
 
-      if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render)) {
-        throw Error('Invalid decorator input');
+      if (!opts.decorator) {
+        opts.decorator = {};
       }
-      else if (!opts.decorator) {
-        opts.decorator = {edit: defaultEdit, render: defaultRender};
+
+      if (!opts.decorator.edit) {
+        opts.decorator.edit = defaultEdit;
+      }
+      if (!opts.decorator.render) {
+        opts.decorator.render = defaultRender;
+      }
+      if (!opts.decorator.renderMatch) {
+        opts.decorator.renderMatch = defaultRenderMatch;
       }
 
       if (!opts.init) {
