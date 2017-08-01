@@ -240,7 +240,7 @@
   interface Options {
     el: JQuery;
     init: InitData;
-    save: (data: any, userData: any) => void;
+    save: (data: any, userData: any, saveData: any) => void;
     userData: any;
     decorator: Decorator;
     skipConsolationRound: boolean;
@@ -888,7 +888,7 @@
     }
   }
 
-  function teamElement(roundNumber: number, match: MatchResult, team: TeamBlock,
+  function teamElement(roundNumber: number, match: MatchResult, matchUserData: any, team: TeamBlock,
                        opponent: TeamBlock, isReady: boolean,
                        isFirstBracket: boolean, opts: Options, resultId: ResultId,
                        topCon: JQuery, renderAll: (boolean) => void) {
@@ -977,7 +977,7 @@
           function editor() {
             span.unbind();
 
-            const score = !isNumber(team.score) ? '0' : span.text();
+            const score = !isNumber(team.score.toNull()) ? '0' : span.text();
             const input = $('<input type="text">');
 
             input.val(score);
@@ -1018,7 +1018,7 @@
               span.html(val);
               if (isNumber(val)) {
                 team.score = Score.of(parseInt(val, 10));
-                renderAll(true);
+                renderAll({match: match, data: matchUserData});
               }
               span.click(editor);
             });
@@ -1078,7 +1078,7 @@
 
       /* match has score even though teams haven't yet been decided */
       /* todo: would be nice to have in preload check, maybe too much work */
-      if ((!match.a.name || !match.b.name) && (isNumber(match.a.score) || isNumber(match.b.score))) {
+      if ((!match.a.name || !match.b.name) && (isNumber(match.a.score.toNull()) || isNumber(match.b.score.toNull()))) {
         console.log('ERROR IN SCORE DATA: ' + match.a.source().name + ': ' +
             match.a.score + ', ' + match.b.source().name + ': ' + match.b.score);
         match.a.score = match.b.score = Score.empty();
@@ -1168,10 +1168,10 @@
       // Coerce truthy/falsy "isset()" for Typescript
       const isReady = !this.match.a.name.isEmpty() && !this.match.b.name.isEmpty();
 
-      this.teamCon.append(teamElement(this.round.roundNumber, this.match, this.match.a,
+      this.teamCon.append(teamElement(this.round.roundNumber, this.match, this.matchUserData, this.match.a,
           this.match.b, isReady, this.isFirstBracket, this.opts, this.resultId,
           this.topCon, this.renderAll));
-      this.teamCon.append(teamElement(this.round.roundNumber, this.match, this.match.b,
+      this.teamCon.append(teamElement(this.round.roundNumber, this.match, this.matchUserData, this.match.b,
           this.match.a, isReady, this.isFirstBracket, this.opts, this.resultId,
           this.topCon, this.renderAll));
 
@@ -1244,7 +1244,7 @@
 
     let w, l, f;
 
-    function renderAll(save: boolean): void {
+    function renderAll(save: any): void {
       resultId.reset();
       w.render();
       if (l) {
@@ -1271,7 +1271,7 @@
         resizeContainer();
 
         if (opts.save) {
-          opts.save(exportData(data), opts.userData);
+          opts.save(exportData(data), opts.userData, save);
         }
       }
     }
