@@ -63,14 +63,14 @@
     }
   }
 
-  class Score extends Option<number> {
-    static of(val: number) {
+  class Score<N = number> extends Option<N> {
+    static of<N>(val: N | null) {
       const type = typeof(val);
       const expected = 'number';
       if (val !== null && type !== expected) {
         throw new Error(`Invalid score format, expected ${expected}, got ${type}`);
       }
-      return Option.of(val);
+      return super.of<N>(val);
     }
 
     static empty(): Option<number> {

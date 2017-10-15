@@ -17,13 +17,13 @@
     "grunt": "^1.0.1",
     "grunt-cli": "^1.2.0",
     "grunt-contrib-concat": "^1.0.1",
-    "grunt-contrib-uglify": "^2.0.0",
+    "grunt-contrib-uglify": "^3.1.0",
     "grunt-contrib-watch": "^1.0.0",
     "grunt-css": "^0.5.4",
     "grunt-sass": "^2.0.0",
-    "grunt-ts": "^6.0.0-beta.3",
-    "grunt-tslint": "^4.0.0",
-    "tslint": "^4.2.0",
-    "typescript": "^2.0.6"
+    "grunt-ts": "^6.0.0-beta.16",
+    "grunt-tslint": "^5.0.1",
+    "tslint": "^5.7.0",
+    "typescript": "^2.5.3"
   }
 }
