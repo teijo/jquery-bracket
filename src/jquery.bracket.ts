@@ -1,7 +1,7 @@
 /**
  * jQuery Bracket
  *
- * Copyright (c) 2011-2016, Teijo Laine,
+ * Copyright (c) 2011-2017, Teijo Laine,
  * http://aropupu.fi/bracket/
  *
  * Licenced under the MIT licence
