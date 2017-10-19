@@ -381,10 +381,11 @@
     return true;
   }
 
+  const endOfBranch = () => { throw new EndOfBranchException(); };
   const winnerMatchSources = (teams: [any, any][], m: number) => (): [MatchSource, MatchSource] => [
-    {source: () => new TeamBlock(() => { throw new EndOfBranchException(); },
+    {source: () => new TeamBlock(endOfBranch,
         teams[m][0], Option.of(Order.first()), Option.of<number>(m * 2), Score.empty())},
-    {source: () => new TeamBlock(() => { throw new EndOfBranchException(); },
+    {source: () => new TeamBlock(endOfBranch,
         teams[m][1], Option.of(Order.second()), Option.of<number>(m * 2 + 1), Score.empty())}
   ];
 
