@@ -672,6 +672,26 @@
     }));
   }
 
+  function teamState(team: TeamBlock, opponent: TeamBlock, score: Score): EntryState {
+    return team.name
+      .map(() => score
+        .map<EntryState>(() => EntryState.ENTRY_COMPLETE)
+        .orElseGet(() => (opponent.emptyBranch() === BranchType.BYE)
+          ? EntryState.ENTRY_DEFAULT_WIN
+          : EntryState.ENTRY_NO_SCORE))
+      .orElseGet(() => {
+        const type = team.emptyBranch();
+        switch (type) {
+          case BranchType.BYE:
+            return EntryState.EMPTY_BYE;
+          case BranchType.TBD:
+            return EntryState.EMPTY_TBD;
+          default:
+            throw new Error(`Unexpected branch type ${type}`);
+        }
+      });
+  }
+
   class Round {
     private containerWidth = this.opts.teamWidth + this.opts.scoreWidth;
     private roundCon: JQuery = $(`<div class="round" style="width: ${this.containerWidth}px; margin-right: ${this.opts.roundMargin}px"/>`);
@@ -903,28 +923,11 @@
 
     sEl.text(scoreString);
 
-    const entryState: EntryState = team.name
-        .map(() => score
-            .map<EntryState>(() => EntryState.ENTRY_COMPLETE)
-            .orElseGet(() => (opponent.emptyBranch() === BranchType.BYE)
-                ? EntryState.ENTRY_DEFAULT_WIN
-                : EntryState.ENTRY_NO_SCORE))
-        .orElseGet(() => {
-          const type = team.emptyBranch();
-          switch (type) {
-            case BranchType.BYE:
-              return EntryState.EMPTY_BYE;
-            case BranchType.TBD:
-              return EntryState.EMPTY_TBD;
-            default:
-              throw new Error(`Unexpected branch type ${type}`);
-          }
-        });
-
     const tEl = $(`<div class="team" style="width: ${opts.teamWidth + opts.scoreWidth}px;"></div>`);
     const nEl = $(`<div class="label" style="width: ${opts.teamWidth}px;"></div>`).appendTo(tEl);
 
-    opts.decorator.render(nEl, team.name.toNull(), scoreString, entryState);
+    opts.decorator.render(nEl, team.name.toNull(), scoreString,
+      teamState(team, opponent, score));
 
     team.seed.forEach(seed => { tEl.attr('data-teamid', seed); });
 
