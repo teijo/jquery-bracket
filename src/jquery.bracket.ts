@@ -382,13 +382,12 @@
   }
 
   const endOfBranch = () => { throw new EndOfBranchException(); };
-  const rootMatchSources = (teams: [any, any][], m: number) => (): [MatchSource, MatchSource] => {
-    const teamA = new TeamBlock(endOfBranch, teams[m][0],
-      Option.of(Order.first()), Option.of<number>(m * 2), Score.empty());
-    const teamB = new TeamBlock(endOfBranch, teams[m][1],
-      Option.of(Order.second()), Option.of<number>(m * 2 + 1), Score.empty());
-    return [{source: () => teamA}, {source: () => teamB}];
-  };
+  const winnerMatchSources = (teams: [any, any][], m: number) => (): [MatchSource, MatchSource] => [
+    {source: () => new TeamBlock(endOfBranch,
+        teams[m][0], Option.of(Order.first()), Option.of<number>(m * 2), Score.empty())},
+    {source: () => new TeamBlock(endOfBranch,
+        teams[m][1], Option.of(Order.second()), Option.of<number>(m * 2 + 1), Score.empty())}
+  ];
 
   const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (tC: JQuery) => {
     tC.css('top', '');
@@ -411,7 +410,7 @@
       round = winners.addRound(Option.empty());
 
       for (let m = 0; m < matchCount; m += 1) {
-        const teamCb = (r === 0) ? rootMatchSources(teams, m) : null;
+        const teamCb = (r === 0) ? winnerMatchSources(teams, m) : null;
         if (!(r === roundCount - 1 && isSingleElimination) && !(r === roundCount - 1 && skipGrandFinalComeback)) {
           round.addMatch(teamCb, Option.empty());
         }
