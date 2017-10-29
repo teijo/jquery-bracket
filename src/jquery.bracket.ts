@@ -224,7 +224,13 @@
     (val: string, next?: boolean): void;
   }
 
-  type EntryState = 'empty-bye' | 'empty-tbd' | 'entry-no-score' | 'entry-default-win' | 'entry-complete';
+  enum EntryState {
+    EMPTY_BYE = 'empty-bye',
+    EMPTY_TBD = 'empty-tbd',
+    ENTRY_NO_SCORE = 'entry-no-score',
+    ENTRY_DEFAULT_WIN = 'entry-default-win',
+    ENTRY_COMPLETE = 'entry-complete'
+  }
 
   interface Decorator {
     edit: (span: JQuery, name: any, done_fn: DoneCallback) => void;
@@ -348,16 +354,16 @@
 
   function defaultRender(container: JQuery, team: string, score: any, state: EntryState): void {
     switch (state) {
-      case 'empty-bye':
+      case EntryState.EMPTY_BYE:
         container.append('BYE');
         return;
-      case 'empty-tbd':
+      case EntryState.EMPTY_TBD:
         container.append('TBD');
         return;
 
-      case 'entry-no-score':
-      case 'entry-default-win':
-      case 'entry-complete':
+      case EntryState.ENTRY_NO_SCORE:
+      case EntryState.ENTRY_DEFAULT_WIN:
+      case EntryState.ENTRY_COMPLETE:
         container.append(team);
         return;
     }
@@ -897,19 +903,19 @@
 
     sEl.text(scoreString);
 
-    const entryState = team.name
+    const entryState: EntryState = team.name
         .map(() => score
-            .map<EntryState>(() => 'entry-complete')
+            .map<EntryState>(() => EntryState.ENTRY_COMPLETE)
             .orElseGet(() => (opponent.emptyBranch() === BranchType.BYE)
-                ? 'entry-default-win'
-                : 'entry-no-score'))
+                ? EntryState.ENTRY_DEFAULT_WIN
+                : EntryState.ENTRY_NO_SCORE))
         .orElseGet(() => {
           const type = team.emptyBranch();
           switch (type) {
             case BranchType.BYE:
-              return 'empty-bye';
+              return EntryState.EMPTY_BYE;
             case BranchType.TBD:
-              return 'empty-tbd';
+              return EntryState.EMPTY_TBD;
             default:
               throw new Error(`Unexpected branch type ${type}`);
           }
