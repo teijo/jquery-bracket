@@ -5,14 +5,14 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON("package.json"),
     watch: {
       scripts: {
-        files: ["src/jquery.bracket.sass", "src/jquery.bracket.ts"],
+        files: ["src/jquery.bracket.scss", "src/jquery.bracket.ts"],
         tasks: ["default"]
       }
     },
     sass: {
       dist: {
         files: {
-          "dist/jquery.bracket.css": "src/jquery.bracket.sass"
+          "dist/jquery.bracket.css": "src/jquery.bracket.scss"
         }
       }
     },
