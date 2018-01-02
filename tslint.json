@@ -1,57 +1,9 @@
 {
   "rules": {
-    "class-name": true,
-    "comment-format": [true, "check-space"],
-    "curly": true,
-    "eofline": true,
-    "forin": true,
-    "indent": [true, "spaces"],
-    "label-position": true,
-    "max-line-length": [true, 140],
-    "member-ordering": [true,
-        "public-before-private",
-        "static-before-instance",
-        "variables-before-functions"
-    ],
-    "no-arg": true,
+    "max-classes-per-file": false,
+    "interface-name": false,
     "no-bitwise": false,
-    "no-console": [true,
-      "debug",
-      "info",
-      "time",
-      "timeEnd",
-      "trace"
-    ],
-    "no-construct": true,
-    "no-debugger": true,
-    "no-duplicate-variable": true,
-    "no-empty": true,
-    "no-eval": true,
-    "no-inferrable-types": true,
-    "no-shadowed-variable": false,
-    "no-string-literal": true,
-    "no-switch-case-fall-through": true,
-    "trailing-comma": false,
-    "no-trailing-whitespace": true,
-    "no-unused-expression": true,
-    "no-var-keyword": false,
-    "one-line": [true,
-      "check-open-brace",
-      "check-catch",
-      "check-whitespace"
-    ],
-    "quotemark": [true, "single"],
-    "radix": true,
-    "semicolon": true,
-    "object-literal-sort-keys": false,
-    "triple-equals": [true, "allow-null-check"],
-    "variable-name": false,
-    "whitespace": [true,
-      "check-branch",
-      "check-decl",
-      "check-operator",
-      "check-separator",
-      "check-type"
-    ]
-  }
+    "no-console": false
+  },
+  "extends": ["tslint:latest", "tslint-config-prettier"]
 }

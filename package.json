@@ -11,7 +11,10 @@
     "url": "https://github.com/teijo/jquery-bracket.git"
   },
   "scripts": {
-    "start": "npm install && grunt watch"
+    "start": "npm install && grunt watch",
+    "check":
+      "prettier -l src/*.ts *.md *.json *.js && echo 'Format OK' || echo 'Not conforming to prettier, auto-format with: npm run format'",
+    "format": "prettier --write src/*.ts *.md *.json *.js"
   },
   "devDependencies": {
     "grunt": "^1.0.1",
@@ -24,6 +27,8 @@
     "grunt-ts": "^6.0.0-beta.16",
     "grunt-tslint": "^5.0.1",
     "tslint": "^5.7.0",
+    "prettier": "^1.9.2",
+    "tslint-config-prettier": "^1.6.0",
     "typescript": "^2.5.3"
   }
 }
