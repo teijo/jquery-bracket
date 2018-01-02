@@ -20,15 +20,15 @@
     "grunt": "^1.0.1",
     "grunt-cli": "^1.2.0",
     "grunt-contrib-concat": "^1.0.1",
-    "grunt-contrib-uglify": "^3.1.0",
+    "grunt-contrib-uglify": "^3.3.0",
     "grunt-contrib-watch": "^1.0.0",
     "grunt-css": "^0.5.4",
     "grunt-sass": "^2.0.0",
-    "grunt-ts": "^6.0.0-beta.16",
+    "grunt-ts": "^6.0.0-beta.17",
     "grunt-tslint": "^5.0.1",
-    "tslint": "^5.7.0",
+    "tslint": "^5.8.0",
     "prettier": "^1.9.2",
     "tslint-config-prettier": "^1.6.0",
-    "typescript": "^2.5.3"
+    "typescript": "^2.6.2"
   }
 }
