@@ -7,6 +7,7 @@
  * Licenced under the MIT licence
  */
 
+// tslint:disable-next-line: no-reference
 /// <reference path="../lib/jquery.d.ts" />
 
 ($ => {
@@ -282,9 +283,9 @@
   }
 
   function depth(a): number {
-    function df(a, d: number): number {
-      if (a instanceof Array) {
-        return df(a[0], d + 1);
+    function df(arrayOrValue, d: number): number {
+      if (arrayOrValue instanceof Array) {
+        return df(arrayOrValue[0], d + 1);
       }
       return d;
     }
@@ -582,6 +583,29 @@
   const loserAlignment = (teamCon: JQuery, match: Match) => () =>
     teamCon.css("top", match.el.height() / 2 - teamCon.height() / 2 + "px");
 
+  const mkMatchConnector = (centerConnectors: boolean) => (
+    tC,
+    match: Match
+  ): Connector => {
+    // inside lower bracket
+    const connectorOffset = tC.height() / 4;
+    const center = { height: 0, shift: connectorOffset * 2 };
+    return match
+      .winner()
+      .order.map(order =>
+        order.map(
+          centerConnectors ? center : { height: 0, shift: connectorOffset },
+          centerConnectors
+            ? center
+            : {
+                height: -connectorOffset * 2,
+                shift: connectorOffset
+              }
+        )
+      )
+      .orElse(center);
+  };
+
   function prepareLosers(
     winners: Bracket,
     losers: Bracket,
@@ -617,30 +641,7 @@
             // Override default connector
             match.setConnectorCb(Option.empty());
           } else if (r < roundCount - 1 || n < 1) {
-            const cb =
-              n % 2 === 0
-                ? (tC, match: Match): Connector => {
-                    // inside lower bracket
-                    const connectorOffset = tC.height() / 4;
-                    const center = { height: 0, shift: connectorOffset * 2 };
-                    return match
-                      .winner()
-                      .order.map(order =>
-                        order.map(
-                          centerConnectors
-                            ? center
-                            : { height: 0, shift: connectorOffset },
-                          centerConnectors
-                            ? center
-                            : {
-                                height: -connectorOffset * 2,
-                                shift: connectorOffset
-                              }
-                        )
-                      )
-                      .orElse(center);
-                  }
-                : null;
+            const cb = n % 2 === 0 ? mkMatchConnector(centerConnectors) : null;
             match.setConnectorCb(Option.of(cb));
           }
         }
@@ -800,7 +801,7 @@
           tC.height() / 2;
         const matchupOffset = topShift - winners.el.height() / 2;
 
-        let { height, shift } = winners
+        const { height, shift } = winners
           .winner()
           .order.map(order =>
             order.map(
@@ -824,9 +825,7 @@
             shift: connectorOffset * 2
           });
 
-        height -= tC.height() / 2;
-
-        return { height, shift };
+        return { height: height - tC.height() / 2, shift };
       })
     );
 
@@ -841,7 +840,7 @@
           tC.height() / 2;
         const matchupOffset = topShift - winners.el.height() / 2;
 
-        let { height, shift } = losers
+        const { height, shift } = losers
           .winner()
           .order.map(order =>
             order.map(
@@ -863,9 +862,7 @@
             shift: connectorOffset * 2
           });
 
-        height += tC.height() / 2;
-
-        return { height: -height, shift: -shift };
+        return { height: -(height + tC.height() / 2), shift: -shift };
       })
     );
   }
@@ -1077,15 +1074,7 @@
     }
   }
 
-  function mkConnector(
-    roundMargin: number,
-    connector: Connector,
-    teamCon: JQuery,
-    align: string
-  ): JQuery {
-    let { height, shift } = connector;
-    const width = roundMargin / 2;
-    let drop = true;
+  const calculateHeight = height => {
     // drop:
     // [team]'\
     //         \_[team]
@@ -1093,13 +1082,25 @@
     //         /'[team]
     // [team]_/
     if (height < 0) {
-      drop = false;
-      height = -height;
+      return { height: -height, drop: false };
     }
     /* straight lines are prettier */
     if (height < 2) {
-      height = 0;
+      return { height: 0, drop: true };
     }
+
+    return { height, drop: true };
+  };
+
+  function mkConnector(
+    roundMargin: number,
+    connector: Connector,
+    teamCon: JQuery,
+    align: string
+  ): JQuery {
+    const shift = connector.shift;
+    const { height, drop } = calculateHeight(connector.shift);
+    const width = roundMargin / 2;
 
     const src = $('<div class="connector"></div>').appendTo(teamCon);
     src.css("height", height);
