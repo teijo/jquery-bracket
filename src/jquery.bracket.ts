@@ -1099,7 +1099,7 @@
     align: string
   ): JQuery {
     const shift = connector.shift;
-    const { height, drop } = calculateHeight(connector.shift);
+    const { height, drop } = calculateHeight(connector.height);
     const width = roundMargin / 2;
 
     const src = $('<div class="connector"></div>').appendTo(teamCon);
