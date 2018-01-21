@@ -115,7 +115,8 @@
 
   enum BranchType {
     TBD,
-    BYE
+    BYE,
+    END
   }
 
   class Order {
@@ -134,14 +135,33 @@
     }
   }
 
+  // Hack to get the branch leaf (round 0) "name" lazily if it's modified
+  type NameGetter = () => Option<object>;
+
   class TeamBlock {
+    get name() {
+      return typeof this.nameOrGetter === "function"
+        ? this.nameOrGetter()
+        : this.nameOrGetter;
+    }
+
+    set name(value: Option<object>) {
+      this.nameOrGetter = value;
+    }
+
     constructor(
       readonly source: (() => TeamBlock), // Where base of the information propagated from
-      public name: Option<object>,
+      private nameOrGetter: Option<object> | NameGetter,
       readonly order: Option<Order>,
       public seed: Option<number>,
       public score: Score
     ) {}
+
+    // A pair of teams is created simultaneously for a match so the sibling
+    // cannot be passed in constructor
+    public sibling: () => TeamBlock = () => {
+      throw new Error("No sibling asigned");
+    };
 
     // Recursively check if branch ends into a BYE
     public emptyBranch(): BranchType {
@@ -149,12 +169,26 @@
         return BranchType.TBD;
       } else {
         try {
-          return this.source().emptyBranch();
+          const sourceType = this.source().emptyBranch();
+          if (sourceType === BranchType.TBD) {
+            return BranchType.TBD;
+          } else if (sourceType === BranchType.END) {
+            return BranchType.BYE;
+          }
+          const sourceSiblingType = this.source()
+            .sibling()
+            .emptyBranch();
+          if (sourceSiblingType === BranchType.TBD) {
+            return BranchType.TBD;
+          }
+          return BranchType.BYE;
         } catch (e) {
           if (e instanceof EndOfBranchException) {
-            return BranchType.BYE;
+            return BranchType.END;
           } else {
-            throw new Error("Unexpected exception type");
+            throw new Error(
+              `Unexpected exception type (message: "${e.message}")`
+            );
           }
         }
       }
@@ -206,14 +240,19 @@
 
     // Arbitrary (either parent) source is required so that branch emptiness
     // can be determined by traversing to the beginning.
-    private static emptyTeam(source: () => TeamBlock): TeamBlock {
-      return new TeamBlock(
+    private static emptyTeam(
+      source: () => TeamBlock,
+      sibling: TeamBlock
+    ): TeamBlock {
+      const teamBlock = new TeamBlock(
         source,
         Option.empty(),
         Option.empty(),
         Option.empty(),
         Score.empty()
       );
+      teamBlock.sibling = () => sibling;
+      return teamBlock;
     }
 
     constructor(readonly a: TeamBlock, readonly b: TeamBlock) {
@@ -223,14 +262,14 @@
     public winner(): TeamBlock {
       return (
         MatchResult.teamsInResultOrder(this)[0] ||
-        MatchResult.emptyTeam(this.a.source)
+        MatchResult.emptyTeam(this.a.source, this.b)
       );
     }
 
     public loser(): TeamBlock {
       return (
         MatchResult.teamsInResultOrder(this)[1] ||
-        MatchResult.emptyTeam(this.a.source)
+        MatchResult.emptyTeam(this.b.source, this.a)
       );
     }
   }
@@ -431,31 +470,37 @@
   const endOfBranch = () => {
     throw new EndOfBranchException();
   };
-  const winnerMatchSources = (teams: Array<[any, any]>, m: number) => (): [
-    MatchSource,
-    MatchSource
-  ] => [
-    {
-      source: () =>
-        new TeamBlock(
-          endOfBranch,
-          teams[m][0],
-          Option.of(Order.first()),
-          Option.of<number>(m * 2),
-          Score.empty()
-        )
-    },
-    {
-      source: () =>
-        new TeamBlock(
-          endOfBranch,
-          teams[m][1],
-          Option.of(Order.second()),
-          Option.of<number>(m * 2 + 1),
-          Score.empty()
-        )
-    }
-  ];
+  const winnerMatchSources = (
+    teams: Array<[Option<object>, Option<object>]>,
+    m: number
+  ) => (): [MatchSource, MatchSource] => {
+    const teamA = new TeamBlock(
+      endOfBranch,
+      () => teams[m][0],
+      Option.of(Order.first()),
+      Option.of<number>(m * 2),
+      Score.empty()
+    );
+    const teamB = new TeamBlock(
+      endOfBranch,
+      () => teams[m][1],
+      Option.of(Order.second()),
+      Option.of<number>(m * 2 + 1),
+      Score.empty()
+    );
+
+    teamA.sibling = () => teamB;
+    teamB.sibling = () => teamA;
+
+    return [
+      {
+        source: () => teamA
+      },
+      {
+        source: () => teamB
+      }
+    ];
+  };
 
   const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (
     tC: JQuery
@@ -946,22 +991,26 @@
             ];
       const teamA = () => teams[0].source();
       const teamB = () => teams[1].source();
-      const matchResult: MatchResult = new MatchResult(
-        new TeamBlock(
-          teamA,
-          teamA().name,
-          Option.of(Order.first()),
-          teamA().seed,
-          Score.empty()
-        ),
-        new TeamBlock(
-          teamB,
-          teamB().name,
-          Option.of(Order.second()),
-          teamB().seed,
-          Score.empty()
-        )
+
+      const teamABlock = new TeamBlock(
+        teamA,
+        teamA().name,
+        Option.of(Order.first()),
+        teamA().seed,
+        Score.empty()
       );
+      const teamBBlock = new TeamBlock(
+        teamB,
+        teamB().name,
+        Option.of(Order.second()),
+        teamB().seed,
+        Score.empty()
+      );
+
+      teamABlock.sibling = () => teamBBlock;
+      teamBBlock.sibling = () => teamABlock;
+
+      const matchResult: MatchResult = new MatchResult(teamABlock, teamBBlock);
       const match = this.mkMatch(
         this,
         matchResult,
