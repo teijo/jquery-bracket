@@ -166,7 +166,18 @@
     // Recursively check if branch ends into a BYE
     public emptyBranch(): BranchType {
       if (!this.name.isEmpty()) {
-        return BranchType.TBD;
+        if (this.sibling().name.isEmpty()) {
+          // If there is only one team assigned to a match, it cannot
+          // yield TBD as the sole team automatically propagates to next
+          // match. The issue arises with double elimination when winner
+          // bracket team propagates and the defaulted match is referenced
+          // from loser bracket -> there won't be a team dropping to loser
+          // bracket, so we need to resolve that branch as handled with BYE.
+          return BranchType.BYE;
+        } else {
+          // Two teams so branch will yield a result later
+          return BranchType.TBD;
+        }
       } else {
         try {
           const sourceType = this.source().emptyBranch();
