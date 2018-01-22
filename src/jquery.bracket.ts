@@ -862,9 +862,7 @@
           .order.map(order =>
             order.map(
               {
-                height:
-                  matchupOffset +
-                  connectorOffset * (opts.centerConnectors ? 2 : 1),
+                height: matchupOffset + connectorOffset * 2,
                 shift: connectorOffset * (opts.centerConnectors ? 2 : 1)
               },
               {
