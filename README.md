@@ -35,6 +35,7 @@ Minified files are compiled to `dist/` directory.
 
 ## Changes
 
+* 2018-01-24: **0.11.1** Fix `TBD` propagation and final connector bug.
 * 2016-11-12: **0.11.0** Center connectors with `centerConnectors: boolean`
   and disable hover highlight with `disableHighlight: boolean`. Bug fixes.
 * 2016-11-05: **0.10.0** Pass entry state to `render` decorator to allow
