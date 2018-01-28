@@ -715,7 +715,6 @@
     winners: Bracket,
     losers: Bracket,
     opts: Options,
-    topCon: JQuery,
     resizeContainer: () => void
   ) {
     const round = finals.addRound(Option.empty());
@@ -1836,7 +1835,7 @@
         opts.centerConnectors
       );
       if (!opts.skipGrandFinalComeback) {
-        prepareFinals(f, w, l, opts, topCon, resizeContainer);
+        prepareFinals(f, w, l, opts, resizeContainer);
       }
     }
 
