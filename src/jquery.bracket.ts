@@ -1169,18 +1169,18 @@
 
     src.css({
       [align]: -width - 2,
-      borderBottom: drop && "none",
-      borderTop: !drop && "none",
-      bottom: !doShift && -shift - 1,
+      borderBottom: drop ? "none" : "",
+      borderTop: !drop ? "none" : "",
+      bottom: !doShift ? -shift - 1 : "",
       height,
-      top: doShift && shift - 1,
+      top: doShift ? shift - 1 : "",
       width
     });
 
     dst.css({
       [align]: -width,
-      bottom: drop && 0,
-      top: !drop && 0,
+      bottom: drop ? 0 : "",
+      top: !drop ? 0 : "",
       width
     });
 
