@@ -522,10 +522,10 @@
     const height = tC.height();
 
     tC.css({
-      bottom: skipConsolationRound ? "" : - height / 2 + "px",
+      bottom: skipConsolationRound ? "" : -height / 2 + "px",
       position: "absolute",
-      top: skipConsolationRound ? (match.el.height() / 2 - height / 2 + "px") : ""
-    })
+      top: skipConsolationRound ? match.el.height() / 2 - height / 2 + "px" : ""
+    });
   };
 
   function prepareWinners(
