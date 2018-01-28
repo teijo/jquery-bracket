@@ -1743,7 +1743,7 @@
     }
 
     if (!opts.disableToolbar) {
-      embedEditButtons(topCon, data, opts);
+      topCon.append(createToolbar(data, opts));
     }
 
     let fEl;
@@ -1848,53 +1848,76 @@
     };
   };
 
-  function embedEditButtons(topCon: JQuery, data: any, opts: Options) {
-    const tools = $('<div class="tools"></div>').appendTo(topCon);
-    const inc = $('<span class="increment">+</span>').appendTo(tools);
+  function createIncrementButton(onClick) {
+    return $('<span class="increment">+</span>').click(onClick);
+  }
+
+  function createDecrementButton(onClick) {
+    return $('<span class="decrement">-</span>').click(onClick);
+  }
+
+  function createDoubleEliminationButton(onClick) {
+    return $('<span class="doubleElimination">de</span>').click(onClick);
+  }
+
+  function createSingleEliminationButton(onClick) {
+    return $('<span class="singleElimination">se</span>').click(onClick);
+  }
+
+  function createToolbar(data: any, opts: Options) {
     const teamCount = data.teams.length;
     const resultCount = data.results.length;
 
-    inc.click(() => {
-      for (let i = 0; i < teamCount; i += 1) {
-        data.teams.push([Option.empty(), Option.empty()]);
-      }
-      return JqueryBracket(opts);
-    });
+    const incrementButton = () =>
+      createIncrementButton(() => {
+        for (let i = 0; i < teamCount; i += 1) {
+          data.teams.push([Option.empty(), Option.empty()]);
+        }
+        return JqueryBracket(opts);
+      });
 
-    if (
-      (teamCount > 1 && resultCount === 1) ||
-      (teamCount > 2 && resultCount === 3)
-    ) {
-      const dec = $('<span class="decrement">-</span>').appendTo(tools);
-      dec.click(() => {
+    const decrementButton = () =>
+      createDecrementButton(() => {
         if (teamCount > 1) {
           data.teams = data.teams.slice(0, teamCount / 2);
           return JqueryBracket(opts);
         }
       });
-    }
 
-    if (resultCount === 1 && teamCount > 1) {
-      const type = $('<span class="doubleElimination">de</span>').appendTo(
-        tools
-      );
-      type.click(() => {
+    const doubleEliminationButton = () =>
+      createDoubleEliminationButton(() => {
         if (teamCount > 1 && resultCount < 3) {
           data.results.push([], []);
           return JqueryBracket(opts);
         }
       });
-    } else if (resultCount === 3 && teamCount > 1) {
-      const type = $('<span class="singleElimination">se</span>').appendTo(
-        tools
-      );
-      type.click(() => {
+
+    const singleEliminationButton = () =>
+      createSingleEliminationButton(() => {
         if (resultCount === 3) {
           data.results = data.results.slice(0, 1);
           return JqueryBracket(opts);
         }
       });
+
+    const tools = $('<div class="tools"></div>');
+
+    tools.append(incrementButton());
+
+    if (
+      (teamCount > 1 && resultCount === 1) ||
+      (teamCount > 2 && resultCount === 3)
+    ) {
+      tools.append(decrementButton());
     }
+
+    if (resultCount === 1 && teamCount > 1) {
+      tools.append(doubleEliminationButton());
+    } else if (resultCount === 3 && teamCount > 1) {
+      tools.append(singleEliminationButton());
+    }
+
+    return tools;
   }
 
   const assertNumber = (opts: Options, field: string) => {
