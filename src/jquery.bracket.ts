@@ -1154,39 +1154,35 @@
     roundMargin: number,
     connector: Connector,
     teamCon: JQuery,
-    align: string
+    align: "right" | "left"
   ): JQuery {
     const shift = connector.shift;
     const { height, drop } = calculateHeight(connector.height);
     const width = roundMargin / 2;
 
     const src = $('<div class="connector"></div>').appendTo(teamCon);
-    src.css("height", height);
-    src.css("width", width + "px");
-    src.css(align, -width - 2 + "px");
+    const dst = $('<div class="connector"></div>').appendTo(src);
 
     // Subtract 1 due to line thickness and alignment mismatch caused by
     // combining top and bottom alignment
-    if (shift >= 0) {
-      src.css("top", shift - 1 + "px");
-    } else {
-      src.css("bottom", -shift - 1 + "px");
-    }
+    const doShift = shift >= 0;
 
-    if (drop) {
-      src.css("border-bottom", "none");
-    } else {
-      src.css("border-top", "none");
-    }
+    src.css({
+      [align]: -width - 2,
+      borderBottom: drop && "none",
+      borderTop: !drop && "none",
+      bottom: !doShift && -shift - 1,
+      height,
+      top: doShift && shift - 1,
+      width
+    });
 
-    const dst = $('<div class="connector"></div>').appendTo(src);
-    dst.css("width", width + "px");
-    dst.css(align, -width + "px");
-    if (drop) {
-      dst.css("bottom", "0px");
-    } else {
-      dst.css("top", "0px");
-    }
+    dst.css({
+      [align]: -width,
+      bottom: drop && 0,
+      top: !drop && 0,
+      width
+    });
 
     return src;
   }
