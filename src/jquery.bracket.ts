@@ -516,13 +516,16 @@
   const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (
     tC: JQuery
   ) => {
+    // Unless this is reset, the height calculation below will behave
+    // incorrectly. No idea why.
     tC.css("top", "");
-    tC.css("position", "absolute");
-    if (skipConsolationRound) {
-      tC.css("top", match.el.height() / 2 - tC.height() / 2 + "px");
-    } else {
-      tC.css("bottom", -tC.height() / 2 + "px");
-    }
+    const height = tC.height();
+
+    tC.css({
+      bottom: skipConsolationRound ? "" : - height / 2 + "px",
+      position: "absolute",
+      top: skipConsolationRound ? (match.el.height() / 2 - height / 2 + "px") : ""
+    })
   };
 
   function prepareWinners(
