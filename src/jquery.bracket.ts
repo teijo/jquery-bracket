@@ -1691,28 +1691,20 @@
         data.results
       );
 
-      if (!opts.disableToolbar) {
-        topCon.css(
-          "width",
-          roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) +
-            40
-        );
-      } else {
-        topCon.css(
-          "width",
-          roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) +
+      topCon.css({
+        // reserve space for consolation round
+        height:
+          isSingleElimination &&
+          data.teams.length <= 2 &&
+          !opts.skipConsolationRound
+            ? height + 40
+            : "",
+        width: opts.disableToolbar
+          ? roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) +
             10
-        );
-      }
-
-      // reserve space for consolation round
-      if (
-        isSingleElimination &&
-        data.teams.length <= 2 &&
-        !opts.skipConsolationRound
-      ) {
-        topCon.css("height", height + 40);
-      }
+          : roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) +
+            40
+      });
     }
 
     let w;
