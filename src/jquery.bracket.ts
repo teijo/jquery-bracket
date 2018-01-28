@@ -576,11 +576,10 @@
 
         consol.setAlignCb((tC: JQuery) => {
           const height = winners.el.height() / 2;
-          consol.el.css("height", height + "px");
+          consol.el.css({ height });
 
-          const topShift = tC.height() / 2 + opts.matchMargin;
-
-          tC.css("top", topShift + "px");
+          const top = tC.height() / 2 + opts.matchMargin;
+          tC.css({ top });
         });
 
         consol.setConnectorCb(Option.empty());
@@ -639,8 +638,10 @@
     }
   };
 
-  const loserAlignment = (teamCon: JQuery, match: Match) => () =>
-    teamCon.css("top", match.el.height() / 2 - teamCon.height() / 2 + "px");
+  const loserAlignment = (teamCon: JQuery, match: Match) => () => {
+    const top = match.el.height() / 2 - teamCon.height() / 2;
+    return teamCon.css({ top });
+  };
 
   const mkMatchConnector = (centerConnectors: boolean) => (
     tC,
@@ -772,16 +773,15 @@
           match2.setConnectorCb(Option.empty());
           match2.setAlignCb(tC => {
             const height = winners.el.height() + losers.el.height();
-            match2.el.css("height", height + "px");
+            match2.el.css({ height });
 
-            const topShift =
+            const top =
               (winners.el.height() / 2 +
                 winners.el.height() +
                 losers.el.height() / 2) /
                 2 -
               tC.height();
-
-            tC.css("top", topShift + "px");
+            tC.css({ top });
           });
           return false;
         } else {
@@ -796,20 +796,18 @@
     );
 
     finalMatch.setAlignCb(tC => {
-      let height = winners.el.height() + losers.el.height();
-      if (!opts.skipConsolationRound) {
-        height /= 2;
-      }
-      finalMatch.el.css("height", height + "px");
+      const height: number =
+        (winners.el.height() + losers.el.height()) /
+        (opts.skipConsolationRound ? 1 : 2);
+      finalMatch.el.css({ height });
 
-      const topShift: number =
+      const top: number =
         (winners.el.height() / 2 +
           winners.el.height() +
           losers.el.height() / 2) /
           2 -
         tC.height();
-
-      tC.css("top", topShift + "px");
+      tC.css({ top });
     });
 
     if (!opts.skipConsolationRound) {
@@ -832,17 +830,16 @@
       );
       consol.setAlignCb(tC => {
         const height = (winners.el.height() + losers.el.height()) / 2;
-        consol.el.css("height", height + "px");
+        consol.el.css({ height });
 
-        const topShift =
+        const top =
           (winners.el.height() / 2 +
             winners.el.height() +
             losers.el.height() / 2) /
             2 +
           tC.height() / 2 -
           height;
-
-        tC.css("top", topShift + "px");
+        tC.css({ top });
       });
 
       finalMatch.setConnectorCb(Option.empty());
@@ -1618,14 +1615,11 @@
       this.matchCon.appendTo(this.round.el);
       this.matchCon.append(this.teamCon);
 
-      this.el.css(
-        "height",
-        this.round.bracket.el.height() / this.round.size() + "px"
-      );
-      this.teamCon.css(
-        "top",
-        this.el.height() / 2 - this.teamCon.height() / 2 + "px"
-      );
+      const height = this.round.bracket.el.height() / this.round.size();
+      this.el.css({ height });
+
+      const top = this.el.height() / 2 - this.teamCon.height() / 2;
+      this.teamCon.css({ top });
 
       /* todo: move to class */
       if (this.alignCb !== null) {
@@ -1767,10 +1761,10 @@
       lEl = $('<div class="loserBracket"></div>').appendTo(topCon);
     }
 
-    wEl.css("height", height);
+    wEl.css({ height });
 
     if (lEl) {
-      lEl.css("height", wEl.height() / 2);
+      lEl.css({ height: height / 2 });
     }
 
     resizeContainer();
