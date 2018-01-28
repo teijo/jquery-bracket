@@ -1867,43 +1867,45 @@
   function embedEditButtons(topCon: JQuery, data: any, opts: Options) {
     const tools = $('<div class="tools"></div>').appendTo(topCon);
     const inc = $('<span class="increment">+</span>').appendTo(tools);
+    const teamCount = data.teams.length;
+    const resultCount = data.results.length;
+
     inc.click(() => {
-      const len = data.teams.length;
-      for (let i = 0; i < len; i += 1) {
+      for (let i = 0; i < teamCount; i += 1) {
         data.teams.push([Option.empty(), Option.empty()]);
       }
       return JqueryBracket(opts);
     });
 
     if (
-      (data.teams.length > 1 && data.results.length === 1) ||
-      (data.teams.length > 2 && data.results.length === 3)
+      (teamCount > 1 && resultCount === 1) ||
+      (teamCount > 2 && resultCount === 3)
     ) {
       const dec = $('<span class="decrement">-</span>').appendTo(tools);
       dec.click(() => {
-        if (data.teams.length > 1) {
-          data.teams = data.teams.slice(0, data.teams.length / 2);
+        if (teamCount > 1) {
+          data.teams = data.teams.slice(0, teamCount / 2);
           return JqueryBracket(opts);
         }
       });
     }
 
-    if (data.results.length === 1 && data.teams.length > 1) {
+    if (resultCount === 1 && teamCount > 1) {
       const type = $('<span class="doubleElimination">de</span>').appendTo(
         tools
       );
       type.click(() => {
-        if (data.teams.length > 1 && data.results.length < 3) {
+        if (teamCount > 1 && resultCount < 3) {
           data.results.push([], []);
           return JqueryBracket(opts);
         }
       });
-    } else if (data.results.length === 3 && data.teams.length > 1) {
+    } else if (resultCount === 3 && teamCount > 1) {
       const type = $('<span class="singleElimination">se</span>').appendTo(
         tools
       );
       type.click(() => {
-        if (data.results.length === 3) {
+        if (resultCount === 3) {
           data.results = data.results.slice(0, 1);
           return JqueryBracket(opts);
         }
