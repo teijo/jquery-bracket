@@ -1149,24 +1149,20 @@
     return { height, drop: true };
   };
 
-  function mkConnector(
+  function createConnector(
     roundMargin: number,
     connector: Connector,
-    teamCon: JQuery,
     align: "right" | "left"
   ): JQuery {
     const shift = connector.shift;
     const { height, drop } = calculateHeight(connector.height);
     const width = roundMargin / 2;
 
-    const src = $('<div class="connector"></div>').appendTo(teamCon);
-    const dst = $('<div class="connector"></div>').appendTo(src);
-
     // Subtract 1 due to line thickness and alignment mismatch caused by
     // combining top and bottom alignment
     const doShift = shift >= 0;
 
-    src.css({
+    const src = $('<div class="connector"></div>').css({
       [align]: -width - 2,
       borderBottom: drop ? "none" : "",
       borderTop: !drop ? "none" : "",
@@ -1176,14 +1172,14 @@
       width
     });
 
-    dst.css({
+    const dst = $('<div class="connector"></div>').css({
       [align]: -width,
       bottom: drop ? 0 : "",
       top: !drop ? 0 : "",
       width
     });
 
-    return src;
+    return src.append(dst);
   }
 
   function countRounds(
@@ -1540,7 +1536,7 @@
         });
 
       this.teamCon.append(
-        mkConnector(this.opts.roundMargin, result, this.teamCon, align)
+        createConnector(this.opts.roundMargin, result, align)
       );
     }
     public winner() {
