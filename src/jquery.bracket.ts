@@ -1237,7 +1237,7 @@
     }
   }
 
-  function teamElement(
+  function createTeam(
     roundNumber: number,
     match: MatchResult,
     team: TeamBlock,
@@ -1248,7 +1248,7 @@
     resultId: ResultId,
     topCon: JQuery,
     renderAll: (r: boolean) => void
-  ) {
+  ): JQuery {
     const resultIdAttribute =
       team.name.isEmpty() || opponent.name.isEmpty()
         ? ""
@@ -1579,7 +1579,7 @@
         !this.match.a.name.isEmpty() && !this.match.b.name.isEmpty();
 
       this.teamCon.append(
-        teamElement(
+        createTeam(
           this.round.roundNumber,
           this.match,
           this.match.a,
@@ -1593,7 +1593,7 @@
         )
       );
       this.teamCon.append(
-        teamElement(
+        createTeam(
           this.round.roundNumber,
           this.match,
           this.match.b,
