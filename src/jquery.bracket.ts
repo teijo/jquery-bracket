@@ -16,8 +16,8 @@
       return new Option(value);
     }
 
-    public static empty(): Option<any> {
-      return new Option(null);
+    public static empty<A = any>(): Option<A> {
+      return new Option<A>(null);
     }
 
     protected constructor(private val: A | null) {
@@ -64,34 +64,20 @@
     }
   }
 
-  class Score<N = number> extends Option<N> {
-    public static of<N>(val: N | null) {
-      const type = typeof val;
-      const expected = "number";
-      if (val !== null && type !== expected) {
-        throw new Error(
-          `Invalid score format, expected ${expected}, got ${type}`
-        );
-      }
-      return super.of<N>(val);
-    }
-
-    public static empty(): Option<number> {
-      return Option.empty();
-    }
-  }
-
   interface Connector {
     height: number;
     shift: number;
   }
 
-  type ConnectorProvider = (tc: JQuery, match: Match) => Connector;
+  type ConnectorProvider<TTeam, TScore> = (
+    tc: JQuery,
+    match: Match<TTeam, TScore>
+  ) => Connector;
 
-  class ResultObject {
+  class ResultObject<TScore> {
     constructor(
-      readonly first: Score,
-      readonly second: Score,
+      readonly first: Option<TScore>,
+      readonly second: Option<TScore>,
       readonly userData: any
     ) {
       if (!first || !second) {
@@ -101,17 +87,17 @@
     }
   }
 
-  type MatchCallback = (
-    round: Round,
-    match: MatchResult,
+  type MatchCallback<TTeam, TScore> = (
+    round: Round<TTeam, TScore>,
+    match: MatchResult<TTeam, TScore>,
     seed: number,
-    results: Option<ResultObject>,
-    renderCb: Option<RenderCallback>,
+    results: Option<ResultObject<TScore>>,
+    renderCb: Option<RenderCallback<TTeam, TScore>>,
     isFirstBracket: boolean,
-    opts: Options
-  ) => Match;
+    opts: Options<TTeam, TScore>
+  ) => Match<TTeam, TScore>;
 
-  type RenderCallback = (match: Match) => boolean;
+  type RenderCallback<TTeam, TScore> = (match: Match<TTeam, TScore>) => boolean;
 
   enum BranchType {
     TBD,
@@ -136,30 +122,30 @@
   }
 
   // Hack to get the branch leaf (round 0) "name" lazily if it's modified
-  type NameGetter = () => Option<object>;
+  type NameGetter<TTeam> = () => Option<TTeam>;
 
-  class TeamBlock {
+  class TeamBlock<TTeam, TScore> {
     get name() {
       return typeof this.nameOrGetter === "function"
         ? this.nameOrGetter()
         : this.nameOrGetter;
     }
 
-    set name(value: Option<object>) {
+    set name(value: Option<TTeam>) {
       this.nameOrGetter = value;
     }
 
     constructor(
-      readonly source: (() => TeamBlock), // Where base of the information propagated from
-      private nameOrGetter: Option<object> | NameGetter,
+      readonly source: (() => TeamBlock<TTeam, TScore>), // Where base of the information propagated from
+      private nameOrGetter: Option<TTeam> | NameGetter<TTeam>,
       readonly order: Option<Order>,
       public seed: Option<number>,
-      public score: Score
+      public score: Option<TScore>
     ) {}
 
     // A pair of teams is created simultaneously for a match so the sibling
     // cannot be passed in constructor
-    public sibling: () => TeamBlock = () => {
+    public sibling: () => TeamBlock<TTeam, TScore> = () => {
       throw new Error("No sibling asigned");
     };
 
@@ -206,8 +192,8 @@
     }
   }
 
-  interface MatchSource {
-    source: () => TeamBlock;
+  interface MatchSource<TTeam, TScore> {
+    source: () => TeamBlock<TTeam, TScore>;
   }
 
   type BoolCallback = () => boolean;
@@ -222,8 +208,10 @@
     this.name = "EndOfBranchException";
   }
 
-  class MatchResult {
-    private static teamsInResultOrder(match: MatchResult) {
+  class MatchResult<TTeam, TScore> {
+    private static teamsInResultOrder<TTeam, TScore>(
+      match: MatchResult<TTeam, TScore>
+    ) {
       const aBye = match.a.name.isEmpty();
       const bBye = match.b.name.isEmpty();
 
@@ -251,33 +239,36 @@
 
     // Arbitrary (either parent) source is required so that branch emptiness
     // can be determined by traversing to the beginning.
-    private static emptyTeam(
-      source: () => TeamBlock,
-      sibling: TeamBlock
-    ): TeamBlock {
+    private static emptyTeam<TTeam, TScore>(
+      source: () => TeamBlock<TTeam, TScore>,
+      sibling: TeamBlock<TTeam, TScore>
+    ): TeamBlock<TTeam, TScore> {
       const teamBlock = new TeamBlock(
         source,
         Option.empty(),
         Option.empty(),
         Option.empty(),
-        Score.empty()
+        Option.empty<TScore>()
       );
       teamBlock.sibling = () => sibling;
       return teamBlock;
     }
 
-    constructor(readonly a: TeamBlock, readonly b: TeamBlock) {
+    constructor(
+      readonly a: TeamBlock<TTeam, TScore>,
+      readonly b: TeamBlock<TTeam, TScore>
+    ) {
       return;
     }
 
-    public winner(): TeamBlock {
+    public winner(): TeamBlock<TTeam, TScore> {
       return (
         MatchResult.teamsInResultOrder(this)[0] ||
         MatchResult.emptyTeam(this.a.source, this.b)
       );
     }
 
-    public loser(): TeamBlock {
+    public loser(): TeamBlock<TTeam, TScore> {
       return (
         MatchResult.teamsInResultOrder(this)[1] ||
         MatchResult.emptyTeam(this.b.source, this.a)
@@ -285,7 +276,7 @@
     }
   }
 
-  type DoneCallback = (val: string, next?: boolean) => void;
+  type DoneCallback<TTeam> = (val: TTeam, next?: boolean) => void;
 
   enum EntryState {
     EMPTY_BYE = "empty-bye",
@@ -295,27 +286,33 @@
     ENTRY_COMPLETE = "entry-complete"
   }
 
-  interface Decorator {
-    edit: (span: JQuery, name: any, doneFn: DoneCallback) => void;
+  interface Decorator<TTeam, TScore> {
+    edit: (
+      span: JQuery,
+      name: TTeam | null,
+      doneFn: DoneCallback<TTeam>
+    ) => void;
     render: (
       container: JQuery,
-      team: object | null,
-      score: any,
+      team: TTeam | null,
+      score: TScore,
       entryState: EntryState
     ) => void;
   }
 
-  interface InitData {
-    teams: Array<[any, any]>;
-    results: any[][];
+  interface InitData<TTeam, TScore> {
+    teams: Array<[Option<TTeam>, Option<TTeam>]>;
+    results: TScore[][];
   }
 
-  interface Options {
+  interface Options<TTeam, TScore> {
+    // TODO: expose via public interface
+    _internal: { evaluateScore(val: string, previousVal: TScore | null) };
     el: JQuery;
-    init: InitData;
-    save: (data: any, userData: any) => void;
+    init: InitData<TTeam, TScore>;
+    save: (data: InitData<TTeam, TScore>, userData: any) => void;
     userData: any;
-    decorator: Decorator;
+    decorator: Decorator<TTeam, TScore>;
     skipConsolationRound: boolean;
     skipSecondaryFinal: boolean;
     skipGrandFinalComeback: boolean;
@@ -384,7 +381,11 @@
     };
   }
 
-  function postProcess(container: JQuery, w: Bracket, f: Bracket) {
+  function postProcess<TTeam, TScore>(
+    container: JQuery,
+    w: Bracket<TTeam, TScore>,
+    f: Bracket<TTeam, TScore>
+  ) {
     const source = f || w;
     const winner = source.winner();
     const loser = source.loser();
@@ -421,7 +422,11 @@
     });
   }
 
-  function defaultEdit(span: JQuery, data: any, done: DoneCallback): void {
+  function defaultEdit(
+    span: JQuery,
+    data: any,
+    done: DoneCallback<string>
+  ): void {
     const input = $('<input type="text">');
     input.val(data);
     span.empty().append(input);
@@ -460,7 +465,7 @@
     }
   }
 
-  function winnerBubbles(match: Match): boolean {
+  function winnerBubbles<TTeam, TScore>(match: Match<TTeam, TScore>): boolean {
     const el = match.el;
     const winner = el.find(".team.win");
     winner.append('<div class="bubble">1st</div>');
@@ -469,7 +474,9 @@
     return true;
   }
 
-  function consolationBubbles(match: Match): boolean {
+  function consolationBubbles<TTeam, TScore>(
+    match: Match<TTeam, TScore>
+  ): boolean {
     const el = match.el;
     const winner = el.find(".team.win");
     winner.append('<div class="bubble third">3rd</div>');
@@ -481,23 +488,23 @@
   const endOfBranch = () => {
     throw new EndOfBranchException();
   };
-  const winnerMatchSources = (
-    teams: Array<[Option<object>, Option<object>]>,
+  const winnerMatchSources = <TTeam, TScore>(
+    teams: Array<[Option<TTeam>, Option<TTeam>]>,
     m: number
-  ) => (): [MatchSource, MatchSource] => {
+  ) => (): [MatchSource<TTeam, TScore>, MatchSource<TTeam, TScore>] => {
     const teamA = new TeamBlock(
       endOfBranch,
       () => teams[m][0],
       Option.of(Order.first()),
       Option.of<number>(m * 2),
-      Score.empty()
+      Option.empty<TScore>()
     );
     const teamB = new TeamBlock(
       endOfBranch,
       () => teams[m][1],
       Option.of(Order.second()),
       Option.of<number>(m * 2 + 1),
-      Score.empty()
+      Option.empty<TScore>()
     );
 
     teamA.sibling = () => teamB;
@@ -513,9 +520,10 @@
     ];
   };
 
-  const winnerAlignment = (match: Match, skipConsolationRound: boolean) => (
-    tC: JQuery
-  ) => {
+  const winnerAlignment = <TTeam, TScore>(
+    match: Match<TTeam, TScore>,
+    skipConsolationRound: boolean
+  ) => (tC: JQuery) => {
     // Unless this is reset, the height calculation below will behave
     // incorrectly. No idea why.
     tC.css("top", "");
@@ -528,11 +536,11 @@
     });
   };
 
-  function prepareWinners(
-    winners: Bracket,
+  function prepareWinners<TTeam, TScore>(
+    winners: Bracket<TTeam, TScore>,
     teams: Array<[any, any]>,
     isSingleElimination: boolean,
-    opts: Options,
+    opts: Options<TTeam, TScore>,
     skipGrandFinalComeback: boolean
   ) {
     const roundCount = Math.log(teams.length * 2) / Math.log(2);
@@ -587,14 +595,14 @@
     }
   }
 
-  const loserMatchSources = (
-    winners,
-    losers,
+  const loserMatchSources = <TTeam, TScore>(
+    winners: Bracket<TTeam, TScore>,
+    losers: Bracket<TTeam, TScore>,
     matchCount: number,
-    m,
-    n,
-    r
-  ) => (): [MatchSource, MatchSource] => {
+    m: number,
+    n: number,
+    r: number
+  ) => (): [MatchSource<TTeam, TScore>, MatchSource<TTeam, TScore>] => {
     /* first round comes from winner bracket */
     if (n % 2 === 0 && r === 0) {
       return [
@@ -638,14 +646,17 @@
     }
   };
 
-  const loserAlignment = (teamCon: JQuery, match: Match) => () => {
+  const loserAlignment = <TTeam, TScore>(
+    teamCon: JQuery,
+    match: Match<TTeam, TScore>
+  ) => () => {
     const top = match.el.height() / 2 - teamCon.height() / 2;
     return teamCon.css({ top });
   };
 
-  const mkMatchConnector = (centerConnectors: boolean) => (
+  const mkMatchConnector = <TTeam, TScore>(centerConnectors: boolean) => (
     tC,
-    match: Match
+    match: Match<TTeam, TScore>
   ): Connector => {
     // inside lower bracket
     const connectorOffset = tC.height() / 4;
@@ -666,9 +677,9 @@
       .orElse(center);
   };
 
-  function prepareLosers(
-    winners: Bracket,
-    losers: Bracket,
+  function prepareLosers<TTeam, TScore>(
+    winners: Bracket<TTeam, TScore>,
+    losers: Bracket<TTeam, TScore>,
     teamCount: number,
     skipGrandFinalComeback: boolean,
     centerConnectors: boolean
@@ -686,7 +697,14 @@
 
         for (let m = 0; m < matchCount; m += 1) {
           const teamCb = !(n % 2 === 0 && r !== 0)
-            ? loserMatchSources(winners, losers, matchCount, m, n, r)
+            ? loserMatchSources<TTeam, TScore>(
+                winners,
+                losers,
+                matchCount,
+                m,
+                n,
+                r
+              )
             : null;
           const isLastMatch = r === roundCount - 1 && skipGrandFinalComeback;
           const match = round.addMatch(
@@ -710,11 +728,11 @@
     }
   }
 
-  function prepareFinals(
-    finals: Bracket,
-    winners: Bracket,
-    losers: Bracket,
-    opts: Options,
+  function prepareFinals<TTeam, TScore>(
+    finals: Bracket<TTeam, TScore>,
+    winners: Bracket<TTeam, TScore>,
+    losers: Bracket<TTeam, TScore>,
+    opts: Options<TTeam, TScore>,
     resizeContainer: () => void
   ) {
     const round = finals.addRound(Option.empty());
@@ -920,10 +938,10 @@
     );
   }
 
-  function teamState(
-    team: TeamBlock,
-    opponent: TeamBlock,
-    score: Score
+  function teamState<TTeam, TScore>(
+    team: TeamBlock<TTeam, TScore>,
+    opponent: TeamBlock<TTeam, TScore>,
+    score: Option<TScore>
   ): EntryState {
     return team.name
       .map(() =>
@@ -949,34 +967,36 @@
       });
   }
 
-  class Round {
+  class Round<TTeam, TScore> {
     private containerWidth = this.opts.teamWidth + this.opts.scoreWidth;
     private roundCon: JQuery = $(
       `<div class="round" style="width: ${
         this.containerWidth
       }px; margin-right: ${this.opts.roundMargin}px"/>`
     );
-    private matches: Match[] = [];
+    private matches: Array<Match<TTeam, TScore>> = [];
 
     constructor(
-      readonly bracket: Bracket,
-      private previousRound: Option<Round>,
+      readonly bracket: Bracket<TTeam, TScore>,
+      private previousRound: Option<Round<TTeam, TScore>>,
       readonly roundNumber: number,
       // TODO: results should be enforced to be correct by now
-      private roundResults: Option<ResultObject[]>,
+      private roundResults: Option<Array<ResultObject<TScore>>>,
       private doRenderCb: Option<BoolCallback>,
-      private mkMatch: MatchCallback,
+      private mkMatch: MatchCallback<TTeam, TScore>,
       private isFirstBracket: boolean,
-      private opts: Options
+      private opts: Options<TTeam, TScore>
     ) {}
 
     get el() {
       return this.roundCon;
     }
     public addMatch(
-      teamCb: (() => [MatchSource, MatchSource]) | null,
-      renderCb: Option<RenderCallback>
-    ): Match {
+      teamCb:
+        | (() => [MatchSource<TTeam, TScore>, MatchSource<TTeam, TScore>])
+        | null,
+      renderCb: Option<RenderCallback<TTeam, TScore>>
+    ): Match<TTeam, TScore> {
       const matchIdx = this.matches.length;
       const teams =
         teamCb !== null
@@ -1000,25 +1020,28 @@
       const teamA = () => teams[0].source();
       const teamB = () => teams[1].source();
 
-      const teamABlock = new TeamBlock(
+      const teamABlock = new TeamBlock<TTeam, TScore>(
         teamA,
         teamA().name,
         Option.of(Order.first()),
         teamA().seed,
-        Score.empty()
+        Option.empty<TScore>()
       );
-      const teamBBlock = new TeamBlock(
+      const teamBBlock = new TeamBlock<TTeam, TScore>(
         teamB,
         teamB().name,
         Option.of(Order.second()),
         teamB().seed,
-        Score.empty()
+        Option.empty<TScore>()
       );
 
       teamABlock.sibling = () => teamBBlock;
       teamBBlock.sibling = () => teamABlock;
 
-      const matchResult: MatchResult = new MatchResult(teamABlock, teamBBlock);
+      const matchResult: MatchResult<TTeam, TScore> = new MatchResult(
+        teamABlock,
+        teamBBlock
+      );
       const match = this.mkMatch(
         this,
         matchResult,
@@ -1033,10 +1056,10 @@
       this.matches.push(match);
       return match;
     }
-    public match(id: number): Match {
+    public match(id: number): Match<TTeam, TScore> {
       return this.matches[id];
     }
-    public prev(): Option<Round> {
+    public prev(): Option<Round<TTeam, TScore>> {
       return this.previousRound;
     }
     public size(): number {
@@ -1050,36 +1073,40 @@
       this.roundCon.appendTo(this.bracket.el);
       this.matches.forEach(m => m.render());
     }
-    public results(): ResultObject[] {
+    public results(): Array<ResultObject<TScore>> {
       return this.matches.reduce(
-        (agg: ResultObject[], m) => agg.concat([m.results()]),
+        (agg: Array<ResultObject<TScore>>, m) => agg.concat([m.results()]),
         []
       );
     }
   }
 
-  class Bracket {
-    private rounds: Round[] = [];
+  class Bracket<TTeam, TScore> {
+    private rounds: Array<Round<TTeam, TScore>> = [];
 
     constructor(
       private bracketCon: JQuery,
-      private initResults: Option<ResultObject[][]>,
-      private mkMatch: MatchCallback,
+      private initResults: Option<Array<Array<ResultObject<TScore>>>>,
+      private mkMatch: MatchCallback<TTeam, TScore>,
       private isFirstBracket: boolean,
-      private opts: Options
+      private opts: Options<TTeam, TScore>
     ) {}
     get el(): JQuery {
       return this.bracketCon;
     }
-    public addRound(doRenderCb: Option<BoolCallback>): Round {
+    public addRound(doRenderCb: Option<BoolCallback>): Round<TTeam, TScore> {
       const id = this.rounds.length;
       const previous = id > 0 ? Option.of(this.rounds[id - 1]) : Option.empty();
 
       // Rounds may be undefined if init score array does not match number of teams
-      const roundResults = this.initResults.map<ResultObject[]>(
+      const roundResults = this.initResults.map<Array<ResultObject<TScore>>>(
         r =>
           r[id] === undefined
-            ? new ResultObject(Score.empty(), Score.empty(), undefined)
+            ? new ResultObject(
+                Option.empty<TScore>(),
+                Option.empty<TScore>(),
+                undefined
+              )
             : r[id]
       );
 
@@ -1099,19 +1126,19 @@
     public dropRound(): void {
       this.rounds.pop();
     }
-    public round(id: number): Round {
+    public round(id: number): Round<TTeam, TScore> {
       return this.rounds[id];
     }
     public size(): number {
       return this.rounds.length;
     }
-    public final(): Match {
+    public final(): Match<TTeam, TScore> {
       return this.rounds[this.rounds.length - 1].match(0);
     }
-    public winner(): TeamBlock {
+    public winner(): TeamBlock<TTeam, TScore> {
       return this.rounds[this.rounds.length - 1].match(0).winner();
     }
-    public loser(): TeamBlock {
+    public loser(): TeamBlock<TTeam, TScore> {
       return this.rounds[this.rounds.length - 1].match(0).loser();
     }
     public render(): void {
@@ -1123,9 +1150,10 @@
         round.render();
       }
     }
-    public results(): ResultObject[][] {
+    public results(): Array<Array<ResultObject<TScore>>> {
       return this.rounds.reduce(
-        (agg: ResultObject[][], r) => agg.concat([r.results()]),
+        (agg: Array<Array<ResultObject<TScore>>>, r) =>
+          agg.concat([r.results()]),
         []
       );
     }
@@ -1207,12 +1235,12 @@
     }
   }
 
-  function exportData(data) {
+  function exportData<TScore>(data) {
     const output = $.extend(true, {}, data);
     output.teams = output.teams.map(ts => ts.map(t => t.toNull()));
     output.results = output.results.map(brackets =>
       brackets.map(rounds =>
-        rounds.map((matches: ResultObject) => {
+        rounds.map((matches: ResultObject<TScore>) => {
           const matchData = [matches.first.toNull(), matches.second.toNull()];
           if (matches.userData !== undefined) {
             matchData.push(matches.userData);
@@ -1237,14 +1265,14 @@
     }
   }
 
-  function createTeam(
+  function createTeam<TTeam, TScore>(
     roundNumber: number,
-    match: MatchResult,
-    team: TeamBlock,
-    opponent: TeamBlock,
+    match: MatchResult<TTeam, TScore>,
+    team: TeamBlock<TTeam, TScore>,
+    opponent: TeamBlock<TTeam, TScore>,
     isReady: boolean,
     isFirstBracket: boolean,
-    opts: Options,
+    opts: Options<TTeam, TScore>,
     resultId: ResultId,
     topCon: JQuery,
     renderAll: (r: boolean) => void
@@ -1311,7 +1339,7 @@
               // Needs to be taken before possible null is assigned below
               const teamId = team.seed.get();
 
-              opts.init.teams[~~(teamId / 2)][teamId % 2] = Option.of(
+              opts.init.teams[~~(teamId / 2)][teamId % 2] = Option.of<TTeam>(
                 val || null
               );
 
@@ -1373,16 +1401,17 @@
               }
             });
             input.blur(() => {
-              let val = input.val();
-              if ((!val || !isNumber(val)) && !isNumber(team.score)) {
-                val = "0";
-              } else if ((!val || !isNumber(val)) && isNumber(team.score)) {
+              let val = opts._internal.evaluateScore(
+                input.val(),
+                team.score.toNull()
+              );
+              if (val === null) {
                 val = team.score;
               }
 
               span.html(val);
               if (isNumber(val)) {
-                team.score = Score.of(parseInt(val, 10));
+                team.score = Option.of<TScore>(val);
                 renderAll(true);
               }
               span.click(editor);
@@ -1396,21 +1425,23 @@
     return tEl;
   }
 
-  class Match {
+  class Match<TTeam, TScore> {
     private matchCon: JQuery;
     private teamCon: JQuery;
-    private connectorCb: Option<ConnectorProvider> = Option.empty();
+    private connectorCb: Option<
+      ConnectorProvider<TTeam, TScore>
+    > = Option.empty();
     private alignCb: ((JQuery) => void) | null;
     private matchUserData: any;
 
     constructor(
-      private round: Round,
-      private match: MatchResult,
+      private round: Round<TTeam, TScore>,
+      private match: MatchResult<TTeam, TScore>,
       private seed: number,
-      results: Option<ResultObject>,
-      private renderCb: Option<RenderCallback>,
+      results: Option<ResultObject<TScore>>,
+      private renderCb: Option<RenderCallback<TTeam, TScore>>,
       private isFirstBracket: boolean,
-      private opts: Options,
+      private opts: Options<TTeam, TScore>,
       private resultId: ResultId,
       private topCon: JQuery,
       private renderAll: (r: boolean) => void
@@ -1462,20 +1493,20 @@
             match.b.source().name
           }: ${match.b.score}`
         );
-        match.a.score = match.b.score = Score.empty();
+        match.a.score = match.b.score = Option.empty<TScore>();
       }
     }
 
     get el() {
       return this.matchCon;
     }
-    public getRound(): Round {
+    public getRound(): Round<TTeam, TScore> {
       return this.round;
     }
-    public setConnectorCb(cb: Option<ConnectorProvider>): void {
+    public setConnectorCb(cb: Option<ConnectorProvider<TTeam, TScore>>): void {
       this.connectorCb = cb;
     }
-    public connect(cb: Option<ConnectorProvider>): void {
+    public connect(cb: Option<ConnectorProvider<TTeam, TScore>>): void {
       const align = this.opts.dir === "lr" ? "right" : "left";
       const connectorOffset = this.teamCon.height() / 4;
       const matchupOffset = this.matchCon.height() / 2;
@@ -1545,10 +1576,10 @@
     public loser() {
       return this.match.loser();
     }
-    public first(): TeamBlock {
+    public first(): TeamBlock<TTeam, TScore> {
       return this.match.a;
     }
-    public second(): TeamBlock {
+    public second(): TeamBlock<TTeam, TScore> {
       return this.match.b;
     }
     public setAlignCb(cb: (JQuery) => void) {
@@ -1626,13 +1657,13 @@
         this.connect(this.connectorCb);
       }
     }
-    public results(): ResultObject {
+    public results(): ResultObject<TScore> {
       // Either team is bye -> reset (mutate) scores from that match
       const hasBye = this.match.a.name.isEmpty() || this.match.b.name.isEmpty();
       if (hasBye) {
-        this.match.a.score = this.match.b.score = Score.empty();
+        this.match.a.score = this.match.b.score = Option.empty<TScore>();
       }
-      return new ResultObject(
+      return new ResultObject<TScore>(
         this.match.a.score,
         this.match.b.score,
         this.matchUserData
@@ -1642,21 +1673,21 @@
 
   const undefinedToNull = value => (value === undefined ? null : value);
 
-  const wrapResults = initResults =>
+  const wrapResults = <TScore>(initResults) =>
     initResults.map(brackets =>
       brackets.map(rounds =>
         rounds.map(
           (matches: [number, number, any]) =>
             new ResultObject(
-              Score.of(undefinedToNull(matches[0])),
-              Score.of(undefinedToNull(matches[1])),
+              Option.of<TScore>(undefinedToNull(matches[0])),
+              Option.of<TScore>(undefinedToNull(matches[1])),
               matches[2]
             )
         )
       )
     );
 
-  const JqueryBracket = (opts: Options) => {
+  const JqueryBracket = <TTeam, TScore>(opts: Options<TTeam, TScore>) => {
     const resultId = new ResultId();
 
     const data = opts.init;
@@ -1765,14 +1796,14 @@
     resizeContainer();
 
     const mkMatch = (
-      round: Round,
-      match: MatchResult,
+      round: Round<TTeam, TScore>,
+      match: MatchResult<TTeam, TScore>,
       seed: number,
-      results: Option<ResultObject>,
-      renderCb: Option<RenderCallback>,
+      results: Option<ResultObject<TScore>>,
+      renderCb: Option<RenderCallback<TTeam, TScore>>,
       isFirstBracket: boolean,
-      options: Options
-    ): Match => {
+      options: Options<TTeam, TScore>
+    ): Match<TTeam, TScore> => {
       return new Match(
         round,
         match,
@@ -1789,7 +1820,8 @@
 
     w = new Bracket(
       wEl,
-      Option.of(data.results[0] || null),
+      // TODO: fix any
+      Option.of<any>(data.results[0] || null),
       mkMatch,
       true,
       opts
@@ -1798,7 +1830,8 @@
     if (!isSingleElimination) {
       l = new Bracket(
         lEl,
-        Option.of(data.results[1] || null),
+        // TODO: fix any
+        Option.of<any>(data.results[1] || null),
         mkMatch,
         false,
         opts
@@ -1806,7 +1839,8 @@
       if (!opts.skipGrandFinalComeback) {
         f = new Bracket(
           fEl,
-          Option.of(data.results[2] || null),
+          // TODO: fix any
+          Option.of<any>(data.results[2] || null),
           mkMatch,
           false,
           opts
@@ -1838,7 +1872,7 @@
     renderAll(false);
 
     return {
-      data() {
+      data(): InitData<TTeam, TScore> {
         return exportData(opts.init);
       }
     };
@@ -1860,7 +1894,10 @@
     return $('<span class="singleElimination">se</span>').click(onClick);
   }
 
-  function createToolbar(data: any, opts: Options) {
+  function createToolbar<TTeam, TScore>(
+    data: any,
+    opts: Options<TTeam, TScore>
+  ) {
     const teamCount = data.teams.length;
     const resultCount = data.results.length;
 
@@ -1916,7 +1953,10 @@
     return tools;
   }
 
-  const assertNumber = (opts: Options, field: string) => {
+  const assertNumber = <TTeam, TScore>(
+    opts: Options<TTeam, TScore>,
+    field: string
+  ) => {
     if (opts.hasOwnProperty(field)) {
       const expectedType = "number";
       const type = typeof opts[field];
@@ -1929,7 +1969,10 @@
     }
   };
 
-  const assertBoolean = (opts: Options, field: string) => {
+  const assertBoolean = <TTeam, TScore>(
+    opts: Options<TTeam, TScore>,
+    field: string
+  ) => {
     const value = opts[field];
     const expectedType = "boolean";
     const type = typeof value;
@@ -1940,7 +1983,11 @@
     }
   };
 
-  const assertGt = (expected: number, opts: Options, field: string) => {
+  const assertGt = <TTeam, TScore>(
+    expected: number,
+    opts: Options<TTeam, TScore>,
+    field: string
+  ) => {
     const value = opts[field];
     if (value < expected) {
       throw new Error(
@@ -1951,154 +1998,171 @@
 
   const isPow2 = x => x & (x - 1);
 
-  const methods = {
-    init(originalOpts: Options) {
-      const opts = $.extend(true, {}, originalOpts); // Do not mutate inputs
+  interface Methods<TTeam, TScore> {
+    init(originalOpts: Options<TTeam, TScore>);
+    data(): InitData<TTeam, TScore>;
+  }
 
-      if (!opts) {
-        throw Error("Options not set");
-      }
-      if (!opts.init && !opts.save) {
-        throw Error("No bracket data or save callback given");
-      }
-      if (opts.userData === undefined) {
-        opts.userData = null;
-      }
+  function init<TTeam, TScore>(
+    ctx: any,
+    originalOpts: Options<TTeam, TScore> | undefined
+  ) {
+    const opts = $.extend(true, {}, originalOpts); // Do not mutate inputs
 
-      if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render)) {
-        throw Error("Invalid decorator input");
-      } else if (!opts.decorator) {
-        opts.decorator = { edit: defaultEdit, render: defaultRender };
-      }
+    if (!opts) {
+      throw Error("Options not set");
+    }
+    if (!opts.init && !opts.save) {
+      throw Error("No bracket data or save callback given");
+    }
+    if (opts.userData === undefined) {
+      opts.userData = null;
+    }
 
-      if (!opts.init) {
-        opts.init = {
-          results: [],
-          teams: [[Option.empty(), Option.empty()]]
-        };
-      }
+    if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render)) {
+      throw Error("Invalid decorator input");
+    } else if (!opts.decorator) {
+      opts.decorator = { edit: defaultEdit, render: defaultRender };
+    }
 
-      opts.el = this;
-      if (opts.save && (opts.onMatchClick || opts.onMatchHover)) {
-        $.error(
-          "Match callbacks may not be passed in edit mode (in conjunction with save callback)"
-        );
-      }
+    if (!opts.init) {
+      opts.init = {
+        results: [],
+        teams: [[Option.empty(), Option.empty()]]
+      };
+    }
 
-      const disableToolbarType = typeof opts.disableToolbar;
-      const disableToolbarGiven = opts.hasOwnProperty("disableToolbar");
-      if (disableToolbarGiven && disableToolbarType !== "boolean") {
-        $.error(`disableToolbar must be a boolean, got ${disableToolbarType}`);
-      }
-      if (!opts.save && disableToolbarGiven) {
-        $.error(
-          'disableToolbar can be used only if the bracket is editable, i.e. "save" callback given'
-        );
-      }
-      if (!disableToolbarGiven) {
-        opts.disableToolbar = opts.save === undefined;
-      }
-
-      const disableTeamEditType = typeof opts.disableTeamEdit;
-      const disableTeamEditGiven = opts.hasOwnProperty("disableTeamEdit");
-      if (disableTeamEditGiven && disableTeamEditType !== "boolean") {
-        $.error(
-          `disableTeamEdit must be a boolean, got ${disableTeamEditType}`
-        );
-      }
-      if (!opts.save && disableTeamEditGiven) {
-        $.error(
-          'disableTeamEdit can be used only if the bracket is editable, i.e. "save" callback given'
-        );
-      }
-      if (!disableTeamEditGiven) {
-        opts.disableTeamEdit = false;
-      }
-      if (!opts.disableToolbar && opts.disableTeamEdit) {
-        $.error(
-          'disableTeamEdit requires also resizing to be disabled, initialize with "disableToolbar: true"'
-        );
-      }
-
-      /* wrap data to into necessary arrays */
-      const r = wrap(opts.init.results, 4 - depth(opts.init.results));
-      opts.init.results = wrapResults(r);
-
-      assertNumber(opts, "teamWidth");
-      assertNumber(opts, "scoreWidth");
-      assertNumber(opts, "roundMargin");
-      assertNumber(opts, "matchMargin");
-
-      if (!opts.hasOwnProperty("teamWidth")) {
-        opts.teamWidth = 70;
-      }
-      if (!opts.hasOwnProperty("scoreWidth")) {
-        opts.scoreWidth = 30;
-      }
-      if (!opts.hasOwnProperty("roundMargin")) {
-        opts.roundMargin = 40;
-      }
-      if (!opts.hasOwnProperty("matchMargin")) {
-        opts.matchMargin = 20;
-      }
-
-      assertGt(0, opts, "teamWidth");
-      assertGt(0, opts, "scoreWidth");
-      assertGt(0, opts, "roundMargin");
-      assertGt(0, opts, "matchMargin");
-
-      if (!opts.hasOwnProperty("centerConnectors")) {
-        opts.centerConnectors = false;
-      }
-
-      assertBoolean(opts, "centerConnectors");
-
-      if (!opts.hasOwnProperty("disableHighlight")) {
-        opts.disableHighlight = false;
-      }
-
-      assertBoolean(opts, "disableHighlight");
-
-      const log2Result = isPow2(opts.init.teams.length);
-      if (log2Result !== Math.floor(log2Result)) {
-        $.error(
-          `"teams" property must have 2^n number of team pairs, i.e. 1, 2, 4, etc. Got ${
-            opts.init.teams.length
-          } team pairs.`
-        );
-      }
-      opts.dir = opts.dir || "lr";
-      opts.init.teams =
-        !opts.init.teams || opts.init.teams.length === 0
-          ? [[null, null]]
-          : opts.init.teams;
-      opts.init.teams = opts.init.teams.map(ts =>
-        ts.map(t => (t === null ? Option.empty() : Option.of(t)))
+    opts.el = $(ctx);
+    if (opts.save && (opts.onMatchClick || opts.onMatchHover)) {
+      $.error(
+        "Match callbacks may not be passed in edit mode (in conjunction with save callback)"
       );
-      opts.skipConsolationRound = opts.skipConsolationRound || false;
-      opts.skipSecondaryFinal = opts.skipSecondaryFinal || false;
-      if (opts.dir !== "lr" && opts.dir !== "rl") {
-        $.error('Direction must be either: "lr" or "rl"');
-      }
+    }
 
-      const bracket = JqueryBracket(opts);
-      $(this).data("bracket", { target: this, obj: bracket });
-      return bracket;
-    },
-    data() {
+    const disableToolbarType = typeof opts.disableToolbar;
+    const disableToolbarGiven = opts.hasOwnProperty("disableToolbar");
+    if (disableToolbarGiven && disableToolbarType !== "boolean") {
+      $.error(`disableToolbar must be a boolean, got ${disableToolbarType}`);
+    }
+    if (!opts.save && disableToolbarGiven) {
+      $.error(
+        'disableToolbar can be used only if the bracket is editable, i.e. "save" callback given'
+      );
+    }
+    if (!disableToolbarGiven) {
+      opts.disableToolbar = opts.save === undefined;
+    }
+
+    const disableTeamEditType = typeof opts.disableTeamEdit;
+    const disableTeamEditGiven = opts.hasOwnProperty("disableTeamEdit");
+    if (disableTeamEditGiven && disableTeamEditType !== "boolean") {
+      $.error(`disableTeamEdit must be a boolean, got ${disableTeamEditType}`);
+    }
+    if (!opts.save && disableTeamEditGiven) {
+      $.error(
+        'disableTeamEdit can be used only if the bracket is editable, i.e. "save" callback given'
+      );
+    }
+    if (!disableTeamEditGiven) {
+      opts.disableTeamEdit = false;
+    }
+    if (!opts.disableToolbar && opts.disableTeamEdit) {
+      $.error(
+        'disableTeamEdit requires also resizing to be disabled, initialize with "disableToolbar: true"'
+      );
+    }
+
+    /* wrap data to into necessary arrays */
+    const r = wrap(opts.init.results, 4 - depth(opts.init.results));
+    opts.init.results = wrapResults<TScore>(r);
+
+    assertNumber(opts, "teamWidth");
+    assertNumber(opts, "scoreWidth");
+    assertNumber(opts, "roundMargin");
+    assertNumber(opts, "matchMargin");
+
+    if (!opts.hasOwnProperty("teamWidth")) {
+      opts.teamWidth = 70;
+    }
+    if (!opts.hasOwnProperty("scoreWidth")) {
+      opts.scoreWidth = 30;
+    }
+    if (!opts.hasOwnProperty("roundMargin")) {
+      opts.roundMargin = 40;
+    }
+    if (!opts.hasOwnProperty("matchMargin")) {
+      opts.matchMargin = 20;
+    }
+
+    assertGt(0, opts, "teamWidth");
+    assertGt(0, opts, "scoreWidth");
+    assertGt(0, opts, "roundMargin");
+    assertGt(0, opts, "matchMargin");
+
+    if (!opts.hasOwnProperty("centerConnectors")) {
+      opts.centerConnectors = false;
+    }
+
+    assertBoolean(opts, "centerConnectors");
+
+    if (!opts.hasOwnProperty("disableHighlight")) {
+      opts.disableHighlight = false;
+    }
+
+    assertBoolean(opts, "disableHighlight");
+
+    const log2Result = isPow2(opts.init.teams.length);
+    if (log2Result !== Math.floor(log2Result)) {
+      $.error(
+        `"teams" property must have 2^n number of team pairs, i.e. 1, 2, 4, etc. Got ${
+          opts.init.teams.length
+        } team pairs.`
+      );
+    }
+    opts.dir = opts.dir || "lr";
+    opts.init.teams =
+      !opts.init.teams || opts.init.teams.length === 0
+        ? [[null, null]]
+        : opts.init.teams;
+    opts.init.teams = opts.init.teams.map(ts =>
+      ts.map(t => (t === null ? Option.empty() : Option.of(t)))
+    );
+    opts.skipConsolationRound = opts.skipConsolationRound || false;
+    opts.skipSecondaryFinal = opts.skipSecondaryFinal || false;
+    if (opts.dir !== "lr" && opts.dir !== "rl") {
+      $.error('Direction must be either: "lr" or "rl"');
+    }
+
+    opts._internal = {
+      evaluateScore(val: string, previousVal: number | null): number | null {
+        if ((!val || !isNumber(val)) && !isNumber(previousVal)) {
+          return 0;
+        } else if (isNumber(val)) {
+          return parseInt(val, 10);
+        }
+        return null;
+      }
+    };
+
+    const bracket = JqueryBracket(opts);
+    $(ctx).data("bracket", { target: ctx, obj: bracket });
+    return bracket;
+  }
+
+  function isInit<TTeam, TScore>(
+    arg: any
+  ): arg is undefined | Options<TTeam, TScore> {
+    return typeof arg === "object" || arg === undefined;
+  }
+
+  $.fn.bracket = function<TTeam, TScore>(
+    method: string | undefined | Options<TTeam, TScore>
+  ) {
+    if (typeof method === "string" && method === "data") {
       const bracket = $(this).data("bracket");
       return bracket.obj.data();
-    }
-  };
-
-  $.fn.bracket = function(method) {
-    if (methods[method]) {
-      return methods[method].apply(
-        this,
-        Array.prototype.slice.call(arguments, 1)
-      );
-    } else if (typeof method === "object" || !method) {
-      return methods.init.apply(this, arguments);
+    } else if (isInit(method)) {
+      return init<TTeam, TScore>(this, method);
     } else {
       $.error("Method " + method + " does not exist on jQuery.bracket");
     }
