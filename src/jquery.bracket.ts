@@ -10,6 +10,56 @@
 // tslint:disable-next-line: no-reference
 /// <reference path="../lib/jquery.d.ts" />
 
+enum EntryState {
+  EMPTY_BYE = "empty-bye",
+  EMPTY_TBD = "empty-tbd",
+  ENTRY_NO_SCORE = "entry-no-score",
+  ENTRY_DEFAULT_WIN = "entry-default-win",
+  ENTRY_COMPLETE = "entry-complete"
+}
+
+type BracketDoneCallback<TTeam> = (val: TTeam, next?: boolean) => void;
+
+interface BracketDecorator<TTeam, TScore> {
+  edit: (
+    span: JQuery,
+    name: TTeam | null,
+    doneFn: BracketDoneCallback<TTeam>
+  ) => void;
+  render: (
+    container: JQuery,
+    team: TTeam | null,
+    score: TScore,
+    entryState: EntryState
+  ) => void;
+}
+
+interface BracketInitData<TTeam, TScore> {
+  teams?: Array<[TTeam | null, TTeam | null]>;
+  results?: TScore[][];
+}
+
+interface BracketOptions<TTeam, TScore> {
+  init?: BracketInitData<TTeam, TScore>;
+  save?: (data: BracketInitData<TTeam, TScore>, userData: any) => void;
+  userData?: any;
+  decorator: BracketDecorator<TTeam, TScore>;
+  skipConsolationRound?: boolean;
+  skipSecondaryFinal?: boolean;
+  skipGrandFinalComeback?: boolean;
+  dir?: string;
+  onMatchClick?: (data: any) => void;
+  onMatchHover?: (data: any, hover: boolean) => void;
+  disableToolbar?: boolean;
+  disableTeamEdit?: boolean;
+  disableHighlight?: boolean;
+  teamWidth?: number;
+  scoreWidth?: number;
+  roundMargin?: number;
+  matchMargin?: number;
+  centerConnectors?: boolean;
+}
+
 ($ => {
   class Option<A> {
     public static of<A>(value: A | null): Option<A> {
@@ -276,50 +326,30 @@
     }
   }
 
-  type DoneCallback<TTeam> = (val: TTeam, next?: boolean) => void;
-
-  enum EntryState {
-    EMPTY_BYE = "empty-bye",
-    EMPTY_TBD = "empty-tbd",
-    ENTRY_NO_SCORE = "entry-no-score",
-    ENTRY_DEFAULT_WIN = "entry-default-win",
-    ENTRY_COMPLETE = "entry-complete"
-  }
-
-  interface Decorator<TTeam, TScore> {
-    edit: (
-      span: JQuery,
-      name: TTeam | null,
-      doneFn: DoneCallback<TTeam>
-    ) => void;
-    render: (
-      container: JQuery,
-      team: TTeam | null,
-      score: TScore,
-      entryState: EntryState
-    ) => void;
-  }
-
   interface InitData<TTeam, TScore> {
     teams: Array<[Option<TTeam>, Option<TTeam>]>;
     results: TScore[][];
   }
 
+  interface Extension<TScore> {
+    evaluateScore(val: string, previousVal: TScore | null);
+  }
+
   interface Options<TTeam, TScore> {
     // TODO: expose via public interface
-    _internal: { evaluateScore(val: string, previousVal: TScore | null) };
+    extension: Extension<TScore>;
     el: JQuery;
     init: InitData<TTeam, TScore>;
-    save: (data: InitData<TTeam, TScore>, userData: any) => void;
+    save?: (data: BracketInitData<TTeam, TScore>, userData: any) => void;
     userData: any;
-    decorator: Decorator<TTeam, TScore>;
+    decorator: BracketDecorator<TTeam, TScore>;
     skipConsolationRound: boolean;
     skipSecondaryFinal: boolean;
     skipGrandFinalComeback: boolean;
-    dir: string;
+    dir: "lr" | "rl";
     onMatchClick: (data: any) => void;
     onMatchHover: (data: any, hover: boolean) => void;
-    disableToolbar: boolean;
+    disableToolbar?: boolean;
     disableTeamEdit: boolean;
     disableHighlight: boolean;
     teamWidth: number;
@@ -425,7 +455,7 @@
   function defaultEdit(
     span: JQuery,
     data: any,
-    done: DoneCallback<string>
+    done: BracketDoneCallback<string>
   ): void {
     const input = $('<input type="text">');
     input.val(data);
@@ -1401,7 +1431,7 @@
               }
             });
             input.blur(() => {
-              let val = opts._internal.evaluateScore(
+              let val = opts.extension.evaluateScore(
                 input.val(),
                 team.score.toNull()
               );
@@ -1458,22 +1488,18 @@
       if (!opts.save) {
         // The hover and click callbacks are bound by jQuery to the element
         const userData = this.matchUserData;
-        if (opts.onMatchHover) {
-          this.teamCon.hover(
-            () => {
-              opts.onMatchHover(userData, true);
-            },
-            () => {
-              opts.onMatchHover(userData, false);
-            }
-          );
-        }
+        this.teamCon.hover(
+          () => {
+            opts.onMatchHover(userData, true);
+          },
+          () => {
+            opts.onMatchHover(userData, false);
+          }
+        );
 
-        if (opts.onMatchClick) {
-          this.teamCon.click(() => {
-            opts.onMatchClick(userData);
-          });
-        }
+        this.teamCon.click(() => {
+          opts.onMatchClick(userData);
+        });
       }
 
       match.a.name = match.a.source().name;
@@ -1954,7 +1980,7 @@
   }
 
   const assertNumber = <TTeam, TScore>(
-    opts: Options<TTeam, TScore>,
+    opts: BracketOptions<TTeam, TScore>,
     field: string
   ) => {
     if (opts.hasOwnProperty(field)) {
@@ -1970,7 +1996,7 @@
   };
 
   const assertBoolean = <TTeam, TScore>(
-    opts: Options<TTeam, TScore>,
+    opts: BracketOptions<TTeam, TScore>,
     field: string
   ) => {
     const value = opts[field];
@@ -1985,7 +2011,7 @@
 
   const assertGt = <TTeam, TScore>(
     expected: number,
-    opts: Options<TTeam, TScore>,
+    opts: BracketOptions<TTeam, TScore>,
     field: string
   ) => {
     const value = opts[field];
@@ -1996,43 +2022,192 @@
     }
   };
 
+  const getNumber = (expected: any): number => {
+    if (typeof expected !== "number") {
+      throw new Error("Value is not a number");
+    }
+    return expected;
+  };
+
+  const getBoolean = (expected: any): boolean => {
+    if (typeof expected !== "boolean") {
+      throw new Error("Value is not a boolean");
+    }
+    return expected;
+  };
+
+  const getPositiveOrZero = (expected: any): number => {
+    const value = getNumber(expected);
+    if (value < expected) {
+      throw new Error(`Value must be greater than ${expected}, got ${value}`);
+    }
+    return value;
+  };
+
   const isPow2 = x => x & (x - 1);
 
-  interface Methods<TTeam, TScore> {
-    init(originalOpts: Options<TTeam, TScore>);
-    data(): InitData<TTeam, TScore>;
+  function assertOptions<TTeam, TScore>(opts: Options<TTeam, TScore>) {
+    // Assert correct permutation of options
+
+    if (!opts.save && opts.disableTeamEdit) {
+      $.error(
+        'disableTeamEdit can be used only if the bracket is editable, i.e. "save" callback given'
+      );
+    }
+    if (!opts.disableToolbar && opts.disableTeamEdit) {
+      $.error(
+        'disableTeamEdit requires also resizing to be disabled, initialize with "disableToolbar: true"'
+      );
+    }
+  }
+
+  function parseOptions<TTeam, TScore>(
+    input: BracketOptions<TTeam, TScore>,
+    context: JQuery,
+    extension: Extension<TScore>
+  ): Options<TTeam, TScore> {
+    const opts: Options<TTeam, TScore> = {
+      centerConnectors: !input.hasOwnProperty("centerConnectors")
+        ? false
+        : getBoolean(input.centerConnectors),
+      decorator: input.decorator,
+      dir: parseDir(input.dir),
+      disableHighlight: !input.hasOwnProperty("disableHighlight")
+        ? false
+        : getBoolean(input.disableHighlight),
+      disableTeamEdit: !input.hasOwnProperty("disableTeamEdit")
+        ? false
+        : getBoolean(input.disableTeamEdit),
+      disableToolbar: input.disableToolbar,
+      el: context,
+      // TODO: expose via public interface
+      extension,
+      init: parseInit(input.init),
+      matchMargin: !input.hasOwnProperty("matchMargin")
+        ? 20
+        : getPositiveOrZero(input.matchMargin),
+      onMatchClick: input.onMatchClick
+        ? input.onMatchClick
+        : () => {
+            return;
+          },
+      onMatchHover: input.onMatchHover
+        ? input.onMatchHover
+        : () => {
+            return;
+          },
+      roundMargin: !input.hasOwnProperty("roundMargin")
+        ? 40
+        : getPositiveOrZero(input.roundMargin),
+      save: input.save,
+      scoreWidth: !input.hasOwnProperty("scoreWidth")
+        ? 30
+        : getPositiveOrZero(input.scoreWidth),
+      skipConsolationRound: input.skipConsolationRound || false,
+      skipGrandFinalComeback: input.skipGrandFinalComeback || false,
+      skipSecondaryFinal: input.skipSecondaryFinal || false,
+      teamWidth: !input.hasOwnProperty("teamWidth")
+        ? 70
+        : getPositiveOrZero(input.teamWidth),
+      userData: input.userData
+    };
+
+    assertOptions(opts);
+
+    return opts;
+  }
+
+  function parseDir(input: string | undefined): "lr" | "rl" {
+    if (input === undefined) {
+      return "lr";
+    } else {
+      if (input !== "lr" && input !== "rl") {
+        throw new Error('Direction must be either: "lr" or "rl"');
+      }
+      return input;
+    }
+  }
+
+  function defaultEvaluateScore(
+    val: string,
+    previousVal: number | null
+  ): number | null {
+    if ((!val || !isNumber(val)) && !isNumber(previousVal)) {
+      return 0;
+    } else if (isNumber(val)) {
+      return parseInt(val, 10);
+    }
+    return null;
+  }
+
+  function parseInit<TTeam, TScore>(
+    rawInit?: BracketInitData<TTeam, TScore>
+  ): InitData<TTeam, TScore> {
+    const value: BracketInitData<TTeam, TScore> = rawInit
+      ? rawInit
+      : {
+          results: [],
+          teams: [[null, null]]
+        };
+    if (value.teams === undefined) {
+      throw new Error("Teams missing");
+    }
+    if (value.results === undefined) {
+      throw new Error("Results missing");
+    }
+    const log2Result = isPow2(value.teams.length);
+    if (log2Result !== Math.floor(log2Result)) {
+      $.error(
+        `"teams" property must have 2^n number of team pairs, i.e. 1, 2, 4, etc. Got ${
+          value.teams.length
+        } team pairs.`
+      );
+    }
+
+    /* wrap data to into necessary arrays */
+    const r = wrap(value.results, 4 - depth(value.results));
+    const results = wrapResults<TScore>(r);
+
+    return {
+      results,
+      teams:
+        !value.teams || value.teams.length === 0
+          ? [[Option.empty<TTeam>(), Option.empty<TTeam>()]]
+          : value.teams.map(
+              ts =>
+                ts.map(
+                  t => (t === null ? Option.empty<TTeam>() : Option.of(t))
+                ) as [Option<TTeam>, Option<TTeam>]
+            )
+    };
   }
 
   function init<TTeam, TScore>(
     ctx: any,
-    originalOpts: Options<TTeam, TScore> | undefined
+    originalOpts: BracketOptions<TTeam, TScore> | undefined,
+    extension: Extension<TScore>
   ) {
-    const opts = $.extend(true, {}, originalOpts); // Do not mutate inputs
-
-    if (!opts) {
+    if (!originalOpts) {
       throw Error("Options not set");
     }
-    if (!opts.init && !opts.save) {
+    if (!originalOpts.init && !originalOpts.save) {
       throw Error("No bracket data or save callback given");
     }
+
+    const opts: BracketOptions<TTeam, TScore> = $.extend(
+      true,
+      {},
+      originalOpts
+    ); // Do not mutate inputs
+
     if (opts.userData === undefined) {
       opts.userData = null;
     }
 
     if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render)) {
       throw Error("Invalid decorator input");
-    } else if (!opts.decorator) {
-      opts.decorator = { edit: defaultEdit, render: defaultRender };
     }
 
-    if (!opts.init) {
-      opts.init = {
-        results: [],
-        teams: [[Option.empty(), Option.empty()]]
-      };
-    }
-
-    opts.el = $(ctx);
     if (opts.save && (opts.onMatchClick || opts.onMatchHover)) {
       $.error(
         "Match callbacks may not be passed in edit mode (in conjunction with save callback)"
@@ -2053,116 +2228,39 @@
       opts.disableToolbar = opts.save === undefined;
     }
 
-    const disableTeamEditType = typeof opts.disableTeamEdit;
-    const disableTeamEditGiven = opts.hasOwnProperty("disableTeamEdit");
-    if (disableTeamEditGiven && disableTeamEditType !== "boolean") {
-      $.error(`disableTeamEdit must be a boolean, got ${disableTeamEditType}`);
-    }
-    if (!opts.save && disableTeamEditGiven) {
-      $.error(
-        'disableTeamEdit can be used only if the bracket is editable, i.e. "save" callback given'
-      );
-    }
-    if (!disableTeamEditGiven) {
-      opts.disableTeamEdit = false;
-    }
-    if (!opts.disableToolbar && opts.disableTeamEdit) {
-      $.error(
-        'disableTeamEdit requires also resizing to be disabled, initialize with "disableToolbar: true"'
-      );
-    }
-
-    /* wrap data to into necessary arrays */
-    const r = wrap(opts.init.results, 4 - depth(opts.init.results));
-    opts.init.results = wrapResults<TScore>(r);
-
-    assertNumber(opts, "teamWidth");
-    assertNumber(opts, "scoreWidth");
-    assertNumber(opts, "roundMargin");
-    assertNumber(opts, "matchMargin");
-
-    if (!opts.hasOwnProperty("teamWidth")) {
-      opts.teamWidth = 70;
-    }
-    if (!opts.hasOwnProperty("scoreWidth")) {
-      opts.scoreWidth = 30;
-    }
-    if (!opts.hasOwnProperty("roundMargin")) {
-      opts.roundMargin = 40;
-    }
-    if (!opts.hasOwnProperty("matchMargin")) {
-      opts.matchMargin = 20;
-    }
-
-    assertGt(0, opts, "teamWidth");
-    assertGt(0, opts, "scoreWidth");
-    assertGt(0, opts, "roundMargin");
-    assertGt(0, opts, "matchMargin");
-
-    if (!opts.hasOwnProperty("centerConnectors")) {
-      opts.centerConnectors = false;
-    }
-
-    assertBoolean(opts, "centerConnectors");
-
-    if (!opts.hasOwnProperty("disableHighlight")) {
-      opts.disableHighlight = false;
-    }
-
-    assertBoolean(opts, "disableHighlight");
-
-    const log2Result = isPow2(opts.init.teams.length);
-    if (log2Result !== Math.floor(log2Result)) {
-      $.error(
-        `"teams" property must have 2^n number of team pairs, i.e. 1, 2, 4, etc. Got ${
-          opts.init.teams.length
-        } team pairs.`
-      );
-    }
-    opts.dir = opts.dir || "lr";
-    opts.init.teams =
-      !opts.init.teams || opts.init.teams.length === 0
-        ? [[null, null]]
-        : opts.init.teams;
-    opts.init.teams = opts.init.teams.map(ts =>
-      ts.map(t => (t === null ? Option.empty() : Option.of(t)))
+    const internalOpts = parseOptions<TTeam, TScore>(
+      originalOpts,
+      ctx,
+      extension
     );
-    opts.skipConsolationRound = opts.skipConsolationRound || false;
-    opts.skipSecondaryFinal = opts.skipSecondaryFinal || false;
-    if (opts.dir !== "lr" && opts.dir !== "rl") {
-      $.error('Direction must be either: "lr" or "rl"');
-    }
-
-    opts._internal = {
-      evaluateScore(val: string, previousVal: number | null): number | null {
-        if ((!val || !isNumber(val)) && !isNumber(previousVal)) {
-          return 0;
-        } else if (isNumber(val)) {
-          return parseInt(val, 10);
-        }
-        return null;
-      }
-    };
-
-    const bracket = JqueryBracket(opts);
+    const bracket = JqueryBracket(internalOpts);
     $(ctx).data("bracket", { target: ctx, obj: bracket });
     return bracket;
   }
 
   function isInit<TTeam, TScore>(
     arg: any
-  ): arg is undefined | Options<TTeam, TScore> {
+  ): arg is undefined | BracketOptions<TTeam, TScore> {
     return typeof arg === "object" || arg === undefined;
   }
 
-  $.fn.bracket = function<TTeam, TScore>(
-    method: string | undefined | Options<TTeam, TScore>
-  ) {
+  $.fn.bracket = function(method: any) {
     if (typeof method === "string" && method === "data") {
       const bracket = $(this).data("bracket");
       return bracket.obj.data();
     } else if (isInit(method)) {
-      return init<TTeam, TScore>(this, method);
+      const options = method as BracketOptions<string, number>;
+
+      return init<string, number>(
+        this,
+        {
+          ...options,
+          decorator: options.decorator
+            ? options.decorator
+            : { edit: defaultEdit, render: defaultRender }
+        },
+        { evaluateScore: defaultEvaluateScore }
+      );
     } else {
       $.error("Method " + method + " does not exist on jQuery.bracket");
     }
