@@ -127,11 +127,11 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     match: Match<TTeam, TScore, TMData, TUData>
   ) => Connector;
 
-  class ResultObject<TScore> {
+  class ResultObject<TScore, TMData> {
     constructor(
       readonly first: Option<TScore>,
       readonly second: Option<TScore>,
-      readonly userData: any
+      readonly matchData: TMData | undefined
     ) {
       if (!first || !second) {
         throw new Error("Cannot create ResultObject with undefined scores");
@@ -144,7 +144,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     round: Round<TTeam, TScore, TMData, TUData>,
     match: MatchResult<TTeam, TScore>,
     seed: number,
-    results: Option<ResultObject<TScore>>,
+    results: Option<ResultObject<TScore, TMData>>,
     renderCb: Option<RenderCallback<TTeam, TScore, TMData, TUData>>,
     isFirstBracket: boolean,
     opts: Options<TTeam, TScore, TMData, TUData>
@@ -1020,7 +1020,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       private previousRound: Option<Round<TTeam, TScore, TMData, TUData>>,
       readonly roundNumber: number,
       // TODO: results should be enforced to be correct by now
-      private roundResults: Option<Array<ResultObject<TScore>>>,
+      private roundResults: Option<Array<ResultObject<TScore, TMData>>>,
       private doRenderCb: Option<BoolCallback>,
       private mkMatch: MatchCallback<TTeam, TScore, TMData, TUData>,
       private isFirstBracket: boolean,
@@ -1112,9 +1112,10 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       this.roundCon.appendTo(this.bracket.el);
       this.matches.forEach(m => m.render());
     }
-    public results(): Array<ResultObject<TScore>> {
+    public results(): Array<ResultObject<TScore, TMData>> {
       return this.matches.reduce(
-        (agg: Array<ResultObject<TScore>>, m) => agg.concat([m.results()]),
+        (agg: Array<ResultObject<TScore, TMData>>, m) =>
+          agg.concat([m.results()]),
         []
       );
     }
@@ -1125,7 +1126,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
     constructor(
       private bracketCon: JQuery,
-      private initResults: Option<Array<Array<ResultObject<TScore>>>>,
+      private initResults: Option<Array<Array<ResultObject<TScore, TMData>>>>,
       private mkMatch: MatchCallback<TTeam, TScore, TMData, TUData>,
       private isFirstBracket: boolean,
       private opts: Options<TTeam, TScore, TMData, TUData>
@@ -1140,7 +1141,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       const previous = id > 0 ? Option.of(this.rounds[id - 1]) : Option.empty();
 
       // Rounds may be undefined if init score array does not match number of teams
-      const roundResults = this.initResults.map<Array<ResultObject<TScore>>>(
+      const roundResults = this.initResults.map<
+        Array<ResultObject<TScore, TMData>>
+      >(
         r =>
           r[id] === undefined
             ? new ResultObject(
@@ -1191,9 +1194,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         round.render();
       }
     }
-    public results(): Array<Array<ResultObject<TScore>>> {
+    public results(): Array<Array<ResultObject<TScore, TMData>>> {
       return this.rounds.reduce(
-        (agg: Array<Array<ResultObject<TScore>>>, r) =>
+        (agg: Array<Array<ResultObject<TScore, TMData>>>, r) =>
           agg.concat([r.results()]),
         []
       );
@@ -1276,17 +1279,21 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     }
   }
 
-  function exportData<TScore>(data) {
+  function exportData<TScore, TMData>(data) {
     const output = $.extend(true, {}, data);
     output.teams = output.teams.map(ts => ts.map(t => t.toNull()));
     output.results = output.results.map(brackets =>
       brackets.map(rounds =>
-        rounds.map((matches: ResultObject<TScore>) => {
-          const matchData = [matches.first.toNull(), matches.second.toNull()];
-          if (matches.userData !== undefined) {
-            matchData.push(matches.userData);
+        rounds.map((matches: ResultObject<TScore, TMData>) => {
+          if (matches.matchData !== undefined) {
+            return [
+              matches.first.toNull(),
+              matches.second.toNull(),
+              matches.matchData
+            ];
+          } else {
+            return [matches.first.toNull(), matches.second.toNull()];
           }
-          return matchData;
         })
       )
     );
@@ -1473,13 +1480,13 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       ConnectorProvider<TTeam, TScore, TMData, TUData>
     > = Option.empty();
     private alignCb: ((JQuery) => void) | null;
-    private matchUserData: any;
+    private matchUserData: TMData | undefined;
 
     constructor(
       private round: Round<TTeam, TScore, TMData, TUData>,
       private match: MatchResult<TTeam, TScore>,
       private seed: number,
-      results: Option<ResultObject<TScore>>,
+      results: Option<ResultObject<TScore, TMData>>,
       private renderCb: Option<RenderCallback<TTeam, TScore, TMData, TUData>>,
       private isFirstBracket: boolean,
       private opts: Options<TTeam, TScore, TMData, TUData>,
@@ -1493,7 +1500,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       this.alignCb = null;
 
       this.matchUserData = !results.isEmpty()
-        ? results.get().userData
+        ? results.get().matchData
         : undefined;
 
       if (!opts.save) {
@@ -1698,13 +1705,13 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         this.connect(this.connectorCb);
       }
     }
-    public results(): ResultObject<TScore> {
+    public results(): ResultObject<TScore, TMData> {
       // Either team is bye -> reset (mutate) scores from that match
       const hasBye = this.match.a.name.isEmpty() || this.match.b.name.isEmpty();
       if (hasBye) {
         this.match.a.score = this.match.b.score = Option.empty<TScore>();
       }
-      return new ResultObject<TScore>(
+      return new ResultObject<TScore, TMData>(
         this.match.a.score,
         this.match.b.score,
         this.matchUserData
@@ -1842,7 +1849,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       round: Round<TTeam, TScore, TMData, TUData>,
       match: MatchResult<TTeam, TScore>,
       seed: number,
-      results: Option<ResultObject<TScore>>,
+      results: Option<ResultObject<TScore, TMData>>,
       renderCb: Option<RenderCallback<TTeam, TScore, TMData, TUData>>,
       isFirstBracket: boolean,
       options: Options<TTeam, TScore, TMData, TUData>
