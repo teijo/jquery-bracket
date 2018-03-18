@@ -1996,49 +1996,6 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     return tools;
   }
 
-  const assertNumber = <TTeam, TScore, TMData, TUData>(
-    opts: BracketOptions<TTeam, TScore, TMData, TUData>,
-    field: string
-  ) => {
-    if (opts.hasOwnProperty(field)) {
-      const expectedType = "number";
-      const type = typeof opts[field];
-
-      if (type !== expectedType) {
-        throw new Error(
-          `Option "${field}" is ${type} instead of ${expectedType}`
-        );
-      }
-    }
-  };
-
-  const assertBoolean = <TTeam, TScore, TMData, TUData>(
-    opts: BracketOptions<TTeam, TScore, TMData, TUData>,
-    field: string
-  ) => {
-    const value = opts[field];
-    const expectedType = "boolean";
-    const type = typeof value;
-    if (type !== expectedType) {
-      throw new Error(
-        `Value of ${field} must be boolean, got ${expectedType}, got ${type}`
-      );
-    }
-  };
-
-  const assertGt = <TTeam, TScore, TMData, TUData>(
-    expected: number,
-    opts: BracketOptions<TTeam, TScore, TMData, TUData>,
-    field: string
-  ) => {
-    const value = opts[field];
-    if (value < expected) {
-      throw new Error(
-        `Value of ${field} must be greater than ${expected}, got ${value}`
-      );
-    }
-  };
-
   const getNumber = (expected: any): number => {
     if (typeof expected !== "number") {
       throw new Error("Value is not a number");
