@@ -29,7 +29,7 @@ interface BracketDecorator<TTeam, TScore> {
   render: (
     container: JQuery,
     team: TTeam | null,
-    score: TScore,
+    score: TScore | null,
     entryState: EntryState
   ) => void;
 }
@@ -45,14 +45,14 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     data: BracketInitData<TTeam, TScore, TMData>,
     userData: TUData
   ) => void;
-  userData?: any;
+  userData?: TUData;
   decorator: BracketDecorator<TTeam, TScore>;
   skipConsolationRound?: boolean;
   skipSecondaryFinal?: boolean;
   skipGrandFinalComeback?: boolean;
   dir?: string;
-  onMatchClick?: (data: any) => void;
-  onMatchHover?: (data: any, hover: boolean) => void;
+  onMatchClick?: (data: TMData) => void;
+  onMatchHover?: (data: TMData, hover: boolean) => void;
   disableToolbar?: boolean;
   disableTeamEdit?: boolean;
   disableHighlight?: boolean;
@@ -69,7 +69,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       return new Option(value);
     }
 
-    public static empty<A = any>(): Option<A> {
+    public static empty<A>(): Option<A> {
       return new Option<A>(null);
     }
 
@@ -331,13 +331,18 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     }
   }
 
+  type BracketResult<TScore, TMData> = Array<
+    Array<ResultObject<TScore, TMData>>
+  >;
+
   interface InitData<TTeam, TScore, TMData> {
     teams: Array<[Option<TTeam>, Option<TTeam>]>;
-    results: Array<Array<Array<[TScore, TScore, TMData]>>>;
+    results: Array<BracketResult<TScore, TMData>>;
   }
 
   interface Extension<TScore> {
     evaluateScore(val: string, previousVal: TScore | null);
+    scoreToString(score: TScore | null): string;
   }
 
   interface Options<TTeam, TScore, TMData, TUData> {
@@ -347,16 +352,16 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     init: InitData<TTeam, TScore, TMData>;
     save?: (
       data: BracketInitData<TTeam, TScore, TMData>,
-      userData: TUData
+      userData: TUData | undefined
     ) => void;
-    userData: any;
+    userData: TUData | undefined;
     decorator: BracketDecorator<TTeam, TScore>;
     skipConsolationRound: boolean;
     skipSecondaryFinal: boolean;
     skipGrandFinalComeback: boolean;
     dir: "lr" | "rl";
-    onMatchClick: (data: any) => void;
-    onMatchHover: (data: any, hover: boolean) => void;
+    onMatchClick: (data: TMData | undefined) => void;
+    onMatchHover: (data: TMData | undefined, hover: boolean) => void;
     disableToolbar?: boolean;
     disableTeamEdit: boolean;
     disableHighlight: boolean;
@@ -462,7 +467,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
   function defaultEdit(
     span: JQuery,
-    data: any,
+    data: string,
     done: BracketDoneCallback<string>
   ): void {
     const input = $('<input type="text">');
@@ -484,7 +489,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   function defaultRender(
     container: JQuery,
     team: string,
-    score: any,
+    score: number,
     state: EntryState
   ): void {
     switch (state) {
@@ -578,7 +583,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
   function prepareWinners<TTeam, TScore, TMData, TUData>(
     winners: Bracket<TTeam, TScore, TMData, TUData>,
-    teams: Array<[any, any]>,
+    teams: Array<[Option<TTeam>, Option<TTeam>]>,
     isSingleElimination: boolean,
     opts: Options<TTeam, TScore, TMData, TUData>,
     skipGrandFinalComeback: boolean
@@ -591,7 +596,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       round = winners.addRound(Option.empty());
 
       for (let m = 0; m < matchCount; m += 1) {
-        const teamCb = r === 0 ? winnerMatchSources(teams, m) : null;
+        const teamCb =
+          r === 0 ? winnerMatchSources<TTeam, TScore>(teams, m) : null;
         if (
           !(r === roundCount - 1 && isSingleElimination) &&
           !(r === roundCount - 1 && skipGrandFinalComeback)
@@ -1138,7 +1144,10 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       doRenderCb: Option<BoolCallback>
     ): Round<TTeam, TScore, TMData, TUData> {
       const id = this.rounds.length;
-      const previous = id > 0 ? Option.of(this.rounds[id - 1]) : Option.empty();
+      const previous =
+        id > 0
+          ? Option.of(this.rounds[id - 1])
+          : Option.empty<Round<TTeam, TScore, TMData, TUData>>();
 
       // Rounds may be undefined if init score array does not match number of teams
       const roundResults = this.initResults.map<
@@ -1336,9 +1345,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     );
     const score =
       team.name.isEmpty() || opponent.name.isEmpty() || !isReady
-        ? Option.empty()
-        : team.score.map(s => `${s}`);
-    const scoreString = score.orElse("--");
+        ? Option.empty<TScore>()
+        : team.score;
+    const scoreString = opts.extension.scoreToString(score.toNull());
 
     sEl.text(scoreString);
 
@@ -1353,8 +1362,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     opts.decorator.render(
       nEl,
       team.name.toNull(),
-      scoreString,
-      teamState(team, opponent, score)
+      team.score.toNull(),
+      teamState(team, opponent, team.score)
     );
 
     team.seed.forEach(seed => {
@@ -1721,11 +1730,13 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
   const undefinedToNull = value => (value === undefined ? null : value);
 
-  const wrapResults = <TScore>(initResults) =>
+  const wrapResults = <TScore, TMData>(
+    initResults
+  ): Array<BracketResult<TScore, TMData>> =>
     initResults.map(brackets =>
       brackets.map(rounds =>
         rounds.map(
-          (matches: [number, number, any]) =>
+          (matches: [TScore, TScore, TMData]) =>
             new ResultObject(
               Option.of<TScore>(undefinedToNull(matches[0])),
               Option.of<TScore>(undefinedToNull(matches[1])),
@@ -1870,8 +1881,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
     w = new Bracket(
       wEl,
-      // TODO: fix any
-      Option.of<any>(data.results[0] || null),
+      Option.of(data.results[0] || null),
       mkMatch,
       true,
       opts
@@ -1880,8 +1890,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     if (!isSingleElimination) {
       l = new Bracket(
         lEl,
-        // TODO: fix any
-        Option.of<any>(data.results[1] || null),
+        Option.of(data.results[1] || null),
         mkMatch,
         false,
         opts
@@ -1889,8 +1898,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       if (!opts.skipGrandFinalComeback) {
         f = new Bracket(
           fEl,
-          // TODO: fix any
-          Option.of<any>(data.results[2] || null),
+          Option.of(data.results[2] || null),
           mkMatch,
           false,
           opts
@@ -1945,7 +1953,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   }
 
   function createToolbar<TTeam, TScore, TMData, TUData>(
-    data: any,
+    data: InitData<TTeam, TScore, TMData>,
     opts: Options<TTeam, TScore, TMData, TUData>
   ) {
     const teamCount = data.teams.length;
@@ -2149,7 +2157,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
     /* wrap data to into necessary arrays */
     const r = wrap(value.results, 4 - depth(value.results));
-    const results = wrapResults<TScore>(r);
+    const results = wrapResults<TScore, TMData>(r);
 
     return {
       results,
@@ -2166,7 +2174,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   }
 
   function init<TTeam, TScore, TMData, TUData>(
-    ctx: any,
+    ctx: JQuery,
     originalOpts: BracketOptions<TTeam, TScore, TMData, TUData> | undefined,
     extension: Extension<TScore>
   ) {
@@ -2182,10 +2190,6 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       {},
       originalOpts
     ); // Do not mutate inputs
-
-    if (opts.userData === undefined) {
-      opts.userData = null;
-    }
 
     if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render)) {
       throw Error("Invalid decorator input");
@@ -2242,7 +2246,11 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
             ? options.decorator
             : { edit: defaultEdit, render: defaultRender }
         },
-        { evaluateScore: defaultEvaluateScore }
+        {
+          evaluateScore: defaultEvaluateScore,
+          scoreToString: (score: number | null) =>
+            score === null ? "--" : score.toString()
+        }
       );
     } else {
       $.error("Method " + method + " does not exist on jQuery.bracket");
