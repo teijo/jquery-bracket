@@ -34,14 +34,17 @@ interface BracketDecorator<TTeam, TScore> {
   ) => void;
 }
 
-interface BracketInitData<TTeam, TScore> {
+interface BracketInitData<TTeam, TScore, TMData> {
   teams?: Array<[TTeam | null, TTeam | null]>;
-  results?: TScore[][];
+  results?: Array<Array<Array<[TScore, TScore] | [TScore, TScore, TMData]>>>;
 }
 
-interface BracketOptions<TTeam, TScore> {
-  init?: BracketInitData<TTeam, TScore>;
-  save?: (data: BracketInitData<TTeam, TScore>, userData: any) => void;
+interface BracketOptions<TTeam, TScore, TMData, TUData> {
+  init?: BracketInitData<TTeam, TScore, TMData>;
+  save?: (
+    data: BracketInitData<TTeam, TScore, TMData>,
+    userData: TUData
+  ) => void;
   userData?: any;
   decorator: BracketDecorator<TTeam, TScore>;
   skipConsolationRound?: boolean;
@@ -119,9 +122,9 @@ interface BracketOptions<TTeam, TScore> {
     shift: number;
   }
 
-  type ConnectorProvider<TTeam, TScore> = (
+  type ConnectorProvider<TTeam, TScore, TMData, TUData> = (
     tc: JQuery,
-    match: Match<TTeam, TScore>
+    match: Match<TTeam, TScore, TMData, TUData>
   ) => Connector;
 
   class ResultObject<TScore> {
@@ -137,17 +140,19 @@ interface BracketOptions<TTeam, TScore> {
     }
   }
 
-  type MatchCallback<TTeam, TScore> = (
-    round: Round<TTeam, TScore>,
+  type MatchCallback<TTeam, TScore, TMData, TUData> = (
+    round: Round<TTeam, TScore, TMData, TUData>,
     match: MatchResult<TTeam, TScore>,
     seed: number,
     results: Option<ResultObject<TScore>>,
-    renderCb: Option<RenderCallback<TTeam, TScore>>,
+    renderCb: Option<RenderCallback<TTeam, TScore, TMData, TUData>>,
     isFirstBracket: boolean,
-    opts: Options<TTeam, TScore>
-  ) => Match<TTeam, TScore>;
+    opts: Options<TTeam, TScore, TMData, TUData>
+  ) => Match<TTeam, TScore, TMData, TUData>;
 
-  type RenderCallback<TTeam, TScore> = (match: Match<TTeam, TScore>) => boolean;
+  type RenderCallback<TTeam, TScore, TMData, TUData> = (
+    match: Match<TTeam, TScore, TMData, TUData>
+  ) => boolean;
 
   enum BranchType {
     TBD,
@@ -326,21 +331,24 @@ interface BracketOptions<TTeam, TScore> {
     }
   }
 
-  interface InitData<TTeam, TScore> {
+  interface InitData<TTeam, TScore, TMData> {
     teams: Array<[Option<TTeam>, Option<TTeam>]>;
-    results: TScore[][];
+    results: Array<Array<Array<[TScore, TScore, TMData]>>>;
   }
 
   interface Extension<TScore> {
     evaluateScore(val: string, previousVal: TScore | null);
   }
 
-  interface Options<TTeam, TScore> {
+  interface Options<TTeam, TScore, TMData, TUData> {
     // TODO: expose via public interface
     extension: Extension<TScore>;
     el: JQuery;
-    init: InitData<TTeam, TScore>;
-    save?: (data: BracketInitData<TTeam, TScore>, userData: any) => void;
+    init: InitData<TTeam, TScore, TMData>;
+    save?: (
+      data: BracketInitData<TTeam, TScore, TMData>,
+      userData: TUData
+    ) => void;
     userData: any;
     decorator: BracketDecorator<TTeam, TScore>;
     skipConsolationRound: boolean;
@@ -411,10 +419,10 @@ interface BracketOptions<TTeam, TScore> {
     };
   }
 
-  function postProcess<TTeam, TScore>(
+  function postProcess<TTeam, TScore, TMData, TUData>(
     container: JQuery,
-    w: Bracket<TTeam, TScore>,
-    f: Bracket<TTeam, TScore>
+    w: Bracket<TTeam, TScore, TMData, TUData>,
+    f: Bracket<TTeam, TScore, TMData, TUData>
   ) {
     const source = f || w;
     const winner = source.winner();
@@ -495,7 +503,9 @@ interface BracketOptions<TTeam, TScore> {
     }
   }
 
-  function winnerBubbles<TTeam, TScore>(match: Match<TTeam, TScore>): boolean {
+  function winnerBubbles<TTeam, TScore, TMData, TUData>(
+    match: Match<TTeam, TScore, TMData, TUData>
+  ): boolean {
     const el = match.el;
     const winner = el.find(".team.win");
     winner.append('<div class="bubble">1st</div>');
@@ -504,8 +514,8 @@ interface BracketOptions<TTeam, TScore> {
     return true;
   }
 
-  function consolationBubbles<TTeam, TScore>(
-    match: Match<TTeam, TScore>
+  function consolationBubbles<TTeam, TScore, TMData, TUData>(
+    match: Match<TTeam, TScore, TMData, TUData>
   ): boolean {
     const el = match.el;
     const winner = el.find(".team.win");
@@ -550,8 +560,8 @@ interface BracketOptions<TTeam, TScore> {
     ];
   };
 
-  const winnerAlignment = <TTeam, TScore>(
-    match: Match<TTeam, TScore>,
+  const winnerAlignment = <TTeam, TScore, TMData, TUData>(
+    match: Match<TTeam, TScore, TMData, TUData>,
     skipConsolationRound: boolean
   ) => (tC: JQuery) => {
     // Unless this is reset, the height calculation below will behave
@@ -566,11 +576,11 @@ interface BracketOptions<TTeam, TScore> {
     });
   };
 
-  function prepareWinners<TTeam, TScore>(
-    winners: Bracket<TTeam, TScore>,
+  function prepareWinners<TTeam, TScore, TMData, TUData>(
+    winners: Bracket<TTeam, TScore, TMData, TUData>,
     teams: Array<[any, any]>,
     isSingleElimination: boolean,
-    opts: Options<TTeam, TScore>,
+    opts: Options<TTeam, TScore, TMData, TUData>,
     skipGrandFinalComeback: boolean
   ) {
     const roundCount = Math.log(teams.length * 2) / Math.log(2);
@@ -625,9 +635,9 @@ interface BracketOptions<TTeam, TScore> {
     }
   }
 
-  const loserMatchSources = <TTeam, TScore>(
-    winners: Bracket<TTeam, TScore>,
-    losers: Bracket<TTeam, TScore>,
+  const loserMatchSources = <TTeam, TScore, TMData, TUData>(
+    winners: Bracket<TTeam, TScore, TMData, TUData>,
+    losers: Bracket<TTeam, TScore, TMData, TUData>,
     matchCount: number,
     m: number,
     n: number,
@@ -676,18 +686,17 @@ interface BracketOptions<TTeam, TScore> {
     }
   };
 
-  const loserAlignment = <TTeam, TScore>(
+  const loserAlignment = <TTeam, TScore, TMData, TUData>(
     teamCon: JQuery,
-    match: Match<TTeam, TScore>
+    match: Match<TTeam, TScore, TMData, TUData>
   ) => () => {
     const top = match.el.height() / 2 - teamCon.height() / 2;
     return teamCon.css({ top });
   };
 
-  const mkMatchConnector = <TTeam, TScore>(centerConnectors: boolean) => (
-    tC,
-    match: Match<TTeam, TScore>
-  ): Connector => {
+  const mkMatchConnector = <TTeam, TScore, TMData, TUData>(
+    centerConnectors: boolean
+  ) => (tC, match: Match<TTeam, TScore, TMData, TUData>): Connector => {
     // inside lower bracket
     const connectorOffset = tC.height() / 4;
     const center = { height: 0, shift: connectorOffset * 2 };
@@ -707,9 +716,9 @@ interface BracketOptions<TTeam, TScore> {
       .orElse(center);
   };
 
-  function prepareLosers<TTeam, TScore>(
-    winners: Bracket<TTeam, TScore>,
-    losers: Bracket<TTeam, TScore>,
+  function prepareLosers<TTeam, TScore, TMData, TUData>(
+    winners: Bracket<TTeam, TScore, TMData, TUData>,
+    losers: Bracket<TTeam, TScore, TMData, TUData>,
     teamCount: number,
     skipGrandFinalComeback: boolean,
     centerConnectors: boolean
@@ -727,7 +736,7 @@ interface BracketOptions<TTeam, TScore> {
 
         for (let m = 0; m < matchCount; m += 1) {
           const teamCb = !(n % 2 === 0 && r !== 0)
-            ? loserMatchSources<TTeam, TScore>(
+            ? loserMatchSources<TTeam, TScore, TMData, TUData>(
                 winners,
                 losers,
                 matchCount,
@@ -758,11 +767,11 @@ interface BracketOptions<TTeam, TScore> {
     }
   }
 
-  function prepareFinals<TTeam, TScore>(
-    finals: Bracket<TTeam, TScore>,
-    winners: Bracket<TTeam, TScore>,
-    losers: Bracket<TTeam, TScore>,
-    opts: Options<TTeam, TScore>,
+  function prepareFinals<TTeam, TScore, TMData, TUData>(
+    finals: Bracket<TTeam, TScore, TMData, TUData>,
+    winners: Bracket<TTeam, TScore, TMData, TUData>,
+    losers: Bracket<TTeam, TScore, TMData, TUData>,
+    opts: Options<TTeam, TScore, TMData, TUData>,
     resizeContainer: () => void
   ) {
     const round = finals.addRound(Option.empty());
@@ -997,25 +1006,25 @@ interface BracketOptions<TTeam, TScore> {
       });
   }
 
-  class Round<TTeam, TScore> {
+  class Round<TTeam, TScore, TMData, TUData> {
     private containerWidth = this.opts.teamWidth + this.opts.scoreWidth;
     private roundCon: JQuery = $(
       `<div class="round" style="width: ${
         this.containerWidth
       }px; margin-right: ${this.opts.roundMargin}px"/>`
     );
-    private matches: Array<Match<TTeam, TScore>> = [];
+    private matches: Array<Match<TTeam, TScore, TMData, TUData>> = [];
 
     constructor(
-      readonly bracket: Bracket<TTeam, TScore>,
-      private previousRound: Option<Round<TTeam, TScore>>,
+      readonly bracket: Bracket<TTeam, TScore, TMData, TUData>,
+      private previousRound: Option<Round<TTeam, TScore, TMData, TUData>>,
       readonly roundNumber: number,
       // TODO: results should be enforced to be correct by now
       private roundResults: Option<Array<ResultObject<TScore>>>,
       private doRenderCb: Option<BoolCallback>,
-      private mkMatch: MatchCallback<TTeam, TScore>,
+      private mkMatch: MatchCallback<TTeam, TScore, TMData, TUData>,
       private isFirstBracket: boolean,
-      private opts: Options<TTeam, TScore>
+      private opts: Options<TTeam, TScore, TMData, TUData>
     ) {}
 
     get el() {
@@ -1025,8 +1034,8 @@ interface BracketOptions<TTeam, TScore> {
       teamCb:
         | (() => [MatchSource<TTeam, TScore>, MatchSource<TTeam, TScore>])
         | null,
-      renderCb: Option<RenderCallback<TTeam, TScore>>
-    ): Match<TTeam, TScore> {
+      renderCb: Option<RenderCallback<TTeam, TScore, TMData, TUData>>
+    ): Match<TTeam, TScore, TMData, TUData> {
       const matchIdx = this.matches.length;
       const teams =
         teamCb !== null
@@ -1086,10 +1095,10 @@ interface BracketOptions<TTeam, TScore> {
       this.matches.push(match);
       return match;
     }
-    public match(id: number): Match<TTeam, TScore> {
+    public match(id: number): Match<TTeam, TScore, TMData, TUData> {
       return this.matches[id];
     }
-    public prev(): Option<Round<TTeam, TScore>> {
+    public prev(): Option<Round<TTeam, TScore, TMData, TUData>> {
       return this.previousRound;
     }
     public size(): number {
@@ -1111,20 +1120,22 @@ interface BracketOptions<TTeam, TScore> {
     }
   }
 
-  class Bracket<TTeam, TScore> {
-    private rounds: Array<Round<TTeam, TScore>> = [];
+  class Bracket<TTeam, TScore, TMData, TUData> {
+    private rounds: Array<Round<TTeam, TScore, TMData, TUData>> = [];
 
     constructor(
       private bracketCon: JQuery,
       private initResults: Option<Array<Array<ResultObject<TScore>>>>,
-      private mkMatch: MatchCallback<TTeam, TScore>,
+      private mkMatch: MatchCallback<TTeam, TScore, TMData, TUData>,
       private isFirstBracket: boolean,
-      private opts: Options<TTeam, TScore>
+      private opts: Options<TTeam, TScore, TMData, TUData>
     ) {}
     get el(): JQuery {
       return this.bracketCon;
     }
-    public addRound(doRenderCb: Option<BoolCallback>): Round<TTeam, TScore> {
+    public addRound(
+      doRenderCb: Option<BoolCallback>
+    ): Round<TTeam, TScore, TMData, TUData> {
       const id = this.rounds.length;
       const previous = id > 0 ? Option.of(this.rounds[id - 1]) : Option.empty();
 
@@ -1156,13 +1167,13 @@ interface BracketOptions<TTeam, TScore> {
     public dropRound(): void {
       this.rounds.pop();
     }
-    public round(id: number): Round<TTeam, TScore> {
+    public round(id: number): Round<TTeam, TScore, TMData, TUData> {
       return this.rounds[id];
     }
     public size(): number {
       return this.rounds.length;
     }
-    public final(): Match<TTeam, TScore> {
+    public final(): Match<TTeam, TScore, TMData, TUData> {
       return this.rounds[this.rounds.length - 1].match(0);
     }
     public winner(): TeamBlock<TTeam, TScore> {
@@ -1295,14 +1306,14 @@ interface BracketOptions<TTeam, TScore> {
     }
   }
 
-  function createTeam<TTeam, TScore>(
+  function createTeam<TTeam, TScore, TMData, TUData>(
     roundNumber: number,
     match: MatchResult<TTeam, TScore>,
     team: TeamBlock<TTeam, TScore>,
     opponent: TeamBlock<TTeam, TScore>,
     isReady: boolean,
     isFirstBracket: boolean,
-    opts: Options<TTeam, TScore>,
+    opts: Options<TTeam, TScore, TMData, TUData>,
     resultId: ResultId,
     topCon: JQuery,
     renderAll: (r: boolean) => void
@@ -1455,23 +1466,23 @@ interface BracketOptions<TTeam, TScore> {
     return tEl;
   }
 
-  class Match<TTeam, TScore> {
+  class Match<TTeam, TScore, TMData, TUData> {
     private matchCon: JQuery;
     private teamCon: JQuery;
     private connectorCb: Option<
-      ConnectorProvider<TTeam, TScore>
+      ConnectorProvider<TTeam, TScore, TMData, TUData>
     > = Option.empty();
     private alignCb: ((JQuery) => void) | null;
     private matchUserData: any;
 
     constructor(
-      private round: Round<TTeam, TScore>,
+      private round: Round<TTeam, TScore, TMData, TUData>,
       private match: MatchResult<TTeam, TScore>,
       private seed: number,
       results: Option<ResultObject<TScore>>,
-      private renderCb: Option<RenderCallback<TTeam, TScore>>,
+      private renderCb: Option<RenderCallback<TTeam, TScore, TMData, TUData>>,
       private isFirstBracket: boolean,
-      private opts: Options<TTeam, TScore>,
+      private opts: Options<TTeam, TScore, TMData, TUData>,
       private resultId: ResultId,
       private topCon: JQuery,
       private renderAll: (r: boolean) => void
@@ -1526,13 +1537,17 @@ interface BracketOptions<TTeam, TScore> {
     get el() {
       return this.matchCon;
     }
-    public getRound(): Round<TTeam, TScore> {
+    public getRound(): Round<TTeam, TScore, TMData, TUData> {
       return this.round;
     }
-    public setConnectorCb(cb: Option<ConnectorProvider<TTeam, TScore>>): void {
+    public setConnectorCb(
+      cb: Option<ConnectorProvider<TTeam, TScore, TMData, TUData>>
+    ): void {
       this.connectorCb = cb;
     }
-    public connect(cb: Option<ConnectorProvider<TTeam, TScore>>): void {
+    public connect(
+      cb: Option<ConnectorProvider<TTeam, TScore, TMData, TUData>>
+    ): void {
       const align = this.opts.dir === "lr" ? "right" : "left";
       const connectorOffset = this.teamCon.height() / 4;
       const matchupOffset = this.matchCon.height() / 2;
@@ -1713,7 +1728,9 @@ interface BracketOptions<TTeam, TScore> {
       )
     );
 
-  const JqueryBracket = <TTeam, TScore>(opts: Options<TTeam, TScore>) => {
+  const JqueryBracket = <TTeam, TScore, TMData, TUData>(
+    opts: Options<TTeam, TScore, TMData, TUData>
+  ) => {
     const resultId = new ResultId();
 
     const data = opts.init;
@@ -1822,14 +1839,14 @@ interface BracketOptions<TTeam, TScore> {
     resizeContainer();
 
     const mkMatch = (
-      round: Round<TTeam, TScore>,
+      round: Round<TTeam, TScore, TMData, TUData>,
       match: MatchResult<TTeam, TScore>,
       seed: number,
       results: Option<ResultObject<TScore>>,
-      renderCb: Option<RenderCallback<TTeam, TScore>>,
+      renderCb: Option<RenderCallback<TTeam, TScore, TMData, TUData>>,
       isFirstBracket: boolean,
-      options: Options<TTeam, TScore>
-    ): Match<TTeam, TScore> => {
+      options: Options<TTeam, TScore, TMData, TUData>
+    ): Match<TTeam, TScore, TMData, TUData> => {
       return new Match(
         round,
         match,
@@ -1898,7 +1915,7 @@ interface BracketOptions<TTeam, TScore> {
     renderAll(false);
 
     return {
-      data(): InitData<TTeam, TScore> {
+      data(): InitData<TTeam, TScore, TMData> {
         return exportData(opts.init);
       }
     };
@@ -1920,9 +1937,9 @@ interface BracketOptions<TTeam, TScore> {
     return $('<span class="singleElimination">se</span>').click(onClick);
   }
 
-  function createToolbar<TTeam, TScore>(
+  function createToolbar<TTeam, TScore, TMData, TUData>(
     data: any,
-    opts: Options<TTeam, TScore>
+    opts: Options<TTeam, TScore, TMData, TUData>
   ) {
     const teamCount = data.teams.length;
     const resultCount = data.results.length;
@@ -1979,8 +1996,8 @@ interface BracketOptions<TTeam, TScore> {
     return tools;
   }
 
-  const assertNumber = <TTeam, TScore>(
-    opts: BracketOptions<TTeam, TScore>,
+  const assertNumber = <TTeam, TScore, TMData, TUData>(
+    opts: BracketOptions<TTeam, TScore, TMData, TUData>,
     field: string
   ) => {
     if (opts.hasOwnProperty(field)) {
@@ -1995,8 +2012,8 @@ interface BracketOptions<TTeam, TScore> {
     }
   };
 
-  const assertBoolean = <TTeam, TScore>(
-    opts: BracketOptions<TTeam, TScore>,
+  const assertBoolean = <TTeam, TScore, TMData, TUData>(
+    opts: BracketOptions<TTeam, TScore, TMData, TUData>,
     field: string
   ) => {
     const value = opts[field];
@@ -2009,9 +2026,9 @@ interface BracketOptions<TTeam, TScore> {
     }
   };
 
-  const assertGt = <TTeam, TScore>(
+  const assertGt = <TTeam, TScore, TMData, TUData>(
     expected: number,
-    opts: BracketOptions<TTeam, TScore>,
+    opts: BracketOptions<TTeam, TScore, TMData, TUData>,
     field: string
   ) => {
     const value = opts[field];
@@ -2046,7 +2063,9 @@ interface BracketOptions<TTeam, TScore> {
 
   const isPow2 = x => x & (x - 1);
 
-  function assertOptions<TTeam, TScore>(opts: Options<TTeam, TScore>) {
+  function assertOptions<TTeam, TScore, TMData, TUData>(
+    opts: Options<TTeam, TScore, TMData, TUData>
+  ) {
     // Assert correct permutation of options
 
     if (!opts.save && opts.disableTeamEdit) {
@@ -2061,12 +2080,12 @@ interface BracketOptions<TTeam, TScore> {
     }
   }
 
-  function parseOptions<TTeam, TScore>(
-    input: BracketOptions<TTeam, TScore>,
+  function parseOptions<TTeam, TScore, TMData, TUData>(
+    input: BracketOptions<TTeam, TScore, TMData, TUData>,
     context: JQuery,
     extension: Extension<TScore>
-  ): Options<TTeam, TScore> {
-    const opts: Options<TTeam, TScore> = {
+  ): Options<TTeam, TScore, TMData, TUData> {
+    const opts: Options<TTeam, TScore, TMData, TUData> = {
       centerConnectors: !input.hasOwnProperty("centerConnectors")
         ? false
         : getBoolean(input.centerConnectors),
@@ -2140,10 +2159,10 @@ interface BracketOptions<TTeam, TScore> {
     return null;
   }
 
-  function parseInit<TTeam, TScore>(
-    rawInit?: BracketInitData<TTeam, TScore>
-  ): InitData<TTeam, TScore> {
-    const value: BracketInitData<TTeam, TScore> = rawInit
+  function parseInit<TTeam, TScore, TMData, TUData>(
+    rawInit?: BracketInitData<TTeam, TScore, TMData>
+  ): InitData<TTeam, TScore, TMData> {
+    const value: BracketInitData<TTeam, TScore, TMData> = rawInit
       ? rawInit
       : {
           results: [],
@@ -2182,9 +2201,9 @@ interface BracketOptions<TTeam, TScore> {
     };
   }
 
-  function init<TTeam, TScore>(
+  function init<TTeam, TScore, TMData, TUData>(
     ctx: any,
-    originalOpts: BracketOptions<TTeam, TScore> | undefined,
+    originalOpts: BracketOptions<TTeam, TScore, TMData, TUData> | undefined,
     extension: Extension<TScore>
   ) {
     if (!originalOpts) {
@@ -2194,7 +2213,7 @@ interface BracketOptions<TTeam, TScore> {
       throw Error("No bracket data or save callback given");
     }
 
-    const opts: BracketOptions<TTeam, TScore> = $.extend(
+    const opts: BracketOptions<TTeam, TScore, TMData, TUData> = $.extend(
       true,
       {},
       originalOpts
@@ -2228,7 +2247,7 @@ interface BracketOptions<TTeam, TScore> {
       opts.disableToolbar = opts.save === undefined;
     }
 
-    const internalOpts = parseOptions<TTeam, TScore>(
+    const internalOpts = parseOptions<TTeam, TScore, TMData, TUData>(
       originalOpts,
       ctx,
       extension
@@ -2238,9 +2257,9 @@ interface BracketOptions<TTeam, TScore> {
     return bracket;
   }
 
-  function isInit<TTeam, TScore>(
+  function isInit<TTeam, TScore, TMData, TUData>(
     arg: any
-  ): arg is undefined | BracketOptions<TTeam, TScore> {
+  ): arg is undefined | BracketOptions<TTeam, TScore, TMData, TUData> {
     return typeof arg === "object" || arg === undefined;
   }
 
@@ -2249,9 +2268,9 @@ interface BracketOptions<TTeam, TScore> {
       const bracket = $(this).data("bracket");
       return bracket.obj.data();
     } else if (isInit(method)) {
-      const options = method as BracketOptions<string, number>;
+      const options = method as BracketOptions<string, number, any, any>;
 
-      return init<string, number>(
+      return init<string, number, any, any>(
         this,
         {
           ...options,
