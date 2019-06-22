@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>My test page</title>
+    <link rel="stylesheet" type="text/css" href="dist/jquery.bracket.min.css">
+    <script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript" src="dist/jquery.bracket.min.js"></script>
+  </head>
+  <body>
+      <div id="minimal">
+            <h3>Minimal<a href="#minimal">¶</a></h3>
+      
+    <script type="text/javascript">
+    
+var minimalData = {
+    teams : [
+      ["Heynen/Mintsi", "Padiyath/Padiyath"], /* first matchup */
+      ["Ziller/Stoob", "Stasa/Nikos"]  /* second matchup */
+    ],
+    results : [[
+        [[2,1], [3,4]], /* first and second matches of the first round */
+        [[5,6]]         /* second round */
+        ], [              /* LOSER BRACKET */
+        [[7,8]],        /* first round */
+        [[9,10]]        /* second round */
+        ], [              /* FINALS */
+        [[1,12], [13,14]],
+        [[15,16]]       /* LB winner won first round so need a rematch */
+        ]]
+  }
+ 
+$(function() {
+    $('#minimal .demo').bracket({
+        teamWidth: 120,
+        scoreWidth: 25,
+        matchMargin: 30,
+        roundMargin: 50,
+      init: minimalData /* data to initialize the bracket with */
+    })
+  })
+    </script>
+    <div class="demo"></div>
+</div>
+  </body>
+</html>

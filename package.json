@@ -12,23 +12,27 @@
   },
   "scripts": {
     "start": "npm install && grunt watch",
-    "check":
-      "tslint src/*.ts && prettier -l src/*.ts src/*.scss *.md *.json *.js && echo 'Format OK' || echo 'Not conforming to prettier, auto-format with: npm run format'",
+    "check": "tslint src/*.ts && prettier -l src/*.ts src/*.scss *.md *.json *.js && echo 'Format OK' || echo 'Not conforming to prettier, auto-format with: npm run format'",
     "format": "prettier --write src/*.ts src/*.scss *.md *.json *.js"
   },
   "devDependencies": {
-    "grunt": "^1.0.2",
+    "grunt": "^1.0.4",
     "grunt-cli": "^1.2.0",
     "grunt-contrib-concat": "^1.0.1",
     "grunt-contrib-uglify": "^3.3.0",
-    "grunt-contrib-watch": "^1.0.0",
+    "grunt-contrib-watch": "^1.1.0",
     "grunt-css": "^0.5.4",
     "grunt-sass": "^2.1.0",
-    "grunt-ts": "^6.0.0-beta.19",
+    "grunt-ts": "^6.0.0-beta.22",
     "grunt-tslint": "^5.0.1",
-    "tslint": "^5.9.1",
     "prettier": "^1.11.1",
+    "tslint": "^5.9.1",
     "tslint-config-prettier": "^1.10.0",
     "typescript": "^2.7.2"
+  },
+  "dependencies": {
+    "fsevents": "^2.0.7",
+    "jquery": "^3.4.1",
+    "node-sass": "^4.12.0"
   }
 }
