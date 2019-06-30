@@ -395,7 +395,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     cssClass: string | null,
     container: JQuery
   ) {
-    const elements = container.find(".team[data-teamid=" + teamIndex + "]");
+    const elements = container.find(".jqteam[data-teamid=" + teamIndex + "]");
     const addedClass = !cssClass ? "highlight" : cssClass;
 
     return {
@@ -450,7 +450,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       }
     }
 
-    container.find(".team").mouseover(function() {
+    container.find(".jqteam").mouseover(function() {
       const teamId = $(this).attr("data-teamid");
       // Don't highlight BYEs
       if (teamId === undefined) {
@@ -512,9 +512,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     match: Match<TTeam, TScore, TMData, TUData>
   ): boolean {
     const el = match.el;
-    const winner = el.find(".team.win");
+    const winner = el.find(".jqteam.win");
     winner.append('<div class="bubble">1st</div>');
-    const loser = el.find(".team.lose");
+    const loser = el.find(".jqteam.lose");
     loser.append('<div class="bubble">2nd</div>');
     return true;
   }
@@ -523,9 +523,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     match: Match<TTeam, TScore, TMData, TUData>
   ): boolean {
     const el = match.el;
-    const winner = el.find(".team.win");
+    const winner = el.find(".jqteam.win");
     winner.append('<div class="bubble third">3rd</div>');
-    const loser = el.find(".team.lose");
+    const loser = el.find(".jqteam.lose");
     loser.append('<div class="bubble fourth">4th</div>');
     return true;
   }
@@ -1352,11 +1352,11 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     sEl.text(scoreString);
 
     const tEl = $(
-      `<div class="team" style="width: ${opts.teamWidth +
+      `<div class="jqteam" style="width: ${opts.teamWidth +
         opts.scoreWidth}px;"></div>`
     );
     const nEl = $(
-      `<div class="label" style="width: ${opts.teamWidth}px;"></div>`
+      `<div class="jqlabel" style="width: ${opts.teamWidth}px;"></div>`
     ).appendTo(tEl);
 
     opts.decorator.render(
@@ -1403,7 +1403,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
               renderAll(true);
               span.click(editor);
               const labels = opts.el.find(
-                ".team[data-teamid=" + (teamId + 1) + "] div.label:first"
+                ".jqteam[data-teamid=" + (teamId + 1) + "] div.jqlabel:first"
               );
               if (labels.length && next === true && roundNumber === 0) {
                 $(labels).click();

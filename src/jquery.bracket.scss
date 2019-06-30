@@ -18,8 +18,8 @@ $boxHeight: 22px;
 $boxPadding: 3px;
 
 div.jQBracket {
-  font-family: "Arial";
-  font-size: 14px;
+  font-family: "Montserrat", "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
+  font-size: 12px;
   position: relative;
 
   .tools {
@@ -73,7 +73,7 @@ div.jQBracket {
     cursor: pointer;
   }
 
-  .team {
+  .jqteam {
     position: relative;
     z-index: 1;
     float: left;
@@ -93,7 +93,7 @@ div.jQBracket {
       outline: none;
     }
 
-    div.label {
+    div.jqlabel {
       padding: $boxPadding;
       position: absolute;
       height: $boxHeight;
@@ -123,7 +123,7 @@ div.jQBracket {
       }
     }
 
-    div.label input.error,
+    div.jqlabel input.error,
     div.score input.error {
       background-color: #fcc;
     }
@@ -310,10 +310,10 @@ div.jQBracket.rl {
     float: right;
   }
 
-  .team {
+  .jqteam {
     float: right;
 
-    div.label {
+    div.jqlabel {
       right: 0;
     }
 
