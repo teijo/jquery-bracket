@@ -2216,7 +2216,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     }
 
     const internalOpts = parseOptions<TTeam, TScore, TMData, TUData>(
-      originalOpts,
+      opts,
       ctx,
       extension
     );
