@@ -53,6 +53,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   dir?: string;
   onMatchClick?: (data: TMData) => void;
   onMatchHover?: (data: TMData, hover: boolean) => void;
+  disableScoring?: boolean;
   disableToolbar?: boolean;
   disableTeamEdit?: boolean;
   disableHighlight?: boolean;
@@ -342,6 +343,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
   interface Extension<TScore> {
     evaluateScore(val: string, previousVal: TScore | null);
+
     scoreToString(score: TScore | null): string;
   }
 
@@ -362,6 +364,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     dir: "lr" | "rl";
     onMatchClick: (data: TMData | undefined) => void;
     onMatchHover: (data: TMData | undefined, hover: boolean) => void;
+    disableScoring: boolean;
     disableToolbar?: boolean;
     disableTeamEdit: boolean;
     disableHighlight: boolean;
@@ -1036,6 +1039,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     get el() {
       return this.roundCon;
     }
+
     public addMatch(
       teamCb:
         | (() => [MatchSource<TTeam, TScore>, MatchSource<TTeam, TScore>])
@@ -1101,15 +1105,19 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       this.matches.push(match);
       return match;
     }
+
     public match(id: number): Match<TTeam, TScore, TMData, TUData> {
       return this.matches[id];
     }
+
     public prev(): Option<Round<TTeam, TScore, TMData, TUData>> {
       return this.previousRound;
     }
+
     public size(): number {
       return this.matches.length;
     }
+
     public render(): void {
       this.roundCon.empty();
       if (!this.doRenderCb.isEmpty() && !this.doRenderCb.get()()) {
@@ -1118,6 +1126,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       this.roundCon.appendTo(this.bracket.el);
       this.matches.forEach(m => m.render());
     }
+
     public results(): Array<ResultObject<TScore, TMData>> {
       return this.matches.reduce(
         (agg: Array<ResultObject<TScore, TMData>>, m) =>
@@ -1137,9 +1146,11 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       private isFirstBracket: boolean,
       private opts: Options<TTeam, TScore, TMData, TUData>
     ) {}
+
     get el(): JQuery {
       return this.bracketCon;
     }
+
     public addRound(
       doRenderCb: Option<BoolCallback>
     ): Round<TTeam, TScore, TMData, TUData> {
@@ -1176,24 +1187,31 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       this.rounds.push(round);
       return round;
     }
+
     public dropRound(): void {
       this.rounds.pop();
     }
+
     public round(id: number): Round<TTeam, TScore, TMData, TUData> {
       return this.rounds[id];
     }
+
     public size(): number {
       return this.rounds.length;
     }
+
     public final(): Match<TTeam, TScore, TMData, TUData> {
       return this.rounds[this.rounds.length - 1].match(0);
     }
+
     public winner(): TeamBlock<TTeam, TScore> {
       return this.rounds[this.rounds.length - 1].match(0).winner();
     }
+
     public loser(): TeamBlock<TTeam, TScore> {
       return this.rounds[this.rounds.length - 1].match(0).loser();
     }
+
     public render(): void {
       this.bracketCon.empty();
       /* Length of 'rounds' can increase during render in special case when
@@ -1203,6 +1221,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         round.render();
       }
     }
+
     public results(): Array<Array<ResultObject<TScore, TMData>>> {
       return this.rounds.reduce(
         (agg: Array<Array<ResultObject<TScore, TMData>>>, r) =>
@@ -1311,12 +1330,15 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
   class ResultId {
     private counter = 0;
+
     public get() {
       return this.counter;
     }
+
     public getNext(): number {
       return ++this.counter;
     }
+
     public reset(): void {
       this.counter = 0;
     }
@@ -1341,7 +1363,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     const sEl = $(
       `<div class="score" style="width: ${
         opts.scoreWidth
-      }px;" ${resultIdAttribute}></div>`
+      }px;" ${resultIdAttribute}>`
     );
     const score =
       team.name.isEmpty() || opponent.name.isEmpty() || !isReady
@@ -1378,7 +1400,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       tEl.addClass("lose");
     }
 
-    tEl.append(sEl);
+    if (!opts.disableScoring) {
+      tEl.append(sEl);
+    }
 
     // Only first round of BYEs can be edited
     if (
@@ -1416,8 +1440,35 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
           editor();
         });
+      } else if (opts.disableScoring) {
+        tEl.click(() => {
+          if (
+            opts.extension.scoreToString(score.toNull()) === "--" ||
+            opts.extension.scoreToString(score.toNull()) === "0"
+          ) {
+            team.score = Option.of<TScore>(
+              opts.extension.evaluateScore("1", team.score.toNull())
+            );
+            team.sibling().score = Option.of<TScore>(
+              opts.extension.evaluateScore("0", team.sibling().score.toNull())
+            );
+          } else if (opts.extension.scoreToString(score.toNull()) === "1") {
+            team.score = Option.of<TScore>(
+              opts.extension.evaluateScore("0", team.score.toNull())
+            );
+            team.sibling().score = Option.of<TScore>(
+              opts.extension.evaluateScore("1", team.sibling().score.toNull())
+            );
+          }
+          renderAll(true);
+        });
       }
-      if (!team.name.isEmpty() && !opponent.name.isEmpty() && isReady) {
+      if (
+        !team.name.isEmpty() &&
+        !opponent.name.isEmpty() &&
+        isReady &&
+        !opts.disableScoring
+      ) {
         const rId = resultId.get();
 
         sEl.addClass("editable");
@@ -1553,14 +1604,17 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     get el() {
       return this.matchCon;
     }
+
     public getRound(): Round<TTeam, TScore, TMData, TUData> {
       return this.round;
     }
+
     public setConnectorCb(
       cb: Option<ConnectorProvider<TTeam, TScore, TMData, TUData>>
     ): void {
       this.connectorCb = cb;
     }
+
     public connect(
       cb: Option<ConnectorProvider<TTeam, TScore, TMData, TUData>>
     ): void {
@@ -1627,21 +1681,27 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         createConnector(this.opts.roundMargin, result, align)
       );
     }
+
     public winner() {
       return this.match.winner();
     }
+
     public loser() {
       return this.match.loser();
     }
+
     public first(): TeamBlock<TTeam, TScore> {
       return this.match.a;
     }
+
     public second(): TeamBlock<TTeam, TScore> {
       return this.match.b;
     }
+
     public setAlignCb(cb: (JQuery) => void) {
       this.alignCb = cb;
     }
+
     public render() {
       this.matchCon.empty();
       this.teamCon.empty();
@@ -1714,6 +1774,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         this.connect(this.connectorCb);
       }
     }
+
     public results(): ResultObject<TScore, TMData> {
       // Either team is bye -> reset (mutate) scores from that match
       const hasBye = this.match.a.name.isEmpty() || this.match.b.name.isEmpty();
@@ -2066,6 +2127,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       disableHighlight: !input.hasOwnProperty("disableHighlight")
         ? false
         : getBoolean(input.disableHighlight),
+      disableScoring: !input.hasOwnProperty("disableScoring")
+        ? false
+        : getBoolean(input.disableScoring),
       disableTeamEdit: !input.hasOwnProperty("disableTeamEdit")
         ? false
         : getBoolean(input.disableTeamEdit),
