@@ -364,7 +364,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     dir: "lr" | "rl";
     onMatchClick: (data: TMData | undefined) => void;
     onMatchHover: (data: TMData | undefined, hover: boolean) => void;
-    disableScoring: boolean;
+    disableScoring?: boolean;
     disableToolbar?: boolean;
     disableTeamEdit: boolean;
     disableHighlight: boolean;
