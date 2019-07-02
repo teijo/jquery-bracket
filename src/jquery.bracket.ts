@@ -1379,7 +1379,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       }px;"></div>`
     );
     const nEl = $(
-      `<div class="label" style="width: ${opts.teamWidth}px;"></div>`
+      `<div class="label" style="width: ${
+        opts.disableScoring ? opts.teamWidth + opts.scoreWidth : opts.teamWidth
+      }px;"></div>`
     ).appendTo(tEl);
 
     opts.decorator.render(
