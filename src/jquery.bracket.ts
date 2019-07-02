@@ -1374,8 +1374,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     sEl.text(scoreString);
 
     const tEl = $(
-      `<div class="team" style="width: ${opts.teamWidth +
-        opts.scoreWidth}px;"></div>`
+      `<div class="team" style="width: ${
+        opts.disableScoring ? opts.teamWidth : opts.teamWidth + opts.scoreWidth
+      }px;"></div>`
     );
     const nEl = $(
       `<div class="label" style="width: ${opts.teamWidth}px;"></div>`
