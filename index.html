@@ -9,9 +9,11 @@
   </head>
   <body>
       <div id="minimal">
-            <h3>Minimal</h3>
+            <h3 class="tableauheading">Minimal</h3>
       
     <script type="text/javascript">
+    var x = Math.log(16) / Math.log(2) - 1 - 1;
+    $('#minimal .tableauheading').html(x);
     
 var data8 = {
     teams : [
@@ -76,6 +78,8 @@ var data8 = {
       ["Team 7", "Team 10"],
       ["Team 15", "Team 2"]
     ],
+    results : [[[[2,0],[2,1],[2,0],[2,1],[2,0],[2,1],[2,0],[2,1]],[[2,0],[2,1],[2,0],[2,1]],[[2,0],[2,1]]],[[[1,2],[0,2],[1,2],[0,2]],[[2,0],[2,1],[2,0],[2,1]],[[2,0],[2,1]],[[2,0],[2,1]]],[[[2,0],[2,1]],[[2,1],[2,0]]]]
+    /*
     results : [
       [ //MAIN
         [[2,1], [2,1], [2,1], [3,4],[2,1], [2,1], [2,1], [3,4]], // Round 1
@@ -93,14 +97,14 @@ var data8 = {
         [[2,1], [2,0]], // SF
         [[2,0],[2,0]] //F
       ]
-    ]
+    ]*/
   };
  
 $(function() {
     $('#minimal .demo').bracket({
       skipSecondaryFinal: true,
       skipDoubleEliminiationInSemiFinal: true,
-      init: data12 /* data to initialize the bracket with */
+      init: data16 /* data to initialize the bracket with */
     })
   })
     </script>

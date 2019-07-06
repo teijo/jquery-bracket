@@ -645,6 +645,58 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     }
   }
 
+  const loserMatchSourcesSV = <TTeam, TScore, TMData, TUData>(
+    winners: Bracket<TTeam, TScore, TMData, TUData>,
+    losers: Bracket<TTeam, TScore, TMData, TUData>,
+    matchCount: number,
+    m: number,
+    n: number,
+    r: number
+  ) => (): [MatchSource<TTeam, TScore>, MatchSource<TTeam, TScore>] => {
+    /* first round comes from winner bracket */
+    if (n % 2 === 0 && r === 0) {
+      const mindex = matchCount - m - 1; // start with reversed order
+      return [
+        {
+          source: () =>
+            winners
+              .round(0)
+              .match(mindex * 2 + 1)
+              .loser()
+        },
+        {
+          source: () =>
+            winners
+              .round(0)
+              .match(mindex * 2)
+              .loser()
+        }
+      ];
+    } else {
+      /* match with dropped */
+      /* To maximize the time it takes for two teams to play against
+       * eachother twice, WB losers are assigned in reverse order
+       * every second round of LB */
+      const winnerMatch = r % 2 === 1 ? matchCount - m - 1 : m;
+      return [
+        {
+          source: () =>
+            losers
+              .round(r * 2)
+              .match(m)
+              .winner()
+        },
+        {
+          source: () =>
+            winners
+              .round(r + 1)
+              .match(winnerMatch)
+              .loser()
+        }
+      ];
+    }
+  };
+
   const loserMatchSources = <TTeam, TScore, TMData, TUData>(
     winners: Bracket<TTeam, TScore, TMData, TUData>,
     losers: Bracket<TTeam, TScore, TMData, TUData>,
@@ -748,7 +800,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
         for (let m = 0; m < matchCount; m += 1) {
           const teamCb = !(n % 2 === 0 && r !== 0)
-            ? loserMatchSources<TTeam, TScore, TMData, TUData>(
+            ? loserMatchSourcesSV<TTeam, TScore, TMData, TUData>( // FIXME
                 winners,
                 losers,
                 matchCount,
@@ -833,8 +885,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     const finalRound = finals.addRound(Option.empty());
     const finalMatch = finalRound.addMatch(
       () => [
-        { source: () => sfMatch1.first() },
-        { source: () => sfMatch2.first() }
+        { source: () => sfMatch1.winner() },
+        { source: () => sfMatch2.winner() }
       ],
       Option.of(winnerBubbles)
     );
@@ -842,8 +894,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     if (!opts.skipConsolationRound) {
       const consol = finalRound.addMatch(
         () => [
-          { source: () => sfMatch1.second() },
-          { source: () => sfMatch2.second() }
+          { source: () => sfMatch1.loser() },
+          { source: () => sfMatch2.loser() }
         ],
         Option.of(consolationBubbles)
       );
@@ -1923,16 +1975,11 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     if (isSingleElimination) {
       wEl = $('<div class="bracket"></div>').appendTo(topCon);
     }
-    else if (opts.skipDoubleEliminiationInSemiFinal) {
+    else {
       if (!opts.skipGrandFinalComeback) {
         fEl = $('<div class="finals"></div>').appendTo(topCon);
       }
       wEl = $('<div class="bracket"></div>').appendTo(topCon);
-      lEl = $('<div class="loserBracket"></div>').appendTo(topCon);
-    }
-    else {
-      wEl = $('<div class="bracket"></div>').appendTo(topCon);
-      fEl = $('<div class="finals"></div>').appendTo(topCon);
       lEl = $('<div class="loserBracket"></div>').appendTo(topCon);
     }
 
