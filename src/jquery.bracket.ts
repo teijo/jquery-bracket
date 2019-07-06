@@ -644,8 +644,37 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       }
     }
   }
-
-  const loserMatchSourcesSV = <TTeam, TScore, TMData, TUData>(
+  function loserMatchSourcesDispatch <TTeam, TScore, TMData, TUData>(
+    winners: Bracket<TTeam, TScore, TMData, TUData>,
+    losers: Bracket<TTeam, TScore, TMData, TUData>,
+    matchCount: number,
+    m: number,
+    n: number,
+    r: number,
+    teamCount: number):
+    (() => [MatchSource<TTeam, TScore>, MatchSource<TTeam, TScore>]) {
+    switch (teamCount) {
+      case 8:
+        return loserMatchSourcesSV16<TTeam, TScore, TMData, TUData>(
+          winners,
+          losers,
+          matchCount,
+          m,
+          n,
+          r
+        );
+      default:
+        return loserMatchSources<TTeam, TScore, TMData, TUData>(
+          winners,
+          losers,
+          matchCount,
+          m,
+          n,
+          r
+      );
+    }
+  }
+  const loserMatchSourcesSV16 = <TTeam, TScore, TMData, TUData>(
     winners: Bracket<TTeam, TScore, TMData, TUData>,
     losers: Bracket<TTeam, TScore, TMData, TUData>,
     matchCount: number,
@@ -799,15 +828,25 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         const round = losers.addRound(Option.empty());
 
         for (let m = 0; m < matchCount; m += 1) {
-          const teamCb = !(n % 2 === 0 && r !== 0)
-            ? loserMatchSourcesSV<TTeam, TScore, TMData, TUData>( // FIXME
+          const teamCb = !(n % 2 === 0 && r !== 0) // TODO: this is ugly
+            ? (skipDoubleEliminiationInSemiFinal ?
+              loserMatchSourcesDispatch<TTeam, TScore, TMData, TUData>( 
+                winners,
+                losers,
+                matchCount,
+                m,
+                n,
+                r,
+                teamCount
+              ) :
+              loserMatchSources<TTeam, TScore, TMData, TUData>(
                 winners,
                 losers,
                 matchCount,
                 m,
                 n,
                 r
-              )
+              ))
             : null;
           const isLastMatch = r === roundCount - 1 && skipGrandFinalComeback;
           const match = round.addMatch(
