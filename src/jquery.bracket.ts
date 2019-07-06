@@ -606,7 +606,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     let round;
 
     for (let r = 0; r < roundCount; r += 1) {
-      round = winners.addRound(Option.empty());
+      round = winners.addRound(false, Option.empty());
 
       for (let m = 0; m < matchCount; m += 1) {
         const teamCb =
@@ -841,7 +841,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
        * between last WB loser and current LB winner */
       const subRounds = skipGrandFinalComeback && r === roundCount - 1 ? 1 : 2;
       for (let n = 0; n < subRounds; n += 1) {
-        const round = losers.addRound(Option.empty());
+        const round = losers.addRound(false, Option.empty());
 
         for (let m = 0; m < matchCount; m += 1) {
           const teamCb = !(n % 2 === 0 && r !== 0) // TODO: this is ugly
@@ -894,7 +894,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     opts: Options<TTeam, TScore, TMData, TUData>,
     resizeContainer: () => void
   ) {
-    const sfRound = finals.addRound(Option.empty());
+    const sfRound = finals.addRound(false, Option.empty());
     const lastWinnerRound = winners.size() - 1;
     const lastLoserRound = losers.size() - 1;
 
@@ -937,7 +937,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     });
 
     /* FINAL */
-    const finalRound = finals.addRound(Option.empty());
+
+    const finalRound = finals.addRound(true, Option.empty());
     const finalMatch = finalRound.addMatch(
       () => [
         { source: () => sfMatch1.winner() },
@@ -980,7 +981,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     opts: Options<TTeam, TScore, TMData, TUData>,
     resizeContainer: () => void
   ) {
-    const round = finals.addRound(Option.empty());
+    const round = finals.addRound(false, Option.empty());
     const finalMatch = round.addMatch(
       () => [
         { source: () => winners.winner() },
@@ -1016,7 +1017,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
             }
             return rematch;
           };
-          const finalRound = finals.addRound(
+          const finalRound = finals.addRound(false, 
             Option.of<BoolCallback>(doRenderCb)
           );
           /* keep order the same, WB winner top, LB winner below */
@@ -1214,10 +1215,11 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
   class Round<TTeam, TScore, TMData, TUData> {
     private containerWidth = this.opts.teamWidth + this.opts.scoreWidth;
+    private margin = this.isLastRound ? this.opts.roundMargin + 20 : this.opts.roundMargin;
     private roundCon: JQuery = $(
       `<div class="round" style="width: ${
         this.containerWidth
-      }px; margin-right: ${this.opts.roundMargin}px"/>`
+      }px; margin-right: ${this.margin}px"/>`
     );
     private matches: Array<Match<TTeam, TScore, TMData, TUData>> = [];
 
@@ -1230,6 +1232,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       private doRenderCb: Option<BoolCallback>,
       private mkMatch: MatchCallback<TTeam, TScore, TMData, TUData>,
       private isFirstBracket: boolean,
+      private isLastRound: boolean,
       private opts: Options<TTeam, TScore, TMData, TUData>
     ) {}
 
@@ -1341,6 +1344,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       return this.bracketCon;
     }
     public addRound(
+      isLastRound: boolean,
       doRenderCb: Option<BoolCallback>
     ): Round<TTeam, TScore, TMData, TUData> {
       const id = this.rounds.length;
@@ -1371,6 +1375,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         doRenderCb,
         this.mkMatch,
         this.isFirstBracket,
+        isLastRound,
         this.opts
       );
       this.rounds.push(round);
@@ -1977,7 +1982,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       );
       let widthshift = 10;
       if (!opts.disableToolbar) {widthshift += 30};
-      if (opts.skipDoubleEliminiationInSemiFinal) {widthshift += 40};
+      if (opts.skipDoubleEliminiationInSemiFinal) {widthshift += 50};
       topCon.css({
         // reserve space for consolation round
         height:
@@ -2047,7 +2052,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       if (!opts.skipGrandFinalComeback) {
         fEl = $('<div class="finals"></div>').appendTo(topCon);
         if (opts.skipDoubleEliminiationInSemiFinal) {
-          fEl.css( "margin-left", "40px");
+          fEl.css( "margin-left", "30px");
         }
       }
       wEl = $('<div class="bracket"></div>').appendTo(topCon);
