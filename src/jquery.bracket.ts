@@ -510,6 +510,15 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     }
   }
 
+  function semiFinalist<TTeam, TScore, TMData, TUData>(
+    match: Match<TTeam, TScore, TMData, TUData>
+  ): boolean {
+    const el = match.el;
+    const winner = el.find(".jqteam.win");
+    winner.append('<div class="bubble sf">SF</div>');
+    return true;
+  }
+
   function winnerBubbles<TTeam, TScore, TMData, TUData>(
     match: Match<TTeam, TScore, TMData, TUData>
   ): boolean {
@@ -606,7 +615,13 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
           !(r === roundCount - 1 && isSingleElimination) &&
           !(r === roundCount - 1 && skipGrandFinalComeback)
         ) {
-          round.addMatch(teamCb, Option.empty());
+          if (opts.skipDoubleEliminiationInSemiFinal && r === roundCount - 1) {
+            const match = round.addMatch(teamCb, Option.of(semiFinalist));
+            match.setConnectorCb(Option.empty());
+          }
+          else {
+            round.addMatch(teamCb, Option.empty());
+          }
         } else {
           const match = round.addMatch(teamCb, Option.of(winnerBubbles));
           if (!skipGrandFinalComeback) {
@@ -644,6 +659,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       }
     }
   }
+
   function loserMatchSourcesDispatch <TTeam, TScore, TMData, TUData>(
     winners: Bracket<TTeam, TScore, TMData, TUData>,
     losers: Bracket<TTeam, TScore, TMData, TUData>,
@@ -706,7 +722,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       /* To maximize the time it takes for two teams to play against
        * eachother twice, WB losers are assigned in reverse order
        * every second round of LB */
-      const winnerMatch = r % 2 === 1 ? matchCount - m - 1 : m;
+      const winnerMatch = r % 2 === 1 ? matchCount - m - 1 : m; // we started with reversed order
       return [
         {
           source: () =>
@@ -848,16 +864,17 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
                 r
               ))
             : null;
-          const isLastMatch = r === roundCount - 1 && skipGrandFinalComeback;
+          const isConsolationMatch = r === roundCount - 1 && skipGrandFinalComeback;
+          const isLastLooserRound = r === roundCount - 1 && n === subRounds - 1 && skipDoubleEliminiationInSemiFinal;
           const match = round.addMatch(
             teamCb,
-            Option.of(isLastMatch ? consolationBubbles : null)
+            Option.of(isLastLooserRound ? semiFinalist : (isConsolationMatch ? consolationBubbles : null))
           );
           match.setAlignCb(
             loserAlignment(match.el.find(".teamContainer"), match)
           );
 
-          if (isLastMatch) {
+          if (isConsolationMatch || isLastLooserRound) {
             // Override default connector
             match.setConnectorCb(Option.empty());
           } else if (r < roundCount - 1 || n < 1) {
@@ -880,46 +897,45 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     const sfRound = finals.addRound(Option.empty());
     const lastWinnerRound = winners.size() - 1;
     const lastLoserRound = losers.size() - 1;
+
+    // get matches for SF teams
+    const winners0 = winners.round(lastWinnerRound).match(0);
+    const winners1 = winners.round(lastWinnerRound).match(1);
+    const losers0 = losers.round(lastLoserRound).match(0);
+    const losers1 = losers.round(lastLoserRound).match(1);
+    const topmargin = 40;
+
+    // create SF matches
     const sfMatch1 = sfRound.addMatch(
       () => 
       [
-        {
-          source: () =>
-            winners
-              .round(lastWinnerRound)
-              .match(0) // TODO: calculate correctly
-              .winner()
-        },
-        {
-          source: () =>
-            losers
-              .round(lastLoserRound)
-              .match(0) // TODO: calculate correctly
-              .winner()
-        }
+        { source: () => winners0.winner() },
+        { source: () => losers0.winner() }
       ],
       Option.empty()
     );
+    sfMatch1.setAlignCb(tC => {
+      const height: number = winners.el.height() / opts.init.teams.length;
+      sfMatch1.el.css({ height });
+      const top: number = topmargin;
+      tC.css({ top });
+    });
+
     const sfMatch2 = sfRound.addMatch(
       () => 
       [
-        {
-          source: () =>
-            winners
-              .round(lastWinnerRound)
-              .match(1) // TODO: calculate correctly
-              .winner()
-        },
-        {
-          source: () =>
-            losers
-              .round(lastLoserRound)
-              .match(1) // TODO: calculate correctly
-              .winner()
-        }
+        { source: () => winners1.winner() },
+        { source: () => losers1.winner() }
       ],
       Option.empty()
     );
+    sfMatch2.setAlignCb(tC => {
+      const height: number = winners.el.height() / opts.init.teams.length;
+      sfMatch2.el.css({ height });
+      const top: number = topmargin;
+      tC.css({ top });
+    });
+
     /* FINAL */
     const finalRound = finals.addRound(Option.empty());
     const finalMatch = finalRound.addMatch(
@@ -929,6 +945,14 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       ],
       Option.of(winnerBubbles)
     );
+    finalMatch.setAlignCb(tC => {
+      const height = winners.el.height() / opts.init.teams.length;
+      finalMatch.el.css({ height });
+
+      const top: number = topmargin + finalMatch.el.height() / 2;
+      tC.css({ top });
+    });
+
     /* CONSOLATION */
     if (!opts.skipConsolationRound) {
       const consol = finalRound.addMatch(
@@ -938,6 +962,13 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         ],
         Option.of(consolationBubbles)
       );
+      consol.setAlignCb(tC => {
+        const height = winners.el.height() / opts.init.teams.length;
+        consol.el.css({ height });
+
+        const top = topmargin + consol.el.height();
+        tC.css({ top });
+      });
     }
     resizeContainer();
   }
@@ -1445,7 +1476,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     } else if (skipGrandFinalComeback) {
       return Math.max(2, (Math.log(teamCount * 2) / Math.log(2) - 1) * 2 - 1); // DE - grand finals
     } else if (skipDoubleEliminiationInSemiFinal) {
-      return (Math.log(teamCount * 2) / Math.log(2) - 1) + 2;
+      return ((Math.log(teamCount * 2) / Math.log(2)) - 2) * 2 + 2;
     } else {
       // Loser bracket winner has won first match in grand finals,
       // this requires a new match unless explicitely skipped
@@ -1944,7 +1975,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         opts.skipDoubleEliminiationInSemiFinal,
         data.results
       );
-
+      let widthshift = 10;
+      if (!opts.disableToolbar) {widthshift += 30};
+      if (opts.skipDoubleEliminiationInSemiFinal) {widthshift += 40};
       topCon.css({
         // reserve space for consolation round
         height:
@@ -1953,11 +1986,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
           !opts.skipConsolationRound
             ? height + 40
             : "",
-        width: opts.disableToolbar
-          ? roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) +
-            10
-          : roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) +
-            40
+        width: roundCount * (opts.teamWidth + opts.scoreWidth + opts.roundMargin) + widthshift
       });
     }
 
@@ -2017,6 +2046,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     else {
       if (!opts.skipGrandFinalComeback) {
         fEl = $('<div class="finals"></div>').appendTo(topCon);
+        if (opts.skipDoubleEliminiationInSemiFinal) {
+          fEl.css( "margin-left", "40px");
+        }
       }
       wEl = $('<div class="bracket"></div>').appendTo(topCon);
       lEl = $('<div class="loserBracket"></div>').appendTo(topCon);
@@ -2027,6 +2059,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     if (lEl) {
       lEl.css({ height: height / 2 });
     }
+
+    
 
     resizeContainer();
 
@@ -2107,6 +2141,12 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     }
 
     renderAll(false);
+
+    if (opts.skipDoubleEliminiationInSemiFinal) {
+      $('<div class="losersheader"><p>Losers</p></div>').prependTo(lEl);
+      $('<div class="finalsheader"><p>Finals</p></div>').prependTo(fEl);
+      $('<div style="height: ' + (w.el.height() + l.el.height()) + 'px;"><div>').appendTo(fEl);
+    }
 
     return {
       data(): InitData<TTeam, TScore, TMData> {

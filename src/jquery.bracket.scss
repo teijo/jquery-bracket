@@ -21,7 +21,7 @@ div.jQBracket {
   font-family: "Montserrat", "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
   font-size: 12px;
   position: relative;
-  border: 1px solid black; //TODO
+  // border: 1px solid black; //TODO
 
   .tools {
     position: absolute;
@@ -44,7 +44,7 @@ div.jQBracket {
   }
 
   .finals {
-    border: 1px solid red; //TODO
+    //border: 1px solid red; //TODO
     float: right;
     right: 0px;
     clear: right;
@@ -52,13 +52,13 @@ div.jQBracket {
   }
 
   .bracket {
-    border: 1px solid green; //TODO
+    //border: 1px solid green; //TODO
     float: right;
     clear: left;
   }
 
   .loserBracket {
-    border: 1px solid blue; //TODO
+    //border: 1px solid blue; //TODO
     float: right;
     clear: left;
     position: relative;
@@ -266,6 +266,15 @@ div.jQBracket {
 
         &:after {
           border-right: 6px solid $thirdColor;
+        }
+      }
+
+      &.sf {
+        background-color: $fourthColor;
+        color: #ccd;
+
+        &:after {
+          border-right: 6px solid $fourthColor;
         }
       }
     }
