@@ -51,6 +51,8 @@ var data8 = {
       ["Team 7", "Team 10"],
       [null, "Team 2"]
     ],
+    results: [[[[null,null],[2,0],[2,1],[null,null],[null,null],[1,2],[0,2],[null,null]],[[2,0],[1,2],[2,0],[2,0]],[[2,1],[2,0]]],[[[null,null],[null,null],[null,null],[null,null]],[[2,1],[2,0],[2,1],[2,0]],[[2,1],[2,0]],[[0,2],[1,2]]],[[[2,1],[2,0]],[[2,0],[2,1]]]]
+    /*
     results : [
       [ //MAIN
         [[2,1], [2,1], [2,1], [3,4],[2,1], [2,1], [2,1], [3,4]], // Round 1
@@ -68,7 +70,7 @@ var data8 = {
         [[2,1], [2,0]], // SF
         [[2,0],[2,0]] //F
       ]
-    ]
+    ]*/
   };
 
   var data16 = {
@@ -109,7 +111,7 @@ $(function() {
     $('#minimal .demo').bracket({
       skipSecondaryFinal: true,
       skipDoubleEliminiationInSemiFinal: true,
-      init: data8 /* data to initialize the bracket with */
+      init: data12 /* data to initialize the bracket with */
     })
   })
     </script>
