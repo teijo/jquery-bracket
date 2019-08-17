@@ -1922,6 +1922,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       /* todo: move to class */
       if (this.alignCb !== null) {
         this.alignCb(this.teamCon);
+        const top = this.teamCon.css("top");
+        this.matchInfoCon.css({ top }); // matchinfo
       }
 
       const isLast = this.renderCb.map(cb => cb(this)).orElse(false);
