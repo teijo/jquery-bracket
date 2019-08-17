@@ -189,6 +189,11 @@ div.jQBracket {
     position: relative;
     float: left;
   }
+  .matchInfo {
+    z-index: 1;
+    position: relative;
+    float: left;
+  }
 
   .connector {
     border: 2px solid $connectorColor;

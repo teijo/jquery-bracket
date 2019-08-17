@@ -1692,6 +1692,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
   class Match<TTeam, TScore, TMData, TUData> {
     private matchCon: JQuery;
+    private matchInfoCon: JQuery;
     private teamCon: JQuery;
     private connectorCb: Option<
       ConnectorProvider<TTeam, TScore, TMData, TUData>
@@ -1712,6 +1713,10 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       private renderAll: (r: boolean) => void
     ) {
       this.matchCon = $('<div class="match"></div>');
+      this.matchInfoCon = $( // matchinfo
+        `<div class="matchInfo" style="width: ${opts.teamWidth +
+          opts.scoreWidth}px;">CC 14:00</div>`
+      );
       this.teamCon = $('<div class="teamContainer"></div>');
 
       this.alignCb = null;
@@ -1904,6 +1909,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       );
 
       this.matchCon.appendTo(this.round.el);
+      this.matchCon.append(this.matchInfoCon); // matchinfo
       this.matchCon.append(this.teamCon);
 
       const height = this.round.bracket.el.height() / this.round.size();
@@ -1911,6 +1917,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
       const top = this.el.height() / 2 - this.teamCon.height() / 2;
       this.teamCon.css({ top });
+      this.matchInfoCon.css({ top }); // matchinfo
 
       /* todo: move to class */
       if (this.alignCb !== null) {
