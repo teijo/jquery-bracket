@@ -506,6 +506,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       case EntryState.ENTRY_DEFAULT_WIN:
       case EntryState.ENTRY_COMPLETE:
         container.append(team);
+        container.attr("title", team);
         return;
     }
   }
@@ -1712,18 +1713,18 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       private topCon: JQuery,
       private renderAll: (r: boolean) => void
     ) {
+      this.matchUserData = !results.isEmpty()
+        ? results.get().matchData
+        : undefined;
+
       this.matchCon = $('<div class="match"></div>');
       this.matchInfoCon = $( // matchinfo
         `<div class="matchInfo" style="width: ${opts.teamWidth +
-          opts.scoreWidth}px;">CC 14:00</div>`
+          opts.scoreWidth}px;">${this.matchUserData}</div>`
       );
       this.teamCon = $('<div class="teamContainer"></div>');
 
       this.alignCb = null;
-
-      this.matchUserData = !results.isEmpty()
-        ? results.get().matchData
-        : undefined;
 
       if (!opts.save) {
         // The hover and click callbacks are bound by jQuery to the element
