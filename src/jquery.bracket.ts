@@ -1725,11 +1725,13 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
       this.matchCon = $('<div class="match"></div>');
 
-      const matchinfo = this.matchUserData ? this.matchUserData : opts.userDataEmptyString; // handle undefined
-      this.matchInfoCon = $( // matchinfo
-        `<div class="matchInfo" style="width: ${opts.teamWidth +
-          opts.scoreWidth}px;">${matchinfo}</div>`
-      );
+      if (opts.showMatchUserData) {
+        const matchinfo = this.matchUserData ? this.matchUserData : opts.userDataEmptyString; // handle undefined
+        this.matchInfoCon = $( // matchinfo
+          `<div class="matchInfo" style="width: ${opts.teamWidth +
+            opts.scoreWidth}px;">${matchinfo}</div>`
+        );
+      }
       this.teamCon = $('<div class="teamContainer"></div>');
 
       this.alignCb = null;
@@ -1918,7 +1920,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       );
 
       this.matchCon.appendTo(this.round.el);
-      this.matchCon.append(this.matchInfoCon); // matchinfo
+      if (this.opts.showMatchUserData) {
+        this.matchCon.append(this.matchInfoCon); // matchinfo
+      }
       this.matchCon.append(this.teamCon);
 
       const height = this.round.bracket.el.height() / this.round.size();
@@ -1926,15 +1930,19 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
       const top = this.el.height() / 2 - this.teamCon.height() / 2;
       this.teamCon.css({ top });
-      const topInfo = top + this.opts.userDataTopCorrection;
-      this.matchInfoCon.css("top", topInfo); // matchinfo
+      if (this.opts.showMatchUserData) {
+        const topInfo = top + this.opts.userDataTopCorrection;
+        this.matchInfoCon.css("top", topInfo); // matchinfo
+      }
 
       /* todo: move to class */
       if (this.alignCb !== null) {
         this.alignCb(this.teamCon);
         const topTeamCon = this.teamCon.css("top");
-        const top = parseFloat(topTeamCon.slice(0, -2)) + this.opts.userDataTopCorrection;
-        this.matchInfoCon.css({ top }); // matchinfo
+        if (this.opts.showMatchUserData) {
+          const top = parseFloat(topTeamCon.slice(0, -2)) + this.opts.userDataTopCorrection;
+          this.matchInfoCon.css({ top }); // matchinfo
+        }
       }
 
       const isLast = this.renderCb.map(cb => cb(this)).orElse(false);
