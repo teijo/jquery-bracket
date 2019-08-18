@@ -51,6 +51,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   skipSecondaryFinal?: boolean;
   skipGrandFinalComeback?: boolean;
   skipDoubleEliminiationInSemiFinal: boolean;
+  showMatchUserData?: boolean;
+  userDataTopCorrection?: number;
+  userDataEmptyString?: string;
   dir?: string;
   onMatchClick?: (data: TMData) => void;
   onMatchHover?: (data: TMData, hover: boolean) => void;
@@ -361,6 +364,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     skipSecondaryFinal: boolean;
     skipGrandFinalComeback: boolean;
     skipDoubleEliminiationInSemiFinal : boolean;
+    showMatchUserData: boolean;
+    userDataTopCorrection: number;
+    userDataEmptyString: string;
     dir: "lr" | "rl";
     onMatchClick: (data: TMData | undefined) => void;
     onMatchHover: (data: TMData | undefined, hover: boolean) => void;
@@ -1719,7 +1725,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
       this.matchCon = $('<div class="match"></div>');
 
-      const matchinfo = this.matchUserData ? this.matchUserData : "zu bestimmen"; // handle undefined
+      const matchinfo = this.matchUserData ? this.matchUserData : opts.userDataEmptyString; // handle undefined
       this.matchInfoCon = $( // matchinfo
         `<div class="matchInfo" style="width: ${opts.teamWidth +
           opts.scoreWidth}px;">${matchinfo}</div>`
@@ -1920,14 +1926,14 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
       const top = this.el.height() / 2 - this.teamCon.height() / 2;
       this.teamCon.css({ top });
-      const topInfo = top + 2;
+      const topInfo = top + this.opts.userDataTopCorrection;
       this.matchInfoCon.css("top", topInfo); // matchinfo
 
       /* todo: move to class */
       if (this.alignCb !== null) {
         this.alignCb(this.teamCon);
         const topTeamCon = this.teamCon.css("top");
-        const top = parseFloat(topTeamCon.slice(0, -2)) + 2;
+        const top = parseFloat(topTeamCon.slice(0, -2)) + this.opts.userDataTopCorrection;
         this.matchInfoCon.css({ top }); // matchinfo
       }
 
@@ -2336,6 +2342,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       skipGrandFinalComeback: input.skipGrandFinalComeback || false,
       skipSecondaryFinal: input.skipSecondaryFinal || false,
       skipDoubleEliminiationInSemiFinal: input.skipDoubleEliminiationInSemiFinal || false,
+      showMatchUserData: input.showMatchUserData || false,
+      userDataTopCorrection: input.userDataTopCorrection || 0,
+      userDataEmptyString: input.userDataEmptyString || "-",
       teamWidth: !input.hasOwnProperty("teamWidth")
         ? 70
         : getPositiveOrZero(input.teamWidth),
