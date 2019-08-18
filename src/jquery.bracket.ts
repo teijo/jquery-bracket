@@ -1718,9 +1718,11 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         : undefined;
 
       this.matchCon = $('<div class="match"></div>');
+
+      const matchinfo = this.matchUserData ? this.matchUserData : "zu bestimmen"; // handle undefined
       this.matchInfoCon = $( // matchinfo
         `<div class="matchInfo" style="width: ${opts.teamWidth +
-          opts.scoreWidth}px;">${this.matchUserData}</div>`
+          opts.scoreWidth}px;">${matchinfo}</div>`
       );
       this.teamCon = $('<div class="teamContainer"></div>');
 
@@ -1918,12 +1920,14 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
       const top = this.el.height() / 2 - this.teamCon.height() / 2;
       this.teamCon.css({ top });
-      this.matchInfoCon.css({ top }); // matchinfo
+      const topInfo = top + 2;
+      this.matchInfoCon.css("top", topInfo); // matchinfo
 
       /* todo: move to class */
       if (this.alignCb !== null) {
         this.alignCb(this.teamCon);
-        const top = this.teamCon.css("top");
+        const topTeamCon = this.teamCon.css("top");
+        const top = parseFloat(topTeamCon.slice(0, -2)) + 2;
         this.matchInfoCon.css({ top }); // matchinfo
       }
 
@@ -1973,9 +1977,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
     const isSingleElimination = data.results.length <= 1;
 
-    // 45 === team height x2 + 1px margin
+    // 45 === team height x2 + 2px margin
     const height =
-      data.teams.length * 45 + data.teams.length * opts.matchMargin;
+      data.teams.length * 46 + data.teams.length * opts.matchMargin;
 
     const topCon = $('<div class="jQBracket ' + opts.dir + '"></div>').appendTo(
       opts.el.empty()
@@ -2160,7 +2164,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     if (opts.skipDoubleEliminiationInSemiFinal) {
       $('<div class="losersheader"><p>Losers</p></div>').prependTo(lEl);
       $('<div class="finalsheader"><p>Finals</p></div>').prependTo(fEl);
-      $('<div style="height: ' + (w.el.height() + l.el.height()) + 'px;"><div>').appendTo(fEl);
+      $('<div style="height: ' + (w.el.height() + l.el.height() + 10) + 'px;"><div>').appendTo(fEl);
     }
 
     return {
