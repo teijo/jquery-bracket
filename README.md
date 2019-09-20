@@ -3,6 +3,10 @@
 jQuery bracket is a jQuery plugin that lets users create and display single and
 double elimination brackets for tournament play.
 
+## [GotBracket.com](http://www.gotbracket.com/), follow and host tournaments - powered by jQuery Bracket
+
+To get an idea of how you could use the library, or if you're just looking for a quick way of hosting and tracking tournaments online, check out [GotBracket.com](http://www.gotbracket.com/) - early access out now!
+
 ## Documentation and examples
 
 Documentation and examples can be found from the project site at http://www.aropupu.fi/bracket/

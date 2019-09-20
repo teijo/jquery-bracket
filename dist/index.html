@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<script type="text/javascript" src="jquery.min.js"></script>
+	<script type="text/javascript" src="../src/jquery.bracket.js"></script>
+	<link rel="stylesheet" type="text/css" href="jquery.bracket.min.css">
+	</script>
+</head>
+
+<body>
+
+
+	<div id="reverseBracket">
+	</div>
+</body>
+
+<script type="text/javascript">
+
+
+	var doubleEliminationData = {
+		teams : [
+			[{name:"薛蕴芝",num:[1,1,1,1],flag:0},  {name:"BYE",num:[16],flag:0}],
+			[{name:"Helena Kellner",flag:0,num:[9,8]},  {name:"谭浩宇",flag:0,num:[8]}],
+			[{name:"许鲽兮",num:[5,5,4,3],flag:0}, {name:"楊珈禎",num:[12],flag:0}],
+			[{name:"BYE",num:[13],flag:0} , {name:"顾雨晨",num:[4,4,4,3],flag:0}],
+			[{name:"何若萱",num:[3,3,3,2],flag:0},  {name:"BYE",num:[14],flag:0}],
+			[{name:"钱朵朵",num:[11,6],flag:0},{name:"Junmei Sheqqq",num:[6],flag:0}],
+			[{name:"王语萱",num:[7,7,2,4],flag:0},{name:"刘子瑄",num:[10],flag:0}],
+			[{name:"BYE",num:[15],flag:0} , {name:"张煦昕",num:[2,2],flag:0}]
+		],
+		/*teams : [
+			[{name:"薛蕴芝",num:1,flag:0},  null],
+			[{name:"Helena Kellner",num:9,flag:0},  {name:"谭浩宇",num:8,flag:0}],
+			[{name:"许鲽兮",num:5,flag:0}, {name:"楊珈禎",num:12,flag:0}],
+			[null , {name:"顾雨晨",num:4,flag:0}],
+			[{name:"何若萱",num:3,flag:0},  null],
+			[{name:"钱朵朵",num:11,flag:0},{name:"Junmei Shen",num:6,flag:0}],
+			[{name:"王语萱",num:7,flag:0},{name:"刘子瑄",num:10,flag:0}],
+			[null , {name:"张煦昕",num:2,flag:0}]
+		],*/
+		/*results : [[
+			[[0,0,1], [10,8,1], [10,5,1], [0,0,2], [0,0,1], [10,0,1], [10,8,1], [0,1,2]],
+			[[10,10,1], [10,10,1], [10,2,1], [10,5,1]],
+			[[10,3,1], [10,2,1]],
+			[[null,null,null],[null,null,null]]
+		]] */  /* WINNER BRACKET */
+		results : [[ /* WINNER BRACKET */
+			[[null,null,1], [null,null,null], [null,null,null], [0,0,2], [0,0,1], [null,null,null], [null,null,null], [0,1,2]],
+			[[null,null,null], [null,null,null], [null,null,null], [null,null,null]],
+			[[null,null,null], [null,null,null]],
+			[[null,null,null],[null,null,null]]
+		]]
+	}
+
+	$('#reverseBracket').bracket({
+		dir: 'lr', /* left-to-right or right-to-left flow, value either "rl" or  "lr" (default) */
+		centerConnectors: true, 	// 是否显示为合并线
+		disableHighlight: false,
+		skipGrandFinalComeback: true,	// 是否开启双败表
+		init: doubleEliminationData,
+		skipConsolationRound: false, // 是否决出第三
+		skipGrandFinalComeback:true,
+		roundMargin:100,
+		matchMargin:30,
+		teamWidth:120,
+		//save: saveFn,
+		//disableToolbar:false,
+		decorator: {				// 添加事件
+			edit: edit_fn,
+			render: render_fn
+		}
+		//save: saveFn,
+		//userData: "data.json"
+	});
+
+
+/* Edit function is called when team label is clicked */
+function edit_fn(container, data, doneCb) {
+  var input = $('<input type="text">')
+  input.val(data ? data.flag + ':' + data.name : '')
+  container.html(input)
+  input.focus()
+  input.blur(function() {
+    var inputValue = input.val()
+    if (inputValue.length === 0) {
+      doneCb(null); // Drop the team and replace with BYE
+    } else {
+      var flagAndName = inputValue.split(':') // Expects correct input
+      doneCb({flag: flagAndName[0], name: flagAndName[1]})
+    }
+  })
+}
+ 
+/* Render function is called for each team label when data is changed, data
+ * contains the data object given in init and belonging to this slot.
+ *
+ * 'state' is one of the following strings:
+ * - empty-bye: No data or score and there won't team advancing to this place
+ * - empty-tbd: No data or score yet. A team will advance here later
+ * - entry-no-score: Data available, but no score given yet
+ * - entry-default-win: Data available, score will never be given as opponent is BYE
+ * - entry-complete: Data and score available
+ */
+function render_fn(container, data, score, state) {
+
+  switch(state) {
+    case "empty-bye":
+      container.append("BYE")
+      return;
+    case "empty-tbd":
+      container.append("待添加")
+      return;
+ 
+    case "entry-no-score":
+    case "entry-default-win":
+    case "entry-complete":
+	
+		container.append(data.num[data.flag++]+"    "+data.name);
+			
+      return;
+  }
+}
+
+	/* Called whenever bracket is modified
+	*
+	* data:     changed bracket object in format given to init
+	* userData: optional data given when bracket is created.
+	*/
+	function saveFn(data, userData) {
+		debugger
+		var json = jQuery.toJSON(data)
+		$('#saveOutput').text('POST ' + userData + ' ' + json)
+		/* You probably want to do something like this
+		jQuery.ajax("rest/"+userData, {contentType: 'application/json',
+										dataType: 'json',
+										type: 'post',
+										data: json})
+		*/
+	}
+
+</script>
+
+
+
+</html>
