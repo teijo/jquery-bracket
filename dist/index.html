@@ -37,18 +37,19 @@
 			[{name:"王语萱",num:7,flag:0},{name:"刘子瑄",num:10,flag:0}],
 			[null , {name:"张煦昕",num:2,flag:0}]
 		],*/
-		/*results : [[
-			[[0,0,1], [10,8,1], [10,5,1], [0,0,2], [0,0,1], [10,0,1], [10,8,1], [0,1,2]],
+		roundTitles:["16表","1/4决赛",'半决赛',"决赛"],
+		results : [[
+			[[0,0,1], [10,8,2], [10,5,1], [0,0,2], [0,0,1], [10,0,1], [10,8,1], [0,1,2]],
 			[[10,10,1], [10,10,1], [10,2,1], [10,5,1]],
 			[[10,3,1], [10,2,1]],
 			[[null,null,null],[null,null,null]]
-		]] */  /* WINNER BRACKET */
-		results : [[ /* WINNER BRACKET */
+		]]   /* WINNER BRACKET */
+		/*results : [[ 
 			[[null,null,1], [null,null,null], [null,null,null], [0,0,2], [0,0,1], [null,null,null], [null,null,null], [0,1,2]],
 			[[null,null,null], [null,null,null], [null,null,null], [null,null,null]],
 			[[null,null,null], [null,null,null]],
 			[[null,null,null],[null,null,null]]
-		]]
+		]]*/
 	}
 
 	$('#reverseBracket').bracket({
@@ -57,7 +58,7 @@
 		disableHighlight: false,
 		skipGrandFinalComeback: true,	// 是否开启双败表
 		init: doubleEliminationData,
-		skipConsolationRound: false, // 是否决出第三
+		skipConsolationRound: true, // 是否决出第三
 		skipGrandFinalComeback:true,
 		roundMargin:100,
 		matchMargin:30,

@@ -246,7 +246,7 @@
       const bBye = match.b.name.isEmpty();
       const winOrLose = match.winOrLose;
       if(!winOrLose.isEmpty()){
-        debugger;
+        //debugger;
         const num = winOrLose.get();
         if(num == 1){
             return [match.a, match.b];
@@ -336,6 +336,7 @@
   }
 
   interface InitData {
+    roundTitles: Array<[any, any]>;
     teams: Array<[any, any]>;
     results: any[][];
   }
@@ -1078,7 +1079,12 @@
       if (!this.doRenderCb.isEmpty() && !this.doRenderCb.get()()) {
         return;
       }
+      // debugger
       this.roundCon.appendTo(this.bracket.el);
+      // 添加round标题
+      if(this.opts.init.roundTitles){
+        this.roundCon.append('<div class="round-title" >'+this.opts.init.roundTitles[this.roundNumber]+'</div>');
+      }
       this.matches.forEach(m => m.render());
     }
     public results(): ResultObject[] {
@@ -1462,7 +1468,7 @@
       this.matchUserData = !results.isEmpty()
         ? results.get().userData
         : undefined;
-      debugger;
+      //debugger;
       this.winOrLose = !results.isEmpty()
         ? results.get().winOrLose
         : undefined;
@@ -2108,6 +2114,7 @@
       opts.init.teams = opts.init.teams.map(ts =>
         ts.map(t => (t === null ? Option.empty() : Option.of(t)))
       );
+      //debugger;
       opts.skipConsolationRound = opts.skipConsolationRound || false;
       opts.skipSecondaryFinal = opts.skipSecondaryFinal || false;
       if (opts.dir !== "lr" && opts.dir !== "rl") {

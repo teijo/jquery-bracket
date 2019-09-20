@@ -232,7 +232,7 @@ var __extends = (this && this.__extends) || (function () {
             var bBye = match.b.name.isEmpty();
             var winOrLose = match.winOrLose;
             if (!winOrLose.isEmpty()) {
-                debugger;
+                //debugger;
                 var num = winOrLose.get();
                 if (num == 1) {
                     return [match.a, match.b];
@@ -825,7 +825,12 @@ var __extends = (this && this.__extends) || (function () {
             if (!this.doRenderCb.isEmpty() && !this.doRenderCb.get()()) {
                 return;
             }
+            // debugger
             this.roundCon.appendTo(this.bracket.el);
+            // 添加round标题
+            if (this.opts.init.roundTitles) {
+                this.roundCon.append('<div class="round-title" >' + this.opts.init.roundTitles[this.roundNumber] + '</div>');
+            }
             this.matches.forEach(function (m) { return m.render(); });
         };
         Round.prototype.results = function () {
@@ -1117,7 +1122,7 @@ var __extends = (this && this.__extends) || (function () {
             this.matchUserData = !results.isEmpty()
                 ? results.get().userData
                 : undefined;
-            debugger;
+            //debugger;
             this.winOrLose = !results.isEmpty()
                 ? results.get().winOrLose
                 : undefined;
@@ -1547,6 +1552,7 @@ var __extends = (this && this.__extends) || (function () {
             opts.init.teams = opts.init.teams.map(function (ts) {
                 return ts.map(function (t) { return (t === null ? Option.empty() : Option.of(t)); });
             });
+            //debugger;
             opts.skipConsolationRound = opts.skipConsolationRound || false;
             opts.skipSecondaryFinal = opts.skipSecondaryFinal || false;
             if (opts.dir !== "lr" && opts.dir !== "rl") {
