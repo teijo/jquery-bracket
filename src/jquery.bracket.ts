@@ -676,7 +676,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     r: number,
     teamCount: number):
     (() => [MatchSource<TTeam, TScore>, MatchSource<TTeam, TScore>]) {
-    switch (teamCount) {
+    switch (teamCount) { // TODO fix switch, it is just a hack for SwissVolley and should be configurable!
       case 8:
         return loserMatchSourcesSV16<TTeam, TScore, TMData, TUData>(
           winners,
@@ -707,7 +707,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   ) => (): [MatchSource<TTeam, TScore>, MatchSource<TTeam, TScore>] => {
     /* first round comes from winner bracket */
     if (n % 2 === 0 && r === 0) {
-      const mindex = matchCount - m - 1; // start with reversed order
+      const mindex = matchCount - m - 1; // start with reversed order for SwissVolley
       return [
         {
           source: () =>
@@ -851,7 +851,13 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         const round = losers.addRound(false, Option.empty());
 
         for (let m = 0; m < matchCount; m += 1) {
-          const teamCb = !(n % 2 === 0 && r !== 0) // TODO: this is ugly
+          /*
+           * Explain the hack blow:
+           * skipDoulbeEliminationInSemiFinal is currentl also used to implement SwissVolley
+           * Tableau issue hacks. => thus, here we trigger a dispatch to SwissVolley Tableau
+           * specific loserMatchSources calculation.
+           */
+          const teamCb = !(n % 2 === 0 && r !== 0) // TODO: another hack for SwissVolley
             ? (skipDoubleEliminiationInSemiFinal ?
               loserMatchSourcesDispatch<TTeam, TScore, TMData, TUData>( 
                 winners,
@@ -893,7 +899,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       matchCount /= 2;
     }
   }
-
+// TODO fix function name: it is relevant for skipDoubleEliminationInSemiFinal
+// (mix of this feature and SwissVolley Tableau quirks)
   function prepareSVFinals<TTeam, TScore, TMData, TUData>(
     finals: Bracket<TTeam, TScore, TMData, TUData>,
     winners: Bracket<TTeam, TScore, TMData, TUData>,
@@ -2175,6 +2182,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
     renderAll(false);
 
+    // TODO: this should be optional and enabled with its own param (not with SF skip feature)
     if (opts.skipDoubleEliminiationInSemiFinal) {
       $('<div class="losersheader"><p>Losers</p></div>').prependTo(lEl);
       $('<div class="finalsheader"><p>Finals</p></div>').prependTo(fEl);
