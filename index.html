@@ -3,40 +3,128 @@
   <head>
     <meta charset="utf-8">
     <title>My test page</title>
-    <link rel="stylesheet" type="text/css" href="dist/jquery.bracket.min.css">
+    <link rel="stylesheet" type="text/css" href="dist/jquery.bracket.css">
     <script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
-    <script type="text/javascript" src="dist/jquery.bracket.min.js"></script>
+    <script type="text/javascript" src="dist/jquery.bracket.js"></script>
   </head>
   <body>
       <div id="minimal">
-            <h3>Minimal<a href="#minimal">¶</a></h3>
+            <h3 class="tableauheading">Minimal</h3>
       
     <script type="text/javascript">
-    
-var minimalData = {
-    teams : [
-      ["Team 1", "Team 2"], /* first matchup */
-      ["Team 3", "Team 4"]  /* second matchup */
+      
+      var data8 = {
+        teams : [
+          ["Team 1", "Team 8"], /* first matchup */
+          ["Team 5", "Team 4"],
+          ["Team 3", "Team 6"],
+          ["Team 7", "Team 2"]
+        ],
+        results: [[[[2,0],[2,1],[2,0],[2,1]],[[2,0],[2,1]]],[[[2,0],[2,1]],[[1,2],[2,1]]],[[[1,2],[1,2]],[[1,2],[2,1]]]]
+        /*
+        results : [
+          [ // MAIN
+            [[2,1], [2,1], [2,1], [3,4]], 
+            [[2,1], [2,0]]
+          ],
+          [ // LOSER
+            [[2,1],[2,0]],        
+            [[9,10],[0,2]]        
+          ],
+          [ // FINALS
+            [[4,2], [4,3]], // SF
+            [[1,2], [0,2]]  // FINAL 
+            ]] */
+      }
+
+  var data12 = {
+    // [[1, 16], [9, 8], [5, 12], [13, 4], [3, 14], [11, 6], [7, 10], [15, 2]] 
+    teams: [
+      ["Team 1", null],
+      ["Team 9", "Team 8"],
+      ["Team 5", "Team 12"],
+      [null, "Team 4"],
+      ["Team 3", null],
+      ["Team 11", "Team 6"],
+      ["Team 7", "Team 10"],
+      [null, "Team 2"]
     ],
-    results : [[        /* MAIN BRACKET */
-        [[2,1], [3,4]], /* first and second matches of the first round */
-        [[5,6]]         /* second round */
-        ], [            /* LOSER BRACKET */
-        [[7,8]],        /* first round */
-        [[9,10]]        /* second round */
-        ], [            /* FINALS */
-        [[1,12], [13,14]]
-        ]]
-  }
+    results: [[[[null,null],[2,0],[2,1],[null,null],[null,null],[1,2],[0,2],[null,null]],[[2,0],[1,2],[2,0],[2,0]],[[2,1],[2,0]]],[[[null,null],[null,null],[null,null],[null,null]],[[2,1],[2,0],[2,1],[2,0]],[[2,1],[2,0]],[[0,2],[1,2]]],[[[2,1],[2,0]],[[2,0],[2,1]]]]
+    /*
+    results : [
+      [ //MAIN
+        [[2,1], [2,1], [2,1], [3,4],[2,1], [2,1], [2,1], [3,4]], // Round 1
+        [[2,1], [2,1], [2,1], [3,4]],     // Round 2
+        [[2,1], [2,0]]            // Round 3
+        //[27,28]            // SF
+      ],
+      [ //LOSER
+        [[2,1], [2,1], [2,1], [3,4]],  // Round 13
+        [[2,1], [2,1], [2,1], [3,4]], // Round 9
+        [[2,1], [2,0]],       // Round 7
+        [[2,1], [2,0]]        // Round 5
+      ], 
+      [ //FINALS
+        [[2,1], [2,0]], // SF
+        [[2,0],[2,0]] //F
+      ]
+    ]*/
+  };
+
+  var data16 = {
+    // [[1, 16], [9, 8], [5, 12], [13, 4], [3, 14], [11, 6], [7, 10], [15, 2]] 
+    teams: [
+      ["Team with very long Name 1", "Team 16"],
+      ["Team 9", "Team 8"],
+      ["Team 5", "Team 12"],
+      ["Team 13", "Team 4"],
+      ["Team 3", "Team 14"],
+      ["Team 11", "Team 6"],
+      ["Team 7", "Team 10"],
+      ["Team 15", "Team 2"]
+    ],
+    results : [[[[2,0, "CC 12:40"],[2,1, "KB 14:00"],[2,0],[2,1],[2,0],[2,1],[2,0],[2,1]],[[2,0],[2,1],[2,0],[2,1]],[[2,0],[2,1]]],[[[1,2],[0,2],[1,2],[0,2]],[[2,0],[2,1],[2,0],[2,1]],[[2,0],[2,1]],[[2,0],[2,1]]],[[[2,0],[2,1]],[[2,1],[2,0]]]]
+    /*
+    results : [
+      [ //MAIN
+        [[2,1], [2,1], [2,1], [3,4],[2,1], [2,1], [2,1], [3,4]], // Round 1
+        [[2,1], [2,1], [2,1], [3,4]],     // Round 2
+        [[2,1], [2,0]]            // Round 3
+        //[27,28]            // SF
+      ],
+      [ //LOSER
+        [[2,1], [2,1], [2,1], [3,4]],  // Round 13
+        [[2,1], [2,1], [2,1], [3,4]], // Round 9
+        [[2,1], [2,0]],       // Round 7
+        [[2,1], [2,0]]        // Round 5
+      ], 
+      [ //FINALS
+        [[2,1], [2,0]], // SF
+        [[2,0],[2,0]] //F
+      ]
+    ]*/
+  };
  
-$(function() {
+  $(function() {
     $('#minimal .demo').bracket({
+      teamWidth: 120,
+      scoreWidth: 25,
+      matchMargin: 20,
+      roundMargin: 20,
+      centerConnectors: true,
       skipSecondaryFinal: true,
-      init: minimalData /* data to initialize the bracket with */
+      skipDoubleEliminiationInSemiFinal: true,
+      showMatchUserData: true,
+      userDataTopCorrection: 0,
+      userDataEmptyString: "&nbsp;-",
+      init: data16 /* data to initialize the bracket with */
     })
   })
     </script>
-    <div class="demo"></div>
+    <!--
+    <div class="demo" style="display: inline-block"></div>
+    -->
+    <div class="demo" style="overflow: auto"></div>
 </div>
   </body>
 </html>
