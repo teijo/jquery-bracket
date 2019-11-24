@@ -51,6 +51,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   skipSecondaryFinal?: boolean;
   skipGrandFinalComeback?: boolean;
   skipDoubleEliminationInSemiFinal: boolean;
+  headersForSubBrackets: boolean;
+  useSwissVolleyTableauHacks: boolean;
   showMatchUserData?: boolean;
   userDataTopCorrection?: number;
   userDataEmptyString?: string;
@@ -364,6 +366,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     skipSecondaryFinal: boolean;
     skipGrandFinalComeback: boolean;
     skipDoubleEliminationInSemiFinal : boolean;
+    headersForSubBrackets : boolean;
+    useSwissVolleyTableauHacks : boolean;
     showMatchUserData: boolean;
     userDataTopCorrection: number;
     userDataEmptyString: string;
@@ -836,6 +840,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     teamCount: number,
     skipGrandFinalComeback: boolean,
     skipDoubleEliminationInSemiFinal : boolean,
+    useSwissVolleyTableauHacks : boolean,
     centerConnectors: boolean
   ) {
     const roundCountAdjust = skipDoubleEliminationInSemiFinal ? 1 : 0;
@@ -857,8 +862,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
            * Tableau issue hacks. => thus, here we trigger a dispatch to SwissVolley Tableau
            * specific loserMatchSources calculation.
            */
-          const teamCb = !(n % 2 === 0 && r !== 0) // TODO: another hack for SwissVolley
-            ? (skipDoubleEliminationInSemiFinal ?
+          const teamCb = !(n % 2 === 0 && r !== 0)
+            ? (useSwissVolleyTableauHacks ?
               loserMatchSourcesDispatch<TTeam, TScore, TMData, TUData>( 
                 winners,
                 losers,
@@ -901,7 +906,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   }
 // TODO fix function name: it is relevant for skipDoubleEliminationInSemiFinal
 // (mix of this feature and SwissVolley Tableau quirks)
-  function prepareSVFinals<TTeam, TScore, TMData, TUData>(
+  function prepareFinalsInSkipDeInSF<TTeam, TScore, TMData, TUData>(
     finals: Bracket<TTeam, TScore, TMData, TUData>,
     winners: Bracket<TTeam, TScore, TMData, TUData>,
     losers: Bracket<TTeam, TScore, TMData, TUData>,
@@ -2169,11 +2174,12 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         data.teams.length,
         opts.skipGrandFinalComeback,
         opts.skipDoubleEliminationInSemiFinal,
+        opts.useSwissVolleyTableauHacks,
         opts.centerConnectors
       );
       if (!opts.skipGrandFinalComeback) {
         if (opts.skipDoubleEliminationInSemiFinal) {
-          prepareSVFinals(f, w, l, opts, resizeContainer);
+          prepareFinalsInSkipDeInSF(f, w, l, opts, resizeContainer);
         } else {
           prepareFinals(f, w, l, opts, resizeContainer);
         }
@@ -2182,8 +2188,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
     renderAll(false);
 
-    // TODO: this should be optional and enabled with its own param (not with SF skip feature)
-    if (opts.skipDoubleEliminationInSemiFinal) {
+    if (opts.headersForSubBrackets) { // FIXME: if it is false it leads to an ugly looser bracket positioning
       $('<div class="losersheader"><p>Losers</p></div>').prependTo(lEl);
       $('<div class="finalsheader"><p>Finals</p></div>').prependTo(fEl);
       $('<div style="height: ' + (w.el.height() + l.el.height() + 10) + 'px;"><div>').appendTo(fEl);
@@ -2358,6 +2363,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       skipGrandFinalComeback: input.skipGrandFinalComeback || false,
       skipSecondaryFinal: input.skipSecondaryFinal || false,
       skipDoubleEliminationInSemiFinal: input.skipDoubleEliminationInSemiFinal || false,
+      headersForSubBrackets: input.headersForSubBrackets || false,
+      useSwissVolleyTableauHacks: input.useSwissVolleyTableauHacks || false,
       showMatchUserData: input.showMatchUserData || false,
       userDataTopCorrection: input.userDataTopCorrection || 0,
       userDataEmptyString: input.userDataEmptyString || "-",
