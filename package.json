@@ -12,8 +12,7 @@
   },
   "scripts": {
     "start": "npm install && grunt watch",
-    "check":
-      "tslint src/*.ts && prettier -l src/*.ts src/*.scss *.md *.json *.js && echo 'Format OK' || echo 'Not conforming to prettier, auto-format with: npm run format'",
+    "check": "tslint src/*.ts && prettier -l src/*.ts src/*.scss *.md *.json *.js && echo 'Format OK' || echo 'Not conforming to prettier, auto-format with: npm run format'",
     "format": "prettier --write src/*.ts src/*.scss *.md *.json *.js"
   },
   "devDependencies": {

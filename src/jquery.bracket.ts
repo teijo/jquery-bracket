@@ -1016,7 +1016,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   }
 
   class Round<TTeam, TScore, TMData, TUData> {
-    private containerWidth = this.opts.teamWidth + this.opts.scoreWidth;
+    private containerWidth = this.opts.disableScoring ? this.opts.teamWidth : this.opts.teamWidth + this.opts.scoreWidth;
     private roundCon: JQuery = $(
       `<div class="round" style="width: ${
         this.containerWidth
@@ -1380,7 +1380,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     );
     const nEl = $(
       `<div class="label" style="width: ${
-        opts.disableScoring ? opts.teamWidth + opts.scoreWidth : opts.teamWidth
+        opts.disableScoring ? opts.teamWidth : opts.teamWidth + opts.scoreWidth
       }px;"></div>`
     ).appendTo(tEl);
 
