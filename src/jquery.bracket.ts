@@ -53,6 +53,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   dir?: string;
   onMatchClick?: (data: TMData) => void;
   onMatchHover?: (data: TMData, hover: boolean) => void;
+  autoSizeTeamWidth?: boolean;
   disableScoring?: boolean;
   disableToolbar?: boolean;
   disableTeamEdit?: boolean;
@@ -368,6 +369,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     disableToolbar?: boolean;
     disableTeamEdit: boolean;
     disableHighlight: boolean;
+    autoSizeTeamWidth?: boolean;
     teamWidth: number;
     scoreWidth: number;
     roundMargin: number;
@@ -1816,6 +1818,45 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     const resultId = new ResultId();
 
     const data = opts.init;
+    console.log(opts);
+    if (opts.autoSizeTeamWidth === true) {
+      let maxWidth = 0;
+      // Full structure must be made in case of user styles
+      if (document.getElementById("jquery-bracket-ruler") === null) {
+        $(`<div class="jQBracket">
+            <div class="bracket">
+                <div class="round">
+                    <div class="match">
+                        <div class="teamContainer">
+                            <div class="team">
+                                <div id="jquery-bracket-ruler" class="label" style="visibility: hidden; white-space: nowrap"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+           </div>
+          `).appendTo(opts.el.empty());
+      }
+      function visualLength (text) {
+        const ruler = document.getElementById("jquery-bracket-ruler");
+        if (ruler !== null) {
+          ruler.innerHTML = text;
+          return ruler.offsetWidth;
+        } else {
+          return -1;
+        }
+      }
+      for (const teamSet of opts.init.teams) {
+        for (const team of teamSet) {
+          const length = visualLength(team.toNull());
+          if (length > maxWidth) {
+            maxWidth = Math.ceil(length);
+          }
+        }
+      }
+      opts.teamWidth = maxWidth;
+    }
 
     const isSingleElimination = data.results.length <= 1;
 
@@ -2122,6 +2163,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     extension: Extension<TScore>
   ): Options<TTeam, TScore, TMData, TUData> {
     const opts: Options<TTeam, TScore, TMData, TUData> = {
+      autoSizeTeamWidth: !input.hasOwnProperty("autoSizeTeamWidth")
+          ? false
+          : getBoolean(input.autoSizeTeamWidth),
       centerConnectors: !input.hasOwnProperty("centerConnectors")
         ? false
         : getBoolean(input.centerConnectors),
