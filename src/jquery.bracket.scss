@@ -79,6 +79,7 @@ div.jQBracket {
     float: left;
     background-color: #eee;
     cursor: default;
+    height: $boxHeight;
 
     &:first-child {
       border-bottom: 1px solid #999;
