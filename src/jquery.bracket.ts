@@ -858,8 +858,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         for (let m = 0; m < matchCount; m += 1) {
           /*
            * Explain the hack blow:
-           * skipDoulbeEliminationInSemiFinal is currentl also used to implement SwissVolley
-           * Tableau issue hacks. => thus, here we trigger a dispatch to SwissVolley Tableau
+           * here we trigger a dispatch to SwissVolley Tableau
            * specific loserMatchSources calculation.
            */
           const teamCb = !(n % 2 === 0 && r !== 0)
@@ -904,8 +903,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       matchCount /= 2;
     }
   }
-// TODO fix function name: it is relevant for skipDoubleEliminationInSemiFinal
-// (mix of this feature and SwissVolley Tableau quirks)
+
   function prepareFinalsInSkipDeInSF<TTeam, TScore, TMData, TUData>(
     finals: Bracket<TTeam, TScore, TMData, TUData>,
     winners: Bracket<TTeam, TScore, TMData, TUData>,
@@ -920,8 +918,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     // get matches for SF teams
     const winners0 = winners.round(lastWinnerRound).match(0);
     const winners1 = winners.round(lastWinnerRound).match(1);
-    const losers0 = losers.round(lastLoserRound).match(0);
-    const losers1 = losers.round(lastLoserRound).match(1);
+    // flip losers as usual to avoid facing the same team again
+    const losers1 = losers.round(lastLoserRound).match(0);
+    const losers0 = losers.round(lastLoserRound).match(1);
     const topmargin = 40;
 
     // create SF matches

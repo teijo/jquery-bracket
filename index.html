@@ -6,127 +6,173 @@
     <link rel="stylesheet" type="text/css" href="dist/jquery.bracket.css">
     <script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
     <script type="text/javascript" src="dist/jquery.bracket.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/6.2.2/firebase-app.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/6.2.2/firebase-firestore.js"></script>
   </head>
   <body>
-      <div id="minimal">
-            <h3 class="tableauheading">Minimal</h3>
-      
-    <script type="text/javascript">
-      
-      var data8 = {
-        teams : [
-          ["Team 1", "Team 8"], /* first matchup */
-          ["Team 5", "Team 4"],
-          ["Team 3", "Team 6"],
-          ["Team 7", "Team 2"]
-        ],
-        results: [[[[2,0],[2,1],[2,0],[2,1]],[[2,0],[2,1]]],[[[2,0],[2,1]],[[1,2],[2,1]]],[[[1,2],[1,2]],[[1,2],[2,1]]]]
-        /*
-        results : [
-          [ // MAIN
-            [[2,1], [2,1], [2,1], [3,4]], 
-            [[2,1], [2,0]]
-          ],
-          [ // LOSER
-            [[2,1],[2,0]],        
-            [[9,10],[0,2]]        
-          ],
-          [ // FINALS
-            [[4,2], [4,3]], // SF
-            [[1,2], [0,2]]  // FINAL 
-            ]] */
-      }
+      <div id="brackets">
 
-  var data12 = {
-    // [[1, 16], [9, 8], [5, 12], [13, 4], [3, 14], [11, 6], [7, 10], [15, 2]] 
-    teams: [
-      ["Team 1", null],
-      ["Team 9", "Team 8"],
-      ["Team 5", "Team 12"],
-      [null, "Team 4"],
-      ["Team 3", null],
-      ["Team 11", "Team 6"],
-      ["Team 7", "Team 10"],
-      [null, "Team 2"]
-    ],
-    results: [[[[null,null],[2,0],[2,1],[null,null],[null,null],[1,2],[0,2],[null,null]],[[2,0],[1,2],[2,0],[2,0]],[[2,1],[2,0]]],[[[null,null],[null,null],[null,null],[null,null]],[[2,1],[2,0],[2,1],[2,0]],[[2,1],[2,0]],[[0,2],[1,2]]],[[[2,1],[2,0]],[[2,0],[2,1]]]]
-    /*
-    results : [
-      [ //MAIN
-        [[2,1], [2,1], [2,1], [3,4],[2,1], [2,1], [2,1], [3,4]], // Round 1
-        [[2,1], [2,1], [2,1], [3,4]],     // Round 2
-        [[2,1], [2,0]]            // Round 3
-        //[27,28]            // SF
-      ],
-      [ //LOSER
-        [[2,1], [2,1], [2,1], [3,4]],  // Round 13
-        [[2,1], [2,1], [2,1], [3,4]], // Round 9
-        [[2,1], [2,0]],       // Round 7
-        [[2,1], [2,0]]        // Round 5
-      ], 
-      [ //FINALS
-        [[2,1], [2,0]], // SF
-        [[2,0],[2,0]] //F
-      ]
-    ]*/
-  };
+            <script type="text/javascript">
+              var useFirestore = true;
+              function getCollection() {
+                  var host = window.location.host;
+                  var collection = host == "beachsm-baden.ch" ? "results" : "results-test";
+                  return collection;
+              }
+              function drawBracket(dbData, cat) {
+                  $(function() {
+                      $('#brackets .output').bracket({
+                          teamWidth: 115,
+                          scoreWidth: 20,
+                          matchMargin: 20,
+                          roundMargin: 20,
+                          centerConnectors: true,
+                          skipSecondaryFinal: true,
+                          skipDoubleEliminationInSemiFinal: true,
+                          useSwissVolleyTableauHacks: false,
+                          headersForSubBrackets: true,
+                          showMatchUserData: true,
+                          userDataTopCorrection: 1,
+                          userDataEmptyString: "&nbsp;-",
+                          init: dbData /* data to initialize the bracket with */
+                      })
+                  })
+                  $('#brackets .tableauheading').html(cat.toUpperCase());
+                  return false;
+              }
+              function getStaticData(cat) {
+                  console.log("Loading static data for: " + cat);
+                  var data;
+                  var u15fdata = {
+                      teams: [["Kernen/Bissig (1)","Gamper/Stolz (16)"],["Bossart/Montanaro (9)","Berger/Bartholet (8)"],["Thommen/Milz (5)","Bamert/Stäuble (12)"],["Belcheva/Marty (13)","Brunner/Lutz (4)"],["Krähenbühl/Jurt (3)","Morandi/Wick (14)"],["Schnegg/Ilic (11)","Schoop/Vogel (6)"],["Hellstern/Bovet (7)","Koch/Gempeler (10)"],["Peter/Flückiger (15)","Delley/Heim (2)"]],
+                      results: [[[[2,0,"KB3 Sat 09:15"],[2,0,"KB4 Sat 09:15"],[2,1,"KB3 Sat 10:00"],[1,2,"KB4 Sat 10:00"],[2,0,"KB3 Sat 10:45"],[1,2,"KB4 Sat 10:45"],[2,0,"KB3 Sat 11:30"],[0,2,"KB4 Sat 11:30"]],[[2,0,"KB3 Sat 13:45"],[2,0,"KB4 Sat 13:45"],[1,2,"KB3 Sat 14:30"],[1,2,"KB4 Sat 14:30"]],[[2,0,"KB3 Sat 16:45"],[0,2,"KB4 Sat 16:45"]]],[[[0,2,"KB4 Sat 13:00"],[2,0,"KB3 Sat 13:00"],[0,2,"KB4 Sat 12:15"],[2,0,"KB3 Sat 12:15"]],[[1,2,"KB3 Sat 15:15"],[1,2,"KB4 Sat 15:15"],[0,2,"KB3 Sat 16:00"],[1,2,"KB4 Sat 16:00"]],[[0,2,"KB3 Sat 17:30"],[1,2,"KB4 Sat 17:30"]],[[2,1,"KB3 Sat 18:15"],[0,2,"KB4 Sat 18:15"]]],[[[2,0,"CC Sun 09:00"],[2,1,"KW1 Sun 09:00"]],[[2,0,"CC Sun 13:10"],[0,2,"KW1 Sun 11:30"]]]]
+                  };
+                  var u15mdata = {
+                      teams: [["Poltéra/Schnyder (1)",null],["Peter/Amrein (9)","Badr/Schnyder (8)"],["Diem/Hunziker (5)","Bortoluzzi/Peter (12)"],[null,"Bürgi/Kolb (4)"],["Endl/Kleibl (3)",null],["Schneider/Wicki (11)","Künzli/Friedli (6)"],["Kissling/Festag (7)","Allemann/Bartholet (10)"],[null,"Hess/Deecke (2)"]],
+                      results: [[[[null,null],[2,0,"CC Sat 08:30"],[2,0,"KW1 Sat 08:30"],[null,null],[null,null],[0,2,"KW2 Sat 08:30"],[2,1,"CC Sat 09:20"],[null,null]],[[2,0,"KW2 Sat 10:45"],[0,2,"KW1 Sat 10:00"],[2,0,"KW2 Sat 10:00"],[0,2,"KW2 Sat 11:30"]],[[2,0,"KW1 Sat 19:00"],[2,0,"KW2 Sat 19:00"]]],[[[null,null],[null,null],[null,null],[null,null]],[[0,2,"KW2 Sat 13:45"],[0,2,"KW2 Sat 14:30"],[0,2,"KW2 Sat 15:15"],[1,2,"KW2 Sat 16:00"]],[[2,0,"KW1 Sat 18:15"],[2,0,"KW2 Sat 18:15"]],[[0,2,"KW1 Sat 20:30"],[2,0,"KW2 Sat 20:30"]]],[[[2,0,"KW1 Sun 09:50"],[2,0,"KW1 Sun 10:40"]],[[2,1,"CC Sun 14:00"],[2,0,"KW1 Sun 12:20"]]]]
+                  };
+                  var u17fdata = {
+                      teams: [["Mottis/Toschini (1)","Joos/Loffreda (16)"],["Krummenacher/Böbner (9)","Lengweiler/Wirth (8)"],["Schibli/Zec (5)","Challamel/Erni (12)"],["Liechti/Stahl (13)","Erni/Eichler (4)"],["Mortati/Mico (3)","Mares/Pfister (14)"],["Wenger/Wenger (11)","Moser/Hess (6)"],["Schaub/Bürge (7)","Sibo Sapi/Neuhaus (10)"],["Hauser/Haegele (15)","Künzler/Kressler (2)"]],
+                      results: [[[[2,0,"TB5 Sat 08:30"],[2,0,"TB6 Sat 08:30"],[2,0,"TB5 Sat 09:15"],[0,2,"TB6 Sat 09:15"],[2,0,"TB5 Sat 10:00"],[0,2,"TB6 Sat 10:00"],[2,0,"TB5 Sat 10:45"],[0,2,"TB6 Sat 10:45"]],[[2,0,"TB5 Sat 13:00"],[2,1,"TB6 Sat 13:00"],[2,0,"TB5 Sat 13:45"],[1,2,"TB6 Sat 13:45"]],[[2,0,"TB5 Sat 16:00"],[0,2,"TB6 Sat 16:00"]]],[[[0,2,"TB6 Sat 12:15"],[2,0,"TB5 Sat 12:15"],[2,0,"TB6 Sat 11:30"],[2,0,"TB5 Sat 11:30"]],[[0,2,"TB5 Sat 14:30"],[0,2,"TB6 Sat 14:30"],[0,2,"TB5 Sat 15:15"],[2,1,"TB6 Sat 15:15"]],[[0,2,"TB5 Sat 16:45"],[2,1,"TB6 Sat 16:45"]],[[0,2,"TB5 Sat 17:30"],[2,0,"TB6 Sat 17:30"]]],[[[2,1,"CC Sun 09:50"],[2,1,"CC Sun 10:40"]],[[2,0,"CC Sun 14:50"],[0,2,"KW1 Sun 13:10"]]]]
+                  };
+                  var u17mdata = {
+                      teams: [["Breer/Steinmann (1)",null],["Tobli/Charpilloz (9)","Probst/Peter (8)"],["Gut/Rohner (5)","von Birckhahn/Schalch (12)"],[null,"Métral/Chavaz (4)"],["Kolb/Schneider (3)",null],["Miele/Ankurowski (11)","Deecke/Baranzelli (6)"],["Moro/Schneuwly (7)","Weiss/Tanner (10)"],[null,"Simonett/Frauchiger (2)"]],
+                      results: [[[[null,null],[1,2,"KB3 Sat 08:30"],[2,1,"KB4 Sat 08:30"],[null,null],[null,null],[0,2,"KW1 Sat 09:15"],[2,0,"KW2 Sat 09:15"],[null,null]],[[2,0,"CC Sat 13:30"],[1,2,"KW2 Sat 12:15"],[2,0,"KW2 Sat 13:00"],[0,2,"CC Sat 14:20"]],[[2,1,"CC Sat 19:15"],[2,1,"CC Sat 20:00"]]],[[[null,null],[null,null],[null,null],[null,null]],[[1,2,"KW1 Sat 16:45"],[1,2,"KW2 Sat 16:45"],[2,1,"KW1 Sat 17:30"],[2,1,"KW2 Sat 17:30"]],[[2,0,"KW1 Sat 19:45"],[0,2,"KW2 Sat 19:45"]],[[0,2,"CC Sat 20:45"],[1,2,"CC Sat 21:30"]]],[[[2,0,"CC Sun 11:30"],[2,1,"CC Sun 12:20"]],[[2,1,"CC Sun 15:40"],[2,1,"KW1 Sun 14:00"]]]]
+                  };
+                  var u19fdata = {
+                      teams: [["Moser/Rohrer (1)",null],["Odermatt/Brunner (9)","Kuster/Poltéra (8)"],["Flühmann/von der Weid (5)","Kuch/Erni (12)"],[null,"Giroud/Fonzi (4)"],["Schwab/Nussbaumer (3)",null],["Bialas/Bertoli (11)","Mueller/Grenacher (6)"],["Tschanz/Grünig (7)","Häfliger/Duss (10)"],[null,"Frauchiger/Bentele (2)"]],
+                      results: [[[[null,null],[1,2,"CC Fri 10:00"],[0,2,"KW2 Fri 10:00"],[null,null],[null,null],[0,2,"KW1 Fri 10:00"],[2,1,"KW2 Fri 10:50"],[null,null]],[[2,0,"CC Fri 13:20"],[0,2,"KW1 Fri 12:30"],[2,0,"KW2 Fri 12:30"],[1,2,"KW2 Fri 13:20"]],[[2,0,"CC Fri 16:00"],[0,2,"CC Fri 17:00"]]],[[[null,null],[null,null],[null,null],[null,null]],[[1,2,"KW1 Fri 15:00"],[0,2,"KW2 Fri 14:10"],[2,1,"KW1 Fri 14:10"],[0,2,"KW2 Fri 15:00"]],[[1,2,"KW1 Fri 17:00"],[1,2,"KW2 Fri 17:00"]],[[1,2,"KW1 Fri 19:00"],[1,2,"KW2 Fri 19:00"]]],[[[2,0,"KW1 Sat 10:45"],[2,0,"KW1 Sat 11:30"]],[[1,2,"CC Sat 15:10"],[1,2,"KW1 Sat 14:30"]]]]
+                  };
+                  var u19mdata = {
+                      teams: [["Breer/Schnegg (1)","Bärlocher/Zürcher (8)"],["Borrello/Colomb (5)","Moser/Charpilloz (4)"],["Diem/Hasler (3)","Sütterlin/Baumeler (6)"],["Kistler/Blaser (7)","Lengweiler/Egger (2)"]],
+                      results: [[[[2,0,"KB3 Fri 10:00"],[0,2,"KB4 Fri 10:00"],[2,1,"KB3 Fri 10:50"],[0,2,"KB4 Fri 10:50"]],[[2,1,"CC Fri 12:30"],[0,2,"KB3 Fri 12:30"]]],[[[0,2,"KB3 Fri 13:20"],[2,1,"KB4 Fri 13:20"]],[[0,2,"KB3 Fri 15:00"],[0,2,"KB3 Fri 16:00"]]],[[[2,0,"KW1 Sat 12:15"],[1,2,"KW1 Sat 13:00"]],[[2,0,"CC Sat 16:00"],[2,1,"KW1 Sat 16:00"]]]]
+                  };
+                  var u21fdata = {
+                      teams: [["Dirnhofer/Lutz (1)","Wirz/Gertiser (8)"],["Baranzelli/Contorno (5)","Zehr/Kiener (4)"],["Fiechter/Krieger (3)","Brun/Brunschweiler (6)"],["Soldini/Liberti (7)","Sacher/Zwanenburg (2)"]],
+                      results: [[[[2,0,"CC Fri 10:50"],[2,0,"KW1 Fri 10:50"],[2,0,"KW1 Fri 11:40"],[0,2,"KW2 Fri 11:40"]],[[2,0,"KW1 Fri 13:20"],[2,0,"CC Fri 14:10"]]],[[[0,2,"KW1 Fri 16:00"],[2,0,"KW2 Fri 16:00"]],[[0,2,"KW1 Fri 18:00"],[0,2,"KW2 Fri 18:00"]]],[[[2,0,"CC Sat 10:10"],[0,2,"CC Sat 11:00"]],[[1,2,"CC Sat 16:50"],[1,2,"KW1 Sat 13:45"]]]]
+                  };
+                  var u21mdata = {
+                      teams: [["Dillier/Amrein (1)","Gajewski/Mladenovic (8)"],["Maeder/Blaser (5)","Di Chello/Heinzelmann (4)"],["Zürcher/Süess (3)","Caduff/Casparis (6)"],["Broder/Wymann (7)","Simonett/John (2)"]],
+                      results: [[[[2,0,"CC Fri 11:40"],[0,2,"KB3 Fri 11:40"],[2,0,"KB4 Fri 11:40"],[0,2,"KB4 Fri 12:30"]],[[2,0,"KB4 Fri 14:10"],[0,2,"CC Fri 15:00"]]],[[[0,2,"KB4 Fri 15:00"],[2,1,"KB3 Fri 14:10"]],[[0,2,"CC Fri 18:00"],[0,2,"KB4 Fri 16:00"]]],[[[0,2,"CC Sat 11:50"],[2,1,"CC Sat 12:40"]],[[2,0,"CC Sat 17:40"],[0,2,"KW1 Sat 15:15"]]]]
+                  };
+                  switch(cat) {
+                      case "u15f":
+                          data = u15fdata;
+                          break;
+                      case "u15m":
+                          data = u15mdata;
+                          break;
+                      case "u17f":
+                          data = u17fdata;
+                          break;
+                      case "u17m":
+                          data = u17mdata;
+                          break;
+                      case "u19f":
+                          data = u19fdata;
+                          break;
+                      case "u19m":
+                          data = u19mdata;
+                          break;
+                      case "u21f":
+                          data = u21fdata;
+                          break;
+                      case "u21m":
+                          data = u21mdata;
+                          break;
+                      default:
+                          return {
+                              teams: [],
+                              results: []
+                          };
+                  }
+                  return data;
+              }
+              function loadStaticData(cat) {
+                  var dbData = getStaticData(cat);
+                  drawBracket(dbData, cat);
+              }
+              function loadFirestoreData(cat) {
+                  console.log("Loading firestore data for: " + cat);
+                  var collection = getCollection();
+                  console.log(collection);
+                  docRef = db.collection(collection).doc("beachsm-baden-"+cat);
+                  docRef.get().then(function(doc) { /* get once */
+                      if (doc.exists) {
+                          console.log("Document data:", doc.data());
+                          var teamsarray = JSON.parse(doc.data().teams);
+                          var resultsarray = JSON.parse(doc.data().results);
+                          //console.log("Teams: ", teamsarray);
+                          var dbData = {
+                              teams : teamsarray,
+                              results : resultsarray
+                          }
+                          drawBracket(dbData, cat);
+                      } else {
+                          // doc.data() will be undefined in this case
+                          console.log("No such document!");
+                      }
+                  }).catch(function(error) {
+                      console.log("Error getting document:", error);
+                  });
+                  return false;
+              }
+              function loadCategory(cat) {
+                  if (useFirestore) {
+                      loadFirestoreData(cat);
+                  }
+                  else {
+                      loadStaticData(cat);
+                  }
+                  return false;
+              }
+              var url_string = window.location.href
+              var url = new URL(url_string);
+              var cat = url.searchParams.get("cat");
+              console.log(cat);
+              if (cat == null) {
+                  cat = "u15f";
+              }
+              var db;
+              if (useFirestore) {
+                  var firebaseConfig = {
+                      apiKey: "AIzaSyDMtbQOEsuZjUbdMwaP0T6Kx66bqfhf5Rc",
+                      authDomain: "jbsm-baden19.firebaseapp.com",
+                      databaseURL: "https://jbsm-baden19.firebaseio.com",
+                      projectId: "jbsm-baden19",
+                      storageBucket: "",
+                      messagingSenderId: "204734974115",
+                      appId: "1:204734974115:web:7c9606ad1dd88c91"
+                  };
+                  // Initialize Firebase
+                  firebase.initializeApp(firebaseConfig);
+                  db = firebase.firestore();
+              }
+              loadCategory(cat);
+          </script>
 
-  var data16 = {
-    // [[1, 16], [9, 8], [5, 12], [13, 4], [3, 14], [11, 6], [7, 10], [15, 2]] 
-    teams: [
-      ["Team with very long Name 1", "Team 16"],
-      ["Team 9", "Team 8"],
-      ["Team 5", "Team 12"],
-      ["Team 13", "Team 4"],
-      ["Team 3", "Team 14"],
-      ["Team 11", "Team 6"],
-      ["Team 7", "Team 10"],
-      ["Team 15", "Team 2"]
-    ],
-    results : [[[[2,0, "CC 12:40"],[2,1, "KB 14:00"],[2,0],[2,1],[2,0],[2,1],[2,0],[2,1]],[[2,0],[2,1],[2,0],[2,1]],[[2,0],[2,1]]],[[[1,2],[0,2],[1,2],[0,2]],[[2,0],[2,1],[2,0],[2,1]],[[2,0],[2,1]],[[2,0],[2,1]]],[[[2,0],[2,1]],[[2,1],[2,0]]]]
-    /*
-    results : [
-      [ //MAIN
-        [[2,1], [2,1], [2,1], [3,4],[2,1], [2,1], [2,1], [3,4]], // Round 1
-        [[2,1], [2,1], [2,1], [3,4]],     // Round 2
-        [[2,1], [2,0]]            // Round 3
-        //[27,28]            // SF
-      ],
-      [ //LOSER
-        [[2,1], [2,1], [2,1], [3,4]],  // Round 13
-        [[2,1], [2,1], [2,1], [3,4]], // Round 9
-        [[2,1], [2,0]],       // Round 7
-        [[2,1], [2,0]]        // Round 5
-      ], 
-      [ //FINALS
-        [[2,1], [2,0]], // SF
-        [[2,0],[2,0]] //F
-      ]
-    ]*/
-  };
- 
-  $(function() {
-    $('#minimal .demo').bracket({
-      teamWidth: 120,
-      scoreWidth: 25,
-      matchMargin: 20,
-      roundMargin: 20,
-      centerConnectors: true,
-      skipSecondaryFinal: true,
-      skipDoubleEliminationInSemiFinal: true,
-      useSwissVolleyTableauHacks: true,
-      headersForSubBrackets: true,
-      showMatchUserData: true,
-      userDataTopCorrection: 0,
-      userDataEmptyString: "&nbsp;-",
-      init: data16 /* data to initialize the bracket with */
-    })
-  })
-    </script>
-    <!--
-    <div class="demo" style="display: inline-block"></div>
-    -->
-    <div class="demo" style="overflow: auto"></div>
+    <h2 class="tableauheading">Tableau</h2>
+    <div class="output" style="overflow: auto"></div>
 </div>
   </body>
 </html>
