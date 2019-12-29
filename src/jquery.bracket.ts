@@ -52,7 +52,6 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   skipGrandFinalComeback?: boolean;
   skipDoubleEliminationInSemiFinal: boolean;
   headersForSubBrackets: boolean;
-  useSwissVolleyTableauHacks: boolean;
   showMatchUserData?: boolean;
   userDataTopCorrection?: number;
   userDataEmptyString?: string;
@@ -367,7 +366,6 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     skipGrandFinalComeback: boolean;
     skipDoubleEliminationInSemiFinal : boolean;
     headersForSubBrackets : boolean;
-    useSwissVolleyTableauHacks : boolean;
     showMatchUserData: boolean;
     userDataTopCorrection: number;
     userDataEmptyString: string;
@@ -671,86 +669,42 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     }
   }
 
-  function loserMatchSourcesDispatch <TTeam, TScore, TMData, TUData>(
+  const loserMatchSourcesFirstRound = <TTeam, TScore, TMData, TUData>(
     winners: Bracket<TTeam, TScore, TMData, TUData>,
-    losers: Bracket<TTeam, TScore, TMData, TUData>,
     matchCount: number,
     m: number,
     n: number,
     r: number,
-    teamCount: number):
-    (() => [MatchSource<TTeam, TScore>, MatchSource<TTeam, TScore>]) {
-    switch (teamCount) { // TODO fix switch, it is just a hack for SwissVolley and should be configurable!
-      case 8:
-        return loserMatchSourcesSV16<TTeam, TScore, TMData, TUData>(
-          winners,
-          losers,
-          matchCount,
-          m,
-          n,
-          r
-        );
-      default:
-        return loserMatchSources<TTeam, TScore, TMData, TUData>(
-          winners,
-          losers,
-          matchCount,
-          m,
-          n,
-          r
-      );
-    }
-  }
-  const loserMatchSourcesSV16 = <TTeam, TScore, TMData, TUData>(
-    winners: Bracket<TTeam, TScore, TMData, TUData>,
-    losers: Bracket<TTeam, TScore, TMData, TUData>,
-    matchCount: number,
-    m: number,
-    n: number,
-    r: number
+    roundCount: number
   ) => (): [MatchSource<TTeam, TScore>, MatchSource<TTeam, TScore>] => {
-    /* first round comes from winner bracket */
-    if (n % 2 === 0 && r === 0) {
-      const mindex = matchCount - m - 1; // start with reversed order for SwissVolley
-      return [
-        {
-          source: () =>
-            winners
-              .round(0)
-              .match(mindex * 2 + 1)
-              .loser()
-        },
-        {
-          source: () =>
-            winners
-              .round(0)
-              .match(mindex * 2)
-              .loser()
-        }
-      ];
-    } else {
-      /* match with dropped */
-      /* To maximize the time it takes for two teams to play against
-       * eachother twice, WB losers are assigned in reverse order
-       * every second round of LB */
-      const winnerMatch = r % 2 === 1 ? matchCount - m - 1 : m; // we started with reversed order
-      return [
-        {
-          source: () =>
-            losers
-              .round(r * 2)
-              .match(m)
-              .winner()
-        },
-        {
-          source: () =>
-            winners
-              .round(r + 1)
-              .match(winnerMatch)
-              .loser()
-        }
-      ];
+    /*
+     * calculate starting order based on number of looser rounds
+     * if roundCount is equal, start in reverse order.
+     */
+    let mindex = m;
+    let positionSource1 = 0;
+    let positionSource2 = 1;
+    if (roundCount % 2 === 0) {
+      mindex = matchCount - m - 1;
+      positionSource1 = 1;
+      positionSource2 = 0;
     }
+    return [
+      {
+        source: () =>
+          winners
+            .round(0)
+            .match(mindex * 2 + positionSource1)
+            .loser()
+      },
+      {
+        source: () =>
+          winners
+            .round(0)
+            .match(mindex * 2 + positionSource2)
+            .loser()
+      }
+    ];
   };
 
   const loserMatchSources = <TTeam, TScore, TMData, TUData>(
@@ -759,49 +713,36 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     matchCount: number,
     m: number,
     n: number,
-    r: number
+    r: number,
+    roundCount: number
   ) => (): [MatchSource<TTeam, TScore>, MatchSource<TTeam, TScore>] => {
-    /* first round comes from winner bracket */
-    if (n % 2 === 0 && r === 0) {
-      return [
-        {
-          source: () =>
-            winners
-              .round(0)
-              .match(m * 2)
-              .loser()
-        },
-        {
-          source: () =>
-            winners
-              .round(0)
-              .match(m * 2 + 1)
-              .loser()
-        }
-      ];
-    } else {
-      /* match with dropped */
-      /* To maximize the time it takes for two teams to play against
-       * eachother twice, WB losers are assigned in reverse order
-       * every second round of LB */
-      const winnerMatch = r % 2 === 0 ? matchCount - m - 1 : m;
-      return [
-        {
-          source: () =>
-            losers
-              .round(r * 2)
-              .match(m)
-              .winner()
-        },
-        {
-          source: () =>
-            winners
-              .round(r + 1)
-              .match(winnerMatch)
-              .loser()
-        }
-      ];
-    }
+    /* 
+     * Match with dropped:
+     * To maximize the time it takes for two teams to play against
+     * eachother twice, WB losers are assigned in reverse order
+     * every second round of LB.
+     * If the roundCount is even, we already started in reverse order 
+     * in round 0 and thus reverse on the uneven rounds
+     * else we reverse on the even rounds.
+     */
+    const reversTrigger = (roundCount + 1) % 2;
+    const winnerMatch = r % 2 === reversTrigger ? matchCount - m - 1 : m;
+    return [
+      {
+        source: () =>
+          losers
+            .round(r * 2)
+            .match(m)
+            .winner()
+      },
+      {
+        source: () =>
+          winners
+            .round(r + 1)
+            .match(winnerMatch)
+            .loser()
+      }
+    ];
   };
 
   const loserAlignment = <TTeam, TScore, TMData, TUData>(
@@ -837,50 +778,47 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   function prepareLosers<TTeam, TScore, TMData, TUData>(
     winners: Bracket<TTeam, TScore, TMData, TUData>,
     losers: Bracket<TTeam, TScore, TMData, TUData>,
-    teamCount: number,
+    teamPairsCount: number,
     skipGrandFinalComeback: boolean,
     skipDoubleEliminationInSemiFinal : boolean,
-    useSwissVolleyTableauHacks : boolean,
     centerConnectors: boolean
   ) {
     const roundCountAdjust = skipDoubleEliminationInSemiFinal ? 1 : 0;
-    const roundCount = Math.log(teamCount * 2) / Math.log(2) - 1 - roundCountAdjust;
-    let matchCount = teamCount / 2;
+    const roundCount = Math.log(teamPairsCount * 2) / Math.log(2) - 1 - roundCountAdjust;
+    let matchCount = teamPairsCount / 2;
 
     for (let r = 0; r < roundCount; r += 1) {
       /* if player cannot rise back to grand final, last round of loser
-       * bracket will be player between two LB players, eliminating match
+       * bracket will be played between two LB players, eliminating match
        * between last WB loser and current LB winner */
       const subRounds = skipGrandFinalComeback && r === roundCount - 1 ? 1 : 2;
       for (let n = 0; n < subRounds; n += 1) {
         const round = losers.addRound(false, Option.empty());
 
         for (let m = 0; m < matchCount; m += 1) {
-          /*
-           * Explain the hack blow:
-           * here we trigger a dispatch to SwissVolley Tableau
-           * specific loserMatchSources calculation.
-           */
-          const teamCb = !(n % 2 === 0 && r !== 0)
-            ? (useSwissVolleyTableauHacks ?
-              loserMatchSourcesDispatch<TTeam, TScore, TMData, TUData>( 
+          const teamCb = (n % 2 === 0) // first subround
+            ? (r === 0 // first round: source all losers from winner bracket
+              ? loserMatchSourcesFirstRound<TTeam, TScore, TMData, TUData>(
+                  winners,
+                  matchCount,
+                  m,
+                  n,
+                  r,
+                  roundCount
+                )
+              : null // calculate winners of last loser round
+            )
+            // second subround: source second team from winner bracket
+            : loserMatchSources<TTeam, TScore, TMData, TUData>(
                 winners,
                 losers,
                 matchCount,
                 m,
                 n,
                 r,
-                teamCount
-              ) :
-              loserMatchSources<TTeam, TScore, TMData, TUData>(
-                winners,
-                losers,
-                matchCount,
-                m,
-                n,
-                r
-              ))
-            : null;
+                roundCount
+              );
+          
           const isConsolationMatch = r === roundCount - 1 && skipGrandFinalComeback;
           const isLastLooserRound = r === roundCount - 1 && n === subRounds - 1 && skipDoubleEliminationInSemiFinal;
           const match = round.addMatch(
@@ -918,9 +856,12 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     // get matches for SF teams
     const winners0 = winners.round(lastWinnerRound).match(0);
     const winners1 = winners.round(lastWinnerRound).match(1);
-    // flip losers as usual to avoid facing the same team again
-    const losers1 = losers.round(lastLoserRound).match(0);
-    const losers0 = losers.round(lastLoserRound).match(1);
+    
+    // flip losers as usual to avoid facing the same team again ==> ???
+    const losers0 = losers.round(lastLoserRound).match(0);
+    const losers1 = losers.round(lastLoserRound).match(1);
+    
+    // TODO: why?
     const topmargin = 40;
 
     // create SF matches
@@ -1487,7 +1428,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   }
 
   function countRounds(
-    teamCount: number,
+    teamPairsCount: number,
     isSingleElimination: boolean,
     skipGrandFinalComeback: boolean,
     skipSecondaryFinal: boolean,
@@ -1495,11 +1436,11 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     results
   ) {
     if (isSingleElimination) {
-      return Math.log(teamCount * 2) / Math.log(2);
+      return Math.log(teamPairsCount * 2) / Math.log(2);
     } else if (skipGrandFinalComeback) {
-      return Math.max(2, (Math.log(teamCount * 2) / Math.log(2) - 1) * 2 - 1); // DE - grand finals
+      return Math.max(2, (Math.log(teamPairsCount * 2) / Math.log(2) - 1) * 2 - 1); // DE - grand finals
     } else if (skipDoubleEliminationInSemiFinal) {
-      return ((Math.log(teamCount * 2) / Math.log(2)) - 2) * 2 + 2;
+      return ((Math.log(teamPairsCount * 2) / Math.log(2)) - 2) * 2 + 2;
     } else {
       // Loser bracket winner has won first match in grand finals,
       // this requires a new match unless explicitely skipped
@@ -1507,7 +1448,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         !skipSecondaryFinal &&
         (results.length === 3 && results[2].length === 2);
       return (
-        (Math.log(teamCount * 2) / Math.log(2) - 1) * 2 +
+        (Math.log(teamPairsCount * 2) / Math.log(2) - 1) * 2 +
         1 +
         (hasGrandFinalRematch ? 1 : 0)
       ); // DE + grand finals
@@ -2173,7 +2114,6 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         data.teams.length,
         opts.skipGrandFinalComeback,
         opts.skipDoubleEliminationInSemiFinal,
-        opts.useSwissVolleyTableauHacks,
         opts.centerConnectors
       );
       if (!opts.skipGrandFinalComeback) {
@@ -2220,12 +2160,12 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     data: InitData<TTeam, TScore, TMData>,
     opts: Options<TTeam, TScore, TMData, TUData>
   ) {
-    const teamCount = data.teams.length;
+    const teamPairsCount = data.teams.length;
     const resultCount = data.results.length;
 
     const incrementButton = () =>
       createIncrementButton(() => {
-        for (let i = 0; i < teamCount; i += 1) {
+        for (let i = 0; i < teamPairsCount; i += 1) {
           data.teams.push([Option.empty(), Option.empty()]);
         }
         return JqueryBracket(opts);
@@ -2233,15 +2173,15 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
     const decrementButton = () =>
       createDecrementButton(() => {
-        if (teamCount > 1) {
-          data.teams = data.teams.slice(0, teamCount / 2);
+        if (teamPairsCount > 1) {
+          data.teams = data.teams.slice(0, teamPairsCount / 2);
           return JqueryBracket(opts);
         }
       });
 
     const doubleEliminationButton = () =>
       createDoubleEliminationButton(() => {
-        if (teamCount > 1 && resultCount < 3) {
+        if (teamPairsCount > 1 && resultCount < 3) {
           data.results.push([], []);
           return JqueryBracket(opts);
         }
@@ -2260,15 +2200,15 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     tools.append(incrementButton());
 
     if (
-      (teamCount > 1 && resultCount === 1) ||
-      (teamCount > 2 && resultCount === 3)
+      (teamPairsCount > 1 && resultCount === 1) ||
+      (teamPairsCount > 2 && resultCount === 3)
     ) {
       tools.append(decrementButton());
     }
 
-    if (resultCount === 1 && teamCount > 1) {
+    if (resultCount === 1 && teamPairsCount > 1) {
       tools.append(doubleEliminationButton());
-    } else if (resultCount === 3 && teamCount > 1) {
+    } else if (resultCount === 3 && teamPairsCount > 1) {
       tools.append(singleEliminationButton());
     }
 
@@ -2363,7 +2303,6 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       skipSecondaryFinal: input.skipSecondaryFinal || false,
       skipDoubleEliminationInSemiFinal: input.skipDoubleEliminationInSemiFinal || false,
       headersForSubBrackets: input.headersForSubBrackets || false,
-      useSwissVolleyTableauHacks: input.useSwissVolleyTableauHacks || false,
       showMatchUserData: input.showMatchUserData || false,
       userDataTopCorrection: input.userDataTopCorrection || 0,
       userDataEmptyString: input.userDataEmptyString || "-",
