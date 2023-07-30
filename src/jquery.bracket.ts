@@ -1427,7 +1427,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
           function editor() {
             span.unbind();
 
-            const initialScore = !isNumber(team.score) ? "0" : span.text();
+            const initialScore = !isNumber(team.score.val) ? "0" : span.text();
             const input = $('<input type="text">');
 
             input.val(initialScore);
